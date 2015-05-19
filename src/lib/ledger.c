@@ -90,7 +90,7 @@ error:
 }
 
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *topic,
-                                 unsigned int partition, void *data,
-                                 size_t len) {
+                                     unsigned int partition, void *data,
+                                     size_t len) {
     return LEDGER_OK;
 }
