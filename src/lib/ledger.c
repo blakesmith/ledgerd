@@ -46,6 +46,7 @@ void ledger_close_context(ledger_ctx *ctx) {
 
         topic = dnode_get(cur);
         ledger_topic_close(topic);
+        free(topic);
     }
 
     dict_free_nodes(&ctx->topics);
