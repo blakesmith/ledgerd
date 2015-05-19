@@ -22,6 +22,7 @@ const char *ledger_err(ledger_ctx *ctx);
 ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory);
 ledger_status ledger_open_topic(ledger_ctx *ctx, const char *topic,
                                 unsigned int partition_count, int options);
+void ledger_close_context(ledger_ctx *ctx);
 
 #if defined(__cplusplus)
 }

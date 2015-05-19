@@ -44,6 +44,9 @@ ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory) {
     return LEDGER_OK;
 }
 
+void ledger_close_context(ledger_ctx *ctx) {
+}
+
 ledger_status ledger_open_topic(ledger_ctx *ctx, const char *topic,
                                 unsigned int partition_count, int options) {
     int i;

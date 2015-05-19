@@ -63,6 +63,7 @@ TEST(Ledger, CreatesCorrectDirectories) {
     }
     EXPECT_EQ(4, partition_count);
 
+    ledger_close_context(&ctx);
     ASSERT_EQ(0, closedir(dir));
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
