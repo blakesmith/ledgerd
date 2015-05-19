@@ -6,10 +6,21 @@ extern "C" {
 #endif
 
 typedef enum {
-  LEDGER_OK = 0
+    LEDGER_OK = 0,
+    LEDGER_ERR_GENERAL = -1,
+    LEDGER_ERR_MEMORY = -2,
+    LEDGER_ERR_MKDIR = -3
 } ledger_status;
+  
+typedef struct {
+    const char *root_directory;
+    const char *last_error;
+} ledger_ctx;
 
-ledger_status ledger_open_context(const char *directory);
+const char *ledger_err(ledger_ctx *ctx);
+ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory);
+ledger_status ledger_open_topic(ledger_ctx *ctx, const char *topic,
+                                unsigned int partition_count, int options);
 
 #if defined(__cplusplus)
 }
