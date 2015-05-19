@@ -67,4 +67,20 @@ TEST(Ledger, CreatesCorrectDirectories) {
     ASSERT_EQ(0, closedir(dir));
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
+
+TEST(Ledger, CorrectWritesSingleTopic) {
+    ledger_ctx ctx;
+    const char message[] = "hello";
+    size_t mlen = sizeof(message);
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen));
+
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
 }
