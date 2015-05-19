@@ -9,7 +9,8 @@ typedef enum {
     LEDGER_OK = 0,
     LEDGER_ERR_GENERAL = -1,
     LEDGER_ERR_MEMORY = -2,
-    LEDGER_ERR_MKDIR = -3
+    LEDGER_ERR_MKDIR = -3,
+    LEDGER_ERR_ARGS = -4
 } ledger_status;
   
 typedef struct {

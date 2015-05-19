@@ -6,6 +6,7 @@
 
 #include "ledger.h"
 
+#define MAX_PARTITIONS 65536
 #define check_rc(C, R, M) if(!(C)) { \
     rc = R; \
     ctx->last_error = M; \
@@ -51,6 +52,8 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *topic,
     ssize_t path_len;
     char *topic_path = NULL;
     char *partition_path = NULL;
+
+    check_rc(partition_count < MAX_PARTITIONS, LEDGER_ERR_ARGS, "Too many partitions");
 
     path_len = concat_path(ctx->root_directory, topic, &topic_path);
     check_rc(path_len > 0, path_len, "Failed to construct directory path");
