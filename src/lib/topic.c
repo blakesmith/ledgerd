@@ -25,6 +25,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
 
     topic->path_len = path_len;
     topic->path = topic_path;
+    topic->npartitions = partition_count;
 
     rc = mkdir(topic_path, 0755);
     ledger_check_rc(rc == 0 || errno == EEXIST, LEDGER_ERR_MKDIR, "Failed to create context directory");
