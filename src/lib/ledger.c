@@ -54,12 +54,19 @@ static ssize_t concat_path(const char *s1, const char *s2, char **out) {
     return path_len;
 }
 
-static ledger_status open_latest_partition_index(ledger_ctx *ctx, const char *root, unsigned int partition) {
+static ledger_status open_latest_partition_index(ledger_ctx *ctx, const char *topic, unsigned int partition_num, ledger_partition_index *idx) {
     return LEDGER_OK;
 }
 
-static ledger_status open_latest_partition(ledger_ctx *ctx, const char *root, unsigned int partition) {
+static ledger_status open_latest_partition(ledger_ctx *ctx, const char *topic, unsigned int partition_num, ledger_partition *partition) {
+    ledger_status rc;
+
+    rc = open_latest_partition_index(ctx, topic, partition_num, &partition->idx);
+    check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition index");
+
     return LEDGER_OK;
+error:
+    return rc;
 }
 
 const char *ledger_err(ledger_ctx *ctx) {
@@ -118,15 +125,13 @@ error:
 }
 
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *topic,
-                                     unsigned int partition, void *data,
+                                     unsigned int partition_num, void *data,
                                      size_t len) {
     ledger_status rc;
+    ledger_partition partition;
 
-    rc = open_latest_partition(ctx, topic, partition);
+    rc = open_latest_partition(ctx, topic, partition_num, &partition);
     check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition");
-
-    rc = open_latest_partition_index(ctx, topic, partition);
-    check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition index");
 
     return LEDGER_OK;
 

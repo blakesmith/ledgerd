@@ -44,7 +44,7 @@ ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory);
 ledger_status ledger_open_topic(ledger_ctx *ctx, const char *topic,
                                 unsigned int partition_count, int options);
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *topic,
-                                     unsigned int partition, void *data,
+                                     unsigned int partition_num, void *data,
                                      size_t len);
 void ledger_close_context(ledger_ctx *ctx);
 
