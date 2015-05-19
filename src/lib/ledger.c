@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "ledger.h"
 
@@ -11,6 +12,24 @@
     rc = R; \
     ctx->last_error = M; \
     goto error; \
+}
+
+static int ledger_pwrite(int fd, const void *buf, size_t count, off_t offset) {
+    ssize_t rv;
+
+    while(count > 0) {
+        rv = pwrite(fd, buf, count, offset);
+        if(rv == -1 && errno == EINTR) {
+            continue;
+        }
+        if(rv <= 0) {
+            return 0;
+        }
+        count -= rv;
+        offset += rv;
+    }
+
+    return 1;
 }
 
 static ssize_t concat_path(const char *s1, const char *s2, char **out) {
@@ -33,6 +52,14 @@ static ssize_t concat_path(const char *s1, const char *s2, char **out) {
 
     *out = buf;
     return path_len;
+}
+
+static ledger_status open_latest_partition_index(ledger_ctx *ctx, const char *root, unsigned int partition) {
+    return LEDGER_OK;
+}
+
+static ledger_status open_latest_partition(ledger_ctx *ctx, const char *root, unsigned int partition) {
+    return LEDGER_OK;
 }
 
 const char *ledger_err(ledger_ctx *ctx) {
@@ -73,6 +100,7 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *topic,
 
         rc = mkdir(partition_path, 0755);
         check_rc(rc == 0 || errno == EEXIST, LEDGER_ERR_MKDIR, "Failed to create partition directory");
+
         free(partition_path);
     }
 
@@ -92,5 +120,16 @@ error:
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *topic,
                                      unsigned int partition, void *data,
                                      size_t len) {
+    ledger_status rc;
+
+    rc = open_latest_partition(ctx, topic, partition);
+    check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition");
+
+    rc = open_latest_partition_index(ctx, topic, partition);
+    check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition index");
+
     return LEDGER_OK;
+
+error:
+    return rc;
 }
