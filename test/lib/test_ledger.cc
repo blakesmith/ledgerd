@@ -68,6 +68,23 @@ TEST(Ledger, CreatesCorrectDirectories) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, BadWrites) {
+    ledger_ctx ctx;
+    const char message[] = "hello";
+    size_t mlen = sizeof(message);
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_write_partition(&ctx, "bad-topic", 0, (void *)message, mlen));
+
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, 0));
+    EXPECT_EQ(LEDGER_ERR_BAD_PARTITION, ledger_write_partition(&ctx, TOPIC, 5, (void *)message, mlen));
+
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, CorrectWritesSingleTopic) {
     ledger_ctx ctx;
     const char message[] = "hello";

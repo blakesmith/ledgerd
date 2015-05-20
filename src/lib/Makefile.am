@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libledger.la
 
 libledger_la_HEADERS = \
 	ledger.h \
+	partition.h \
 	topic.h
 
 libledger_la_SOURCES = \
@@ -10,6 +11,7 @@ libledger_la_SOURCES = \
 	crc32.h crc32.c \
 	dict.h dict.c \
 	ledger.c \
+	partition.c \
 	topic.c
 
 libledger_ladir = $(includedir)/ledger

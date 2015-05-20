@@ -11,21 +11,6 @@
 
 #define MAX_TOPICS 255
 
-static ledger_status open_latest_partition_index(ledger_ctx *ctx, const char *topic, unsigned int partition_num, ledger_partition_index *idx) {
-    return LEDGER_OK;
-}
-
-static ledger_status open_latest_partition(ledger_ctx *ctx, const char *topic, unsigned int partition_num, ledger_partition *partition) {
-    ledger_status rc;
-
-    rc = open_latest_partition_index(ctx, topic, partition_num, &partition->idx);
-    ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition index");
-
-    return LEDGER_OK;
-error:
-    return rc;
-}
-
 const char *ledger_err(ledger_ctx *ctx) {
     return ctx->last_error;
 }
@@ -71,16 +56,18 @@ error:
     return rc;
 }
 
-ledger_status ledger_write_partition(ledger_ctx *ctx, const char *topic,
+ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
                                      unsigned int partition_num, void *data,
                                      size_t len) {
     ledger_status rc;
-    ledger_partition partition;
+    ledger_topic *topic = NULL;
+    dnode_t *dtopic;
 
-    rc = open_latest_partition(ctx, topic, partition_num, &partition);
-    ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to open latest partition");
+    dtopic = dict_lookup(&ctx->topics, name);
+    ledger_check_rc(dtopic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
-    return LEDGER_OK;
+    topic = dnode_get(dtopic);
+    return ledger_topic_write_partition(topic, partition_num, data, len);
 
 error:
     return rc;
