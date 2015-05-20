@@ -72,3 +72,9 @@ ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
 error:
     return rc;
 }
+
+ledger_status ledger_read_partition(ledger_ctx *ctx, const char *topic,
+                                    unsigned int partition_num, uint64_t last_id,
+                                    size_t nmessages, ledger_message_set *messages) {
+    return LEDGER_OK;
+}

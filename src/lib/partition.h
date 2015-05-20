@@ -5,6 +5,16 @@
 #include <stdint.h>
 
 typedef struct {
+    void *data;
+    size_t len;
+} ledger_message;
+
+typedef struct {
+    size_t nmessages;
+    ledger_message *messages;
+} ledger_message_set;
+
+typedef struct {
     uint64_t first_message_id;
     uint64_t first_message_time;
 } ledger_partition_index_hdr;
