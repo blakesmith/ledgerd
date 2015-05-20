@@ -1,6 +1,7 @@
 #ifndef LIB_LEDGER_PARTITION_H
 #define LIB_LEDGER_PARTITION_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct {
@@ -15,6 +16,7 @@ typedef struct {
 
 typedef struct {
     unsigned int number;
+    bool opened;
     char *path;
     size_t path_len;
     ledger_partition_index idx;

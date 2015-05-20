@@ -1,6 +1,7 @@
 #ifndef LIB_LEDGER_TOPIC_H
 #define LIB_LEDGER_TOPIC_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "partition.h"
@@ -14,6 +15,7 @@ typedef struct {
 
 typedef struct {
     const char *name;
+    bool opened;
     ledger_partition *partitions;
     size_t npartitions;
     char *path;

@@ -14,9 +14,10 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
     ledger_partition *partition = NULL;
     char *topic_path = NULL;
 
-    ledger_check_rc(partition_count < MAX_PARTITIONS, LEDGER_ERR_ARGS, "Too many partitions");
-
+    topic->opened = false;
     topic->path = NULL;
+
+    ledger_check_rc(partition_count < MAX_PARTITIONS, LEDGER_ERR_ARGS, "Too many partitions");
 
     path_len = ledger_concat_path(root, name, &topic_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct directory path");
@@ -37,6 +38,8 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
         rc = ledger_partition_open(partition, topic_path, i);
         ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_BAD_PARTITION, "Failed to open partition");
     }
+
+    topic->opened = true;
 
     return LEDGER_OK;
 
@@ -63,12 +66,15 @@ void ledger_topic_close(ledger_topic *topic) {
     int i;
     ledger_partition *partition;
 
-    for(i = 0; i < topic->npartitions; i++) {
-        partition = topic->partitions + i;
-        ledger_partition_close(partition);
+    if(topic->opened) {
+        for(i = 0; i < topic->npartitions; i++) {
+            partition = topic->partitions + i;
+            ledger_partition_close(partition);
+        }
+        free(topic->partitions);
+        if(topic->path) {
+            free(topic->path);
+        }
     }
-    free(topic->partitions);
-    if(topic->path) {
-        free(topic->path);
-    }
+    topic->opened = false;
 }

@@ -14,6 +14,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     char *partition_path = NULL;
 
     partition->path = NULL;
+    partition->opened = false;
 
     rc = snprintf(part_num, 5, "%d", partition_number);
     ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building partition dir part");
@@ -27,6 +28,8 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     rc = mkdir(partition_path, 0755);
     ledger_check_rc(rc == 0 || errno == EEXIST, LEDGER_ERR_MKDIR, "Failed to create partition directory");
 
+    partition->opened = true;
+
     return LEDGER_OK;
 
 error:
@@ -37,8 +40,11 @@ error:
 }
 
 void ledger_partition_close(ledger_partition *partition) {
-    if(partition->path) {
-        free(partition->path);
+    if(partition->opened) {
+        if(partition->path) {
+            free(partition->path);
+        }
     }
+    partition->opened = false;
 }
 
