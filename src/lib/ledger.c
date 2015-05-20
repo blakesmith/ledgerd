@@ -76,5 +76,13 @@ error:
 ledger_status ledger_read_partition(ledger_ctx *ctx, const char *topic,
                                     unsigned int partition_num, uint64_t last_id,
                                     size_t nmessages, ledger_message_set *messages) {
+    ledger_status rc;
+
+    rc = ledger_message_set_init(messages, 0);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
+
     return LEDGER_OK;
+
+error:
+    return rc;
 }

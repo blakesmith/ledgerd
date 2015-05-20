@@ -4,15 +4,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct {
-    void *data;
-    size_t len;
-} ledger_message;
+#include "message.h"
 
-typedef struct {
-    size_t nmessages;
-    ledger_message *messages;
-} ledger_message_set;
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 typedef struct {
     uint64_t first_message_id;
@@ -36,4 +32,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
                                     unsigned int partition_number);
 void ledger_partition_close(ledger_partition *partition);
 
+#if defined(__cplusplus)
+}
+#endif
 #endif

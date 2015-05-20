@@ -89,6 +89,7 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ledger_ctx ctx;
     const char message[] = "hello";
     size_t mlen = sizeof(message);
+    ledger_message_set messages;
 
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
@@ -96,7 +97,10 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen));
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
+    EXPECT_EQ(1, messages.nmessages);
 
+    ledger_message_set_free(&messages);
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }

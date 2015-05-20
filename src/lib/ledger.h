@@ -9,6 +9,9 @@
 extern "C" {
 #endif
 
+#define LEDGER_BEGIN 0
+#define LEDGER_CHUNK_SIZE 64
+
 typedef struct {
     const char *root_directory;
     const char *last_error;
