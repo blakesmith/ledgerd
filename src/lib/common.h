@@ -18,8 +18,8 @@ typedef enum {
     goto error; \
 }
 
-ssize_t concat_path(const char *s1, const char *s2, char **out);
-void *reallocarray(void *ptr, size_t nmemb, size_t size);
+ssize_t ledger_concat_path(const char *s1, const char *s2, char **out);
+void *ledger_reallocarray(void *ptr, size_t nmemb, size_t size);
 int ledger_pwrite(int fd, const void *buf, size_t count, off_t offset);
 
 #endif

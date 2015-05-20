@@ -1,6 +1,5 @@
 #include <errno.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/stat.h>
 
 #include "common.h"
@@ -19,7 +18,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
 
     topic->path = NULL;
 
-    path_len = concat_path(root, name, &topic_path);
+    path_len = ledger_concat_path(root, name, &topic_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct directory path");
 
     topic->path_len = path_len;
@@ -29,7 +28,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
     rc = mkdir(topic_path, 0755);
     ledger_check_rc(rc == 0 || errno == EEXIST, LEDGER_ERR_MKDIR, "Failed to create context directory");
 
-    topic->partitions = reallocarray(NULL, partition_count, sizeof(ledger_partition));
+    topic->partitions = ledger_reallocarray(NULL, partition_count, sizeof(ledger_partition));
     ledger_check_rc(topic->partitions != NULL, LEDGER_ERR_MEMORY, "Failed to allocate partitions");
 
     for(i = 0; i < partition_count; i++) {
@@ -47,7 +46,7 @@ error:
     }
     return rc;
 }
-        
+
 ledger_status ledger_topic_write_partition(ledger_topic *topic, unsigned int partition_num,
                                            void *data, size_t len) {
     ledger_status rc;

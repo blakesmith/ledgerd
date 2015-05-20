@@ -19,7 +19,7 @@ typedef struct {
     size_t path_len;
     ledger_partition_index idx;
 } ledger_partition;
-  
+
 ledger_status ledger_partition_open(ledger_partition *partition, const char *topic_path,
                                     unsigned int partition_number);
 void ledger_partition_close(ledger_partition *partition);

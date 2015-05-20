@@ -25,7 +25,7 @@
 
 #include "common.h"
 
-ssize_t concat_path(const char *s1, const char *s2, char **out) {
+ssize_t ledger_concat_path(const char *s1, const char *s2, char **out) {
     char *buf = NULL;
     size_t l1;
     size_t l2;
@@ -54,7 +54,7 @@ ssize_t concat_path(const char *s1, const char *s2, char **out) {
 #define MUL_NO_OVERFLOW (1UL << (sizeof(size_t) * 4))
 
 void *
-reallocarray(void *optr, size_t nmemb, size_t size)
+ledger_reallocarray(void *optr, size_t nmemb, size_t size)
 {
     if ((nmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
         nmemb > 0 && SIZE_MAX / nmemb < size) {

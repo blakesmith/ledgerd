@@ -17,8 +17,8 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
 
     rc = snprintf(part_num, 5, "%d", partition_number);
     ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building partition dir part");
-    
-    path_len = concat_path(topic_path, part_num, &partition_path);
+
+    path_len = ledger_concat_path(topic_path, part_num, &partition_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct partition directory path");
 
     partition->path = partition_path;
@@ -33,6 +33,7 @@ error:
     if(partition_path) {
         free(partition_path);
     }
+    return rc;
 }
 
 void ledger_partition_close(ledger_partition *partition) {
