@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 
 #include "common.h"
+#include "journal.h"
 #include "partition.h"
 
 #define META_FILE "meta"
@@ -19,7 +20,7 @@ ledger_status open_meta(ledger_partition *partition) {
     ssize_t path_len;
     struct stat st;
     uint32_t nentries;
-    ledger_journal_meta_entry meta_entry;
+    ledger_partition_meta_entry meta_entry;
     struct timeval tv;
 
     partition->meta.nentries = 0;
@@ -29,7 +30,7 @@ ledger_status open_meta(ledger_partition *partition) {
     ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build meta path");
 
     fd = open(meta_path, O_RDWR|O_CREAT, 0700);
-    ledger_check_rc(fd > 0 || fd == EEXIST, LEDGER_ERR_BAD_META, "Failed to open meta file");
+    ledger_check_rc(fd > 0 || errno == EEXIST, LEDGER_ERR_BAD_META, "Failed to open meta file");
 
     rc = fstat(fd, &st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat meta file");
@@ -85,14 +86,14 @@ ledger_status remap_meta(ledger_partition *partition) {
 
     nentries = (uint32_t *)partition->meta.map;
 
-    expected_len = sizeof(uint32_t) + (*nentries * sizeof(ledger_journal_meta_entry));
+    expected_len = sizeof(uint32_t) + (*nentries * sizeof(ledger_partition_meta_entry));
     ledger_check_rc(partition->meta.map_len == expected_len,
                     LEDGER_ERR_BAD_META,
                     "Corrupt meta file. The size of the file does not match the expected number of entries");
 
     partition->meta.nentries = *nentries;
     nentries++;
-    partition->meta.entries = (ledger_journal_meta_entry *)nentries;
+    partition->meta.entries = (ledger_partition_meta_entry *)nentries;
 
     return LEDGER_OK;
 
@@ -101,13 +102,13 @@ error:
 }
 
 ledger_status close_meta(ledger_partition *partition) {
-    ledger_status rc;
-
-    rc = munmap(partition->meta.map, partition->meta.map_len);
-    partition->meta.opened = false;
-    partition->meta.nentries = 0;
-    partition->meta.entries = NULL;
-    return rc;
+    if(partition->meta.opened) {
+        munmap(partition->meta.map, partition->meta.map_len);
+        partition->meta.opened = false;
+        partition->meta.nentries = 0;
+        partition->meta.entries = NULL;
+    }
+    return LEDGER_OK;
 }
 
 ledger_status ledger_partition_open(ledger_partition *partition, const char *topic_path,
@@ -150,6 +151,30 @@ error:
         close_meta(partition);
     }
     return rc;
+}
+
+ledger_status ledger_partition_write(ledger_partition *partition, void *data,
+                                     size_t len) {
+    ledger_status rc;
+    ledger_partition_meta_entry *latest_meta;
+    ledger_journal journal;
+
+    ledger_check_rc(partition->meta.nentries > 0, LEDGER_ERR_BAD_PARTITION, "No journal entry to write to");
+
+    latest_meta = partition->meta.entries + partition->meta.nentries - 1;
+    journal.id = latest_meta->id;
+    rc = ledger_journal_open(&journal, partition->path, latest_meta->id);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
+
+    rc = ledger_journal_write(&journal, data, len);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to write to journal");
+
+    ledger_journal_close(&journal);
+    return LEDGER_OK;
+error:
+    ledger_journal_close(&journal);
+    return rc;
+
 }
 
 void ledger_partition_close(ledger_partition *partition) {

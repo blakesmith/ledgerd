@@ -9,11 +9,6 @@
 #define MAX_PARTITIONS 65536
 
 typedef struct {
-    uint32_t length;
-    uint32_t crc32;
-} ledger_message_hdr;
-
-typedef struct {
     const char *name;
     bool opened;
     ledger_partition *partitions;
