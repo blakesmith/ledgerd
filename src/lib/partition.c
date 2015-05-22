@@ -22,6 +22,9 @@ ledger_status open_meta(ledger_partition *partition) {
     ledger_journal_meta_entry meta_entry;
     struct timeval tv;
 
+    partition->meta.nentries = 0;
+    partition->meta.entries = NULL;
+
     path_len = ledger_concat_path(partition->path, META_FILE, &meta_path);
     ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build meta path");
 
@@ -72,11 +75,31 @@ error:
     return rc;
 }
 
+ledger_status remap_meta(ledger_partition *partition) {
+    ledger_status rc;
+    uint32_t *nentries;
+
+    ledger_check_rc(partition->meta.map_len >= sizeof(uint32_t),
+                    LEDGER_ERR_BAD_META, "Corrupt meta file, should contain the number of meta entries");
+
+    nentries = (uint32_t *)partition->meta.map;
+    partition->meta.nentries = *nentries;
+    nentries++;
+    partition->meta.entries = (ledger_journal_meta_entry *)nentries;
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
 ledger_status close_meta(ledger_partition *partition) {
     ledger_status rc;
 
     rc = munmap(partition->meta.map, partition->meta.map_len);
     partition->meta.opened = false;
+    partition->meta.nentries = 0;
+    partition->meta.entries = NULL;
     return rc;
 }
 
@@ -105,8 +128,8 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     rc = open_meta(partition);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open meta file");
 
-    /* rc = remap_meta(partition); */
-    /* ledger_check_rc(rc == LEDGER_OK, rc, "Failed to memory map meta file"); */
+    rc = remap_meta(partition);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read memory mapped meta file");
 
     partition->opened = true;
 
