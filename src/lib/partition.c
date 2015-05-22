@@ -78,11 +78,18 @@ error:
 ledger_status remap_meta(ledger_partition *partition) {
     ledger_status rc;
     uint32_t *nentries;
+    size_t expected_len;
 
     ledger_check_rc(partition->meta.map_len >= sizeof(uint32_t),
                     LEDGER_ERR_BAD_META, "Corrupt meta file, should contain the number of meta entries");
 
     nentries = (uint32_t *)partition->meta.map;
+
+    expected_len = sizeof(uint32_t) + (*nentries * sizeof(ledger_journal_meta_entry));
+    ledger_check_rc(partition->meta.map_len == expected_len,
+                    LEDGER_ERR_BAD_META,
+                    "Corrupt meta file. The size of the file does not match the expected number of entries");
+
     partition->meta.nentries = *nentries;
     nentries++;
     partition->meta.entries = (ledger_journal_meta_entry *)nentries;
