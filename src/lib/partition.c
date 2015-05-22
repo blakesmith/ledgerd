@@ -36,7 +36,7 @@ ledger_status open_meta(ledger_partition *partition) {
         rc = gettimeofday(&tv, NULL);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to fetch initial meta time of day");
 
-        nentries = 0;
+        nentries = 1;
         meta_entry.id = 0;
         meta_entry.first_journal_id = 0;
         meta_entry.first_journal_time = tv.tv_sec;
