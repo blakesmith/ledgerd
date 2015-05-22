@@ -36,7 +36,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
         partition = topic->partitions + i;
 
         rc = ledger_partition_open(partition, topic_path, i);
-        ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_BAD_PARTITION, "Failed to open partition");
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open partition");
     }
 
     topic->opened = true;

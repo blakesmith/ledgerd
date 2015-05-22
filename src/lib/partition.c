@@ -1,10 +1,84 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/mman.h>
 
 #include "common.h"
 #include "partition.h"
+
+#define META_FILE "meta"
+
+ledger_status open_meta(ledger_partition *partition) {
+    int fd = 0;
+    ledger_status rc;
+    char *meta_path = NULL;
+    off_t meta_size;
+    ssize_t path_len;
+    struct stat st;
+    uint32_t nentries;
+    ledger_journal_meta_entry meta_entry;
+    struct timeval tv;
+
+    path_len = ledger_concat_path(partition->path, META_FILE, &meta_path);
+    ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build meta path");
+
+    fd = open(meta_path, O_RDWR|O_CREAT, 0700);
+    ledger_check_rc(fd > 0 || fd == EEXIST, LEDGER_ERR_BAD_META, "Failed to open meta file");
+
+    rc = fstat(fd, &st);
+    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat meta file");
+    meta_size = st.st_size;
+
+    if(meta_size == 0) {
+        rc = gettimeofday(&tv, NULL);
+        ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to fetch initial meta time of day");
+
+        nentries = 0;
+        meta_entry.id = 0;
+        meta_entry.first_journal_id = 0;
+        meta_entry.first_journal_time = tv.tv_sec;
+
+        rc = ledger_pwrite(fd, (void *)&nentries, sizeof(uint32_t), 0);
+        ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write meta number of entries");
+
+        rc = ledger_pwrite(fd, (void *)&meta_entry, sizeof(meta_entry), sizeof(uint32_t));
+        ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write meta initial entry");
+
+        meta_size = sizeof(uint32_t) + sizeof(meta_entry);
+    }
+
+    partition->meta.map = mmap(NULL, meta_size, PROT_READ,
+                               MAP_PRIVATE, fd, 0);
+    ledger_check_rc(partition->meta.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map the meta file");
+
+    partition->meta.map_len = meta_size;
+    partition->meta.opened = true;
+
+    free(meta_path);
+    close(fd);
+
+    return LEDGER_OK;
+    
+error:
+    if(meta_path) {
+        free(meta_path);
+    }
+    if(fd) {
+        close(fd);
+    }
+    return rc;
+}
+
+ledger_status close_meta(ledger_partition *partition) {
+    ledger_status rc;
+
+    rc = munmap(partition->meta.map, partition->meta.map_len);
+    partition->meta.opened = false;
+    return rc;
+}
 
 ledger_status ledger_partition_open(ledger_partition *partition, const char *topic_path,
                                     unsigned int partition_number) {
@@ -28,6 +102,12 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     rc = mkdir(partition_path, 0755);
     ledger_check_rc(rc == 0 || errno == EEXIST, LEDGER_ERR_MKDIR, "Failed to create partition directory");
 
+    rc = open_meta(partition);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open meta file");
+
+    /* rc = remap_meta(partition); */
+    /* ledger_check_rc(rc == LEDGER_OK, rc, "Failed to memory map meta file"); */
+
     partition->opened = true;
 
     return LEDGER_OK;
@@ -35,6 +115,9 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
 error:
     if(partition_path) {
         free(partition_path);
+    }
+    if(partition->meta.opened) {
+        close_meta(partition);
     }
     return rc;
 }

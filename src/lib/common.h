@@ -10,7 +10,9 @@ typedef enum {
     LEDGER_ERR_MKDIR = -3,
     LEDGER_ERR_ARGS = -4,
     LEDGER_ERR_BAD_TOPIC = -5,
-    LEDGER_ERR_BAD_PARTITION = -6
+    LEDGER_ERR_BAD_PARTITION = -6,
+    LEDGER_ERR_BAD_META = -7,
+    LEDGER_ERR_IO = -8
 } ledger_status;
 
 #define ledger_check_rc(C, R, M) if(!(C)) { \
