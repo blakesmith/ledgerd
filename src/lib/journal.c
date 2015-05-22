@@ -19,7 +19,7 @@ ledger_status open_journal_index(ledger_journal *journal, const char *partition_
     
     journal->idx.fd = -1;
 
-    rc = snprintf(journal_path, 13, "%08d.%s", journal->id, JOURNAL_IDX_EXT);
+    rc = snprintf(journal_path, 13, "%08d.%s", journal->metadata->id, JOURNAL_IDX_EXT);
     ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building journal index path");
 
     path_len = ledger_concat_path(partition_path, journal_path, &path);
@@ -50,7 +50,7 @@ ledger_status open_journal(ledger_journal *journal, const char *partition_path,
 
     journal->fd = -1;
 
-    rc = snprintf(journal_path, 13, "%08d.%s", journal->id, JOURNAL_EXT);
+    rc = snprintf(journal_path, 13, "%08d.%s", journal->metadata->id, JOURNAL_EXT);
     ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building journal path");
 
     path_len = ledger_concat_path(partition_path, journal_path, &path);
@@ -73,13 +73,15 @@ error:
 }
 
 ledger_status ledger_journal_open(ledger_journal *journal, const char *partition_path,
-                                  uint32_t id) {
+                                  ledger_journal_meta_entry *metadata) {
     ledger_status rc;
 
-    rc = open_journal(journal, partition_path, id);
+    journal->metadata = metadata;
+
+    rc = open_journal(journal, partition_path, metadata->id);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open ledger journal");
 
-    rc = open_journal_index(journal, partition_path, id);
+    rc = open_journal_index(journal, partition_path, metadata->id);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open ledger journal index");    
 
     return LEDGER_OK;
@@ -127,3 +129,20 @@ error:
     return rc;
 }
 
+ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
+                                  size_t nmessages, ledger_message_set *messages) {
+    ledger_status rc;
+    off_t message_offset, journal_offset;
+    struct stat idx_st;
+
+    rc = fstat(journal->idx.fd, &idx_st);
+    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
+
+    /* journal_offset =  */
+    /* ledger_check_rc( */
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}

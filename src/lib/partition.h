@@ -4,24 +4,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "message.h"
+#include "journal.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 typedef struct {
-    uint32_t id;
-    uint64_t first_journal_id;
-    uint64_t first_journal_time;
-} ledger_partition_meta_entry;
-
-typedef struct {
     void *map;
     size_t map_len;
     bool opened;
     uint32_t nentries;
-    ledger_partition_meta_entry *entries;
+    ledger_journal_meta_entry *entries;
 } ledger_partition_meta;
 
 typedef struct {
@@ -37,6 +31,8 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
 void ledger_partition_close(ledger_partition *partition);
 ledger_status ledger_partition_write(ledger_partition *partition, void *data,
                                      size_t len);
+ledger_status ledger_partition_read(ledger_partition *partition, uint64_t last_id,
+                                    size_t nmessages, ledger_message_set *messages);
 
 #if defined(__cplusplus)
 }

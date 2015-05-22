@@ -23,5 +23,8 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
 void ledger_topic_close(ledger_topic *topic);
 ledger_status ledger_topic_write_partition(ledger_topic *topic, unsigned int partition_num,
                                            void *data, size_t len);
+ledger_status ledger_topic_read_partition(ledger_topic *topic, unsigned int partition_num,
+                                          uint64_t last_id, size_t nmessages,
+                                          ledger_message_set *messages);
 
 #endif

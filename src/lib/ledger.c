@@ -56,32 +56,44 @@ error:
     return rc;
 }
 
+static ledger_topic *lookup_topic(ledger_ctx *ctx, const char *name) {
+    ledger_topic *topic = NULL;
+    dnode_t *dtopic;
+
+    dtopic = dict_lookup(&ctx->topics, name);
+    if(dtopic != NULL) {
+        topic = dnode_get(dtopic);
+        return topic;
+    }
+    return NULL;
+}
+
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
                                      unsigned int partition_num, void *data,
                                      size_t len) {
     ledger_status rc;
     ledger_topic *topic = NULL;
-    dnode_t *dtopic;
 
-    dtopic = dict_lookup(&ctx->topics, name);
-    ledger_check_rc(dtopic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
+    topic = lookup_topic(ctx, name);
+    ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
-    topic = dnode_get(dtopic);
     return ledger_topic_write_partition(topic, partition_num, data, len);
 
 error:
     return rc;
 }
 
-ledger_status ledger_read_partition(ledger_ctx *ctx, const char *topic,
+ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
                                     unsigned int partition_num, uint64_t last_id,
                                     size_t nmessages, ledger_message_set *messages) {
     ledger_status rc;
+    ledger_topic *topic = NULL;
 
-    rc = ledger_message_set_init(messages, 0);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
+    topic = lookup_topic(ctx, name);
+    ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
-    return LEDGER_OK;
+    return ledger_topic_read_partition(topic, partition_num, last_id,
+                                       nmessages, messages);
 
 error:
     return rc;

@@ -5,6 +5,13 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
+typedef struct {
+    uint32_t len;
+    uint32_t crc32;
+} ledger_message_hdr;
+
 typedef struct {
     void *data;
     size_t len;
