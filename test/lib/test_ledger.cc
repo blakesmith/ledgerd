@@ -99,6 +99,8 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen));
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(1, messages.nmessages);
+    EXPECT_EQ(mlen, messages.messages[0].len);
+    EXPECT_STREQ(message, (const char *)messages.messages[0].data);
 
     ledger_message_set_free(&messages);
     ledger_close_context(&ctx);

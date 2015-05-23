@@ -1,6 +1,8 @@
 #ifndef LIB_LEDGER_COMMON_H
 #define LIB_LEDGER_COMMON_H
 
+#include <errno.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 typedef enum {
@@ -17,6 +19,7 @@ typedef enum {
 
 #define ledger_check_rc(C, R, M) if(!(C)) { \
     rc = R; \
+    printf("%s, errno: %d\n", M, errno);              \
     goto error; \
 }
 
