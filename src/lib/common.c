@@ -15,9 +15,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define _XOPEN_SOURCE 500
 
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
@@ -82,3 +84,20 @@ int ledger_pwrite(int fd, const void *buf, size_t count, off_t offset) {
     return 1;
 }
 
+int ledger_pread(int fd, void *buf, size_t count, off_t offset) {
+    ssize_t rv;
+
+    while (count > 0) {
+        rv = pread(fd, buf, count, offset);
+        if (rv == -1 && errno == EINTR) {
+            continue;
+        }
+        if (rv <= 0) {
+            return 0;
+        }
+        count -= rv;
+        offset += rv;
+    }
+
+    return 1;
+}

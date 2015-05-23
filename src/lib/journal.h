@@ -24,8 +24,6 @@ typedef struct {
 
 typedef struct {
     int fd;
-    void *map;
-    size_t map_len;
     ledger_journal_index idx;
     ledger_journal_meta_entry *metadata;
 } ledger_journal;

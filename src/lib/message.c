@@ -9,6 +9,9 @@ void ledger_message_init(ledger_message *message) {
 }
 
 void ledger_message_free(ledger_message *message) {
+    if(message->data) {
+        free(message->data);
+    }
 }
 
 ledger_status ledger_message_set_init(ledger_message_set *messages, size_t nmessages) {

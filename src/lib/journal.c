@@ -133,7 +133,7 @@ error:
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
                                   size_t nmessages, ledger_message_set *messages) {
     ledger_status rc;
-    struct stat idx_st, journal_st;
+    struct stat idx_st;
     size_t read_len;
     size_t total_messages;
     uint64_t first_journal_id;
@@ -141,17 +141,13 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     int i;
     uint64_t message_offset;
     uint64_t *message_offsets;
-    uint8_t *byte_map;
     ledger_message_hdr message_hdr;
+    ledger_message *current_message;
 
     journal->idx.map = NULL;
-    journal->map = NULL;
 
     rc = fstat(journal->idx.fd, &idx_st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
-
-    rc = fstat(journal->fd, &journal_st);
-    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal file");
 
     first_journal_id = journal->metadata->first_journal_id;
     start_idx_offset = (last_id - first_journal_id) * sizeof(uint64_t);
@@ -171,34 +167,35 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     ledger_check_rc(journal->idx.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal index");
     journal->idx.map_len = read_len;
 
-    journal->map = mmap(NULL, journal_st.st_size, PROT_READ, MAP_PRIVATE,
-                        journal->fd, 0);
-    ledger_check_rc(journal->map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal");
-    journal->map_len = journal_st.st_size;
-
     rc = ledger_message_set_init(messages, total_messages);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
+
     message_offsets = (uint64_t *)journal->idx.map;
-    byte_map = (uint8_t *)journal->map;
     for(i = 0; i < total_messages; i++) {
         message_offset = *message_offsets;
-        message_hdr.len = *((uint32_t *)(byte_map + message_offset));
-        message_hdr.crc32 = *((uint32_t *)(byte_map + message_offset + sizeof(uint32_t)));
-        messages->messages[i].len = message_hdr.len;
-        messages->messages[i].data = (void *)(byte_map + message_offset + 2 * sizeof(uint32_t));
+        current_message = messages->messages + i;
+
+        rc = ledger_pread(journal->fd, (void *)&message_hdr,
+                          sizeof(message_hdr), message_offset);
+        ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to read message header");
+
+        current_message->data = malloc(message_hdr.len);
+        ledger_check_rc(current_message->data != NULL, LEDGER_ERR_MEMORY, "Failed to allocate message buffer");
+
+        current_message->len = message_hdr.len;
+
+        rc = ledger_pread(journal->fd, current_message->data,
+                          current_message->len, message_offset + sizeof(ledger_message_hdr));
+        ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to read message");
         message_offsets++;
     }
 
     munmap(journal->idx.map, journal->idx.map_len);
-//    munmap(journal->map, journal->map_len);
     return LEDGER_OK;
 
 error:
     if(journal->idx.map) {
         munmap(journal->idx.map, journal->idx.map_len);
-    }
-    if(journal->map) {
-        munmap(journal->map, journal->map_len);
     }
     return rc;
 }
