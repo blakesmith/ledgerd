@@ -13,6 +13,7 @@ typedef struct {
 } ledger_message_hdr;
 
 typedef struct {
+    uint64_t id;
     void *data;
     size_t len;
 } ledger_message;

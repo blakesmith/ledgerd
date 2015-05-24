@@ -102,6 +102,7 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(1, messages.nmessages);
     EXPECT_EQ(mlen, messages.messages[0].len);
+    EXPECT_EQ(0, messages.messages[0].id);
     EXPECT_STREQ(message, (const char *)messages.messages[0].data);
     EXPECT_EQ(1, messages.next_id);
 
@@ -139,9 +140,11 @@ TEST(Ledger, CorruptMessage) {
     EXPECT_EQ(3, messages.next_id);
 
     EXPECT_EQ(sizeof(message1), messages.messages[0].len);
+    EXPECT_EQ(0, messages.messages[0].id);
     EXPECT_STREQ(message1, (const char *)messages.messages[0].data);
 
     EXPECT_EQ(sizeof(message3), messages.messages[1].len);
+    EXPECT_EQ(2, messages.messages[1].id);
     EXPECT_STREQ(message3, (const char *)messages.messages[1].data);
 
     ledger_message_set_free(&messages);
@@ -179,6 +182,7 @@ TEST(Ledger, DoubleCorruptMessage) {
     EXPECT_EQ(3, messages.next_id);
 
     EXPECT_EQ(sizeof(message1), messages.messages[0].len);
+    EXPECT_EQ(0, messages.messages[0].id);
     EXPECT_STREQ(message1, (const char *)messages.messages[0].data);
 
     ledger_message_set_free(&messages);
@@ -209,12 +213,15 @@ TEST(Ledger, MultipleMessagesAtOffset) {
     EXPECT_EQ(4, messages.next_id);
 
     EXPECT_EQ(sizeof(message2), messages.messages[0].len);
+    EXPECT_EQ(1, messages.messages[0].id);
     EXPECT_STREQ(message2, (const char *)messages.messages[0].data);
 
     EXPECT_EQ(sizeof(message3), messages.messages[1].len);
+    EXPECT_EQ(2, messages.messages[1].id);
     EXPECT_STREQ(message3, (const char *)messages.messages[1].data);
 
     EXPECT_EQ(sizeof(message4), messages.messages[2].len);
+    EXPECT_EQ(3, messages.messages[2].id);
     EXPECT_STREQ(message4, (const char *)messages.messages[2].data);
 
     ledger_message_set_free(&messages);
@@ -241,6 +248,7 @@ TEST(Ledger, SmallerRead) {
     EXPECT_EQ(2, messages.next_id);
 
     EXPECT_EQ(sizeof(message2), messages.messages[0].len);
+    EXPECT_EQ(1, messages.messages[0].id);
     EXPECT_STREQ(message2, (const char *)messages.messages[0].data);
 
     ledger_message_set_free(&messages);

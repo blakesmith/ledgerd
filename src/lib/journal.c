@@ -208,6 +208,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
             }
         }
 
+        current_message->id = last_id + i;
         messages->next_id = last_id + i + 1;
         message_offsets++;
     }
