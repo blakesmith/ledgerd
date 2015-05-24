@@ -137,12 +137,11 @@ error:
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
                                   size_t nmessages, ledger_message_set *messages) {
     ledger_status rc;
+    int i;
     struct stat idx_st;
-    size_t read_len;
-    size_t total_messages;
+    size_t journal_read_len, total_messages;
     uint64_t first_journal_id, index_id;
     uint64_t start_idx_offset, end_idx_offset;
-    int i;
     uint64_t message_offset;
     uint64_t *message_offsets;
     ledger_message_hdr message_hdr;
@@ -164,13 +163,13 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     if(end_idx_offset > idx_st.st_size) {
         end_idx_offset = idx_st.st_size;
     }
-    read_len = end_idx_offset - start_idx_offset;
-    total_messages = read_len / sizeof(uint64_t);
+    journal_read_len = end_idx_offset - start_idx_offset;
+    total_messages = journal_read_len / sizeof(uint64_t);
 
     journal->idx.map = mmap(NULL, idx_st.st_size, PROT_READ, MAP_PRIVATE,
                             journal->idx.fd, 0);
     ledger_check_rc(journal->idx.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal index");
-    journal->idx.map_len = read_len;
+    journal->idx.map_len = journal_read_len;
 
     rc = ledger_message_set_init(messages, total_messages);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
