@@ -11,11 +11,16 @@
 typedef struct {
     const char *name;
     bool opened;
+    int options;
     ledger_partition *partitions;
     size_t npartitions;
     char *path;
     size_t path_len;
 } ledger_topic;
+
+typedef enum {
+    LEDGER_DROP_CORRUPT = 1,
+} ledger_topic_options;
 
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
                                 const char *name, unsigned int partition_count,

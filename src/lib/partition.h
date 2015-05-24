@@ -32,7 +32,7 @@ void ledger_partition_close(ledger_partition *partition);
 ledger_status ledger_partition_write(ledger_partition *partition, void *data,
                                      size_t len);
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t last_id,
-                                    size_t nmessages, ledger_message_set *messages);
+                                    size_t nmessages, bool drop_corrupt, ledger_message_set *messages);
 
 #if defined(__cplusplus)
 }

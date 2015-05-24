@@ -135,15 +135,17 @@ error:
 }
 
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
-                                  size_t nmessages, ledger_message_set *messages) {
+                                  size_t nmessages, bool drop_corrupt, ledger_message_set *messages) {
     ledger_status rc;
     int i;
+    int ncorrupt = 0;
     struct stat idx_st;
     size_t journal_read_len, total_messages;
     uint64_t first_journal_id, index_id;
     uint64_t start_idx_offset, end_idx_offset;
     uint64_t message_offset;
     uint64_t *message_offsets;
+    uint32_t crc32_verification;
     ledger_message_hdr message_hdr;
     ledger_message *current_message;
 
@@ -181,7 +183,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     message_offsets = message_offsets + index_id;
     for(i = 0; i < total_messages; i++) {
         message_offset = *message_offsets;
-        current_message = messages->messages + i;
+        current_message = messages->messages + i - ncorrupt;
 
         rc = ledger_pread(journal->fd, (void *)&message_hdr,
                           sizeof(message_hdr), message_offset);
@@ -195,6 +197,14 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
         rc = ledger_pread(journal->fd, current_message->data,
                           current_message->len, message_offset + sizeof(ledger_message_hdr));
         ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to read message");
+
+        crc32_verification = crc32_compute(0, current_message->data, current_message->len);
+
+        if((crc32_verification != message_hdr.crc32) && drop_corrupt) {
+            ledger_message_free(current_message);
+            messages->nmessages--;
+            ncorrupt++;
+        }
         message_offsets++;
     }
 

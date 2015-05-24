@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "common.h"
@@ -34,7 +35,7 @@ void ledger_journal_close(ledger_journal *journal);
 ledger_status ledger_journal_write(ledger_journal *journal, void *data,
                                    size_t len);
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
-                                   size_t nmessages, ledger_message_set *messages);
+                                  size_t nmessages, bool drop_corrupt, ledger_message_set *messages);
 
 #if defined(__cplusplus)
 }

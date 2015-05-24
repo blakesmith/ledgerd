@@ -4,11 +4,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <ftw.h>
+#include <fcntl.h>
 
 #include "ledger.h"
 
 namespace ledger_test {
 static const char *WORKING_DIR = "/tmp/ledger";
+static const char *CORRUPT_WORKING_DIR = "/tmp/corrupt_ledger";
 static const char *TOPIC = "my_data";
 static const char *FULL_TOPIC = "/tmp/ledger/my_data";
 
@@ -105,6 +107,44 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ledger_message_set_free(&messages);
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
+TEST(Ledger, CorruptMessage) {
+    ledger_ctx ctx;
+    const char message1[] = "hello";
+    const char message2[] = "there";
+    const char message3[] = "friend";
+    ledger_message_set messages;
+    int fd;
+
+    cleanup(CORRUPT_WORKING_DIR);
+    ASSERT_EQ(0, setup(CORRUPT_WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, CORRUPT_WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1,
+                  LEDGER_DROP_CORRUPT));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3)));
+
+    // Corrupt the middle message out of band.
+    fd = open("/tmp/corrupt_ledger/my_data/0/00000000.jnl", O_RDWR, 0755);
+    ASSERT_TRUE(fd > 0);
+    ASSERT_EQ(1, pwrite(fd, "i", 1, 26));
+    close(fd);
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
+    EXPECT_EQ(2, messages.nmessages);
+
+    EXPECT_EQ(sizeof(message1), messages.messages[0].len);
+    EXPECT_STREQ(message1, (const char *)messages.messages[0].data);
+
+    EXPECT_EQ(sizeof(message3), messages.messages[1].len);
+    EXPECT_STREQ(message3, (const char *)messages.messages[1].data);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(CORRUPT_WORKING_DIR));
 }
 
 TEST(Ledger, MultipleMessagesAtOffset) {
