@@ -198,13 +198,15 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
                           current_message->len, message_offset + sizeof(ledger_message_hdr));
         ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to read message");
 
-        crc32_verification = crc32_compute(0, current_message->data, current_message->len);
-
-        if((crc32_verification != message_hdr.crc32) && drop_corrupt) {
-            ledger_message_free(current_message);
-            messages->nmessages--;
-            ncorrupt++;
+        if(drop_corrupt) {
+            crc32_verification = crc32_compute(0, current_message->data, current_message->len);
+            if(crc32_verification != message_hdr.crc32) {
+                ledger_message_free(current_message);
+                messages->nmessages--;
+                ncorrupt++;
+            }
         }
+
         message_offsets++;
     }
 
