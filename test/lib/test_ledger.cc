@@ -142,4 +142,29 @@ TEST(Ledger, MultipleMessagesAtOffset) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, SmallerRead) {
+    ledger_ctx ctx;
+    const char message1[] = "hello";
+    const char message2[] = "there";
+    ledger_message_set messages;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 1, 1, &messages));
+    EXPECT_EQ(1, messages.nmessages);
+
+    EXPECT_EQ(sizeof(message2), messages.messages[0].len);
+    EXPECT_STREQ(message2, (const char *)messages.messages[0].data);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 }
