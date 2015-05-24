@@ -103,7 +103,7 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     EXPECT_EQ(1, messages.nmessages);
     EXPECT_EQ(mlen, messages.messages[0].len);
     EXPECT_STREQ(message, (const char *)messages.messages[0].data);
-    EXPECT_EQ(0, messages.last_id);
+    EXPECT_EQ(1, messages.next_id);
 
     ledger_message_set_free(&messages);
     ledger_close_context(&ctx);
@@ -136,7 +136,7 @@ TEST(Ledger, CorruptMessage) {
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(2, messages.nmessages);
-    EXPECT_EQ(2, messages.last_id);
+    EXPECT_EQ(3, messages.next_id);
 
     EXPECT_EQ(sizeof(message1), messages.messages[0].len);
     EXPECT_STREQ(message1, (const char *)messages.messages[0].data);
@@ -167,7 +167,7 @@ TEST(Ledger, DoubleCorruptMessage) {
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3)));
 
-    // Corrupt the middle and last message out of band.
+    // Corrupt the last two messages out of band
     fd = open("/tmp/corrupt_ledger/my_data/0/00000000.jnl", O_RDWR, 0755);
     ASSERT_TRUE(fd > 0);
     ASSERT_EQ(1, pwrite(fd, "i", 1, 26));
@@ -176,7 +176,7 @@ TEST(Ledger, DoubleCorruptMessage) {
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(1, messages.nmessages);
-    EXPECT_EQ(0, messages.last_id);
+    EXPECT_EQ(3, messages.next_id);
 
     EXPECT_EQ(sizeof(message1), messages.messages[0].len);
     EXPECT_STREQ(message1, (const char *)messages.messages[0].data);
@@ -206,7 +206,7 @@ TEST(Ledger, MultipleMessagesAtOffset) {
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 1, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(3, messages.nmessages);
-    EXPECT_EQ(3, messages.last_id);
+    EXPECT_EQ(4, messages.next_id);
 
     EXPECT_EQ(sizeof(message2), messages.messages[0].len);
     EXPECT_STREQ(message2, (const char *)messages.messages[0].data);
@@ -238,7 +238,7 @@ TEST(Ledger, SmallerRead) {
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 1, 1, &messages));
     EXPECT_EQ(1, messages.nmessages);
-    EXPECT_EQ(1, messages.last_id);
+    EXPECT_EQ(2, messages.next_id);
 
     EXPECT_EQ(sizeof(message2), messages.messages[0].len);
     EXPECT_STREQ(message2, (const char *)messages.messages[0].data);

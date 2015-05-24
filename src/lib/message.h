@@ -18,7 +18,7 @@ typedef struct {
 } ledger_message;
 
 typedef struct {
-    uint64_t last_id;
+    uint64_t next_id;
     size_t nmessages;
     ledger_message *messages;
 } ledger_message_set;
