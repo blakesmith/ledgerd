@@ -1,9 +1,13 @@
+#define _XOPEN_SOURCE 500
+#define __STDC_FORMAT_MACROS
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <inttypes.h>
 
 #include "crc32.h"
 #include "journal.h"
@@ -136,7 +140,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     struct stat idx_st;
     size_t read_len;
     size_t total_messages;
-    uint64_t first_journal_id;
+    uint64_t first_journal_id, index_id;
     uint64_t start_idx_offset, end_idx_offset;
     int i;
     uint64_t message_offset;
@@ -150,7 +154,8 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
 
     first_journal_id = journal->metadata->first_journal_id;
-    start_idx_offset = (last_id - first_journal_id) * sizeof(uint64_t);
+    index_id = last_id - first_journal_id;
+    start_idx_offset = index_id * sizeof(uint64_t);
     if(start_idx_offset > idx_st.st_size) {
         // That message doesn't exist yet?
         return LEDGER_OK;
@@ -162,8 +167,8 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     read_len = end_idx_offset - start_idx_offset;
     total_messages = read_len / sizeof(uint64_t);
 
-    journal->idx.map = mmap(NULL, read_len, PROT_READ, MAP_PRIVATE,
-                            journal->idx.fd, start_idx_offset);
+    journal->idx.map = mmap(NULL, idx_st.st_size, PROT_READ, MAP_PRIVATE,
+                            journal->idx.fd, 0);
     ledger_check_rc(journal->idx.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal index");
     journal->idx.map_len = read_len;
 
@@ -171,6 +176,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
 
     message_offsets = (uint64_t *)journal->idx.map;
+    message_offsets = message_offsets + index_id;
     for(i = 0; i < total_messages; i++) {
         message_offset = *message_offsets;
         current_message = messages->messages + i;

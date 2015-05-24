@@ -106,4 +106,40 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
+
+TEST(Ledger, MultipleMessagesAtOffset) {
+    ledger_ctx ctx;
+    const char message1[] = "hello";
+    const char message2[] = "there";
+    const char message3[] = "my";
+    const char message4[] = "friend";
+    ledger_message_set messages;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message4, sizeof(message4)));
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 1, LEDGER_CHUNK_SIZE, &messages));
+    EXPECT_EQ(3, messages.nmessages);
+
+    EXPECT_EQ(sizeof(message2), messages.messages[0].len);
+    EXPECT_STREQ(message2, (const char *)messages.messages[0].data);
+
+    EXPECT_EQ(sizeof(message3), messages.messages[1].len);
+    EXPECT_STREQ(message3, (const char *)messages.messages[1].data);
+
+    EXPECT_EQ(sizeof(message4), messages.messages[2].len);
+    EXPECT_STREQ(message4, (const char *)messages.messages[2].data);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 }
