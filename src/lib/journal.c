@@ -200,11 +200,16 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
 
         if(drop_corrupt) {
             crc32_verification = crc32_compute(0, current_message->data, current_message->len);
-            if(crc32_verification != message_hdr.crc32) {
+            if(crc32_verification == message_hdr.crc32) {
+                messages->last_id = last_id + i;
+            } else {
+                // Message is corrupt
                 ledger_message_free(current_message);
                 messages->nmessages--;
                 ncorrupt++;
             }
+        } else {
+            messages->last_id = last_id + i;
         }
 
         message_offsets++;
