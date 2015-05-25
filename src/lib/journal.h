@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -24,7 +25,19 @@ typedef struct {
 } ledger_journal_index;
 
 typedef struct {
+    pthread_mutex_t idx_write_mutex;
+    pthread_mutex_t journal_write_mutex;
+} ledger_journal_locks;
+
+typedef struct {
+    void *map;
+    size_t map_len;
+    ledger_journal_locks *locks;
+} ledger_journal_lockfile;
+
+typedef struct {
     int fd;
+    ledger_journal_lockfile lockfile;
     ledger_journal_index idx;
     ledger_journal_meta_entry *metadata;
 } ledger_journal;
