@@ -66,13 +66,15 @@ TEST(LedgerThreading, WriteThreading) {
         ASSERT_EQ(0, pthread_join(threads[i], NULL));
     }
 
-    count = 0;
     ASSERT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, NUM_THREADS * NUM_MESSAGES, &messages));
+    EXPECT_TRUE(messages.nmessages > 0);
 
+    count = 0;
     for(i = 0; i < messages.nmessages; i++) {
         read_message = *(int *)messages.messages[i].data;
         count = count + read_message;
     }
+    EXPECT_EQ(messages.nmessages, count);
 
     ledger_message_set_free(&messages);
     ledger_close_context(&ctx);
