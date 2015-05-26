@@ -30,7 +30,7 @@ static int cleanup(const char *directory) {
     return rmrf(directory);
 }
 
-static const int NUM_THREADS = 2;
+static const int NUM_THREADS = 20;
 static const int NUM_MESSAGES = 10000;
 
 void *write_worker(void *ctx_ptr) {
