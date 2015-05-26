@@ -36,13 +36,15 @@ static int cleanup(const char *directory) {
 
 TEST(Ledger, CreatesCorrectDirectories) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     DIR *dir;
     struct dirent *dit;
 
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
 
     dir = opendir(WORKING_DIR);
     ASSERT_TRUE(dir != NULL);
@@ -72,15 +74,17 @@ TEST(Ledger, CreatesCorrectDirectories) {
 
 TEST(Ledger, BadWrites) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     const char message[] = "hello";
     size_t mlen = sizeof(message);
 
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_write_partition(&ctx, "bad-topic", 0, (void *)message, mlen));
 
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
     EXPECT_EQ(LEDGER_ERR_BAD_PARTITION, ledger_write_partition(&ctx, TOPIC, 5, (void *)message, mlen));
 
     ledger_close_context(&ctx);
@@ -89,6 +93,7 @@ TEST(Ledger, BadWrites) {
 
 TEST(Ledger, CorrectWritesSingleTopic) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     const char message[] = "hello";
     size_t mlen = sizeof(message);
     ledger_message_set messages;
@@ -96,7 +101,8 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen));
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
@@ -113,6 +119,7 @@ TEST(Ledger, CorrectWritesSingleTopic) {
 
 TEST(Ledger, CorruptMessage) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     const char message1[] = "hello";
     const char message2[] = "there";
     const char message3[] = "friend";
@@ -122,8 +129,9 @@ TEST(Ledger, CorruptMessage) {
     cleanup(CORRUPT_WORKING_DIR);
     ASSERT_EQ(0, setup(CORRUPT_WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, CORRUPT_WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1,
-                  LEDGER_DROP_CORRUPT));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    options.drop_corrupt = true;
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
@@ -154,6 +162,7 @@ TEST(Ledger, CorruptMessage) {
 
 TEST(Ledger, DoubleCorruptMessage) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     const char message1[] = "hello";
     const char message2[] = "there";
     const char message3[] = "friend";
@@ -163,8 +172,9 @@ TEST(Ledger, DoubleCorruptMessage) {
     cleanup(CORRUPT_WORKING_DIR);
     ASSERT_EQ(0, setup(CORRUPT_WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, CORRUPT_WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1,
-                  LEDGER_DROP_CORRUPT));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    options.drop_corrupt = true;
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
@@ -192,6 +202,7 @@ TEST(Ledger, DoubleCorruptMessage) {
 
 TEST(Ledger, MultipleMessagesAtOffset) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     const char message1[] = "hello";
     const char message2[] = "there";
     const char message3[] = "my";
@@ -201,7 +212,8 @@ TEST(Ledger, MultipleMessagesAtOffset) {
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
@@ -231,6 +243,7 @@ TEST(Ledger, MultipleMessagesAtOffset) {
 
 TEST(Ledger, SmallerRead) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     const char message1[] = "hello";
     const char message2[] = "there";
     ledger_message_set messages;
@@ -238,7 +251,8 @@ TEST(Ledger, SmallerRead) {
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
@@ -255,5 +269,4 @@ TEST(Ledger, SmallerRead) {
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
-
 }

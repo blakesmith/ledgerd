@@ -52,6 +52,7 @@ void *write_worker(void *ctx_ptr) {
 
 TEST(LedgerThreading, WriteThreading) {
     ledger_ctx ctx;
+    ledger_topic_options options;
     pthread_t threads[NUM_THREADS];
     int i, count;
     ledger_message_set messages;
@@ -60,7 +61,8 @@ TEST(LedgerThreading, WriteThreading) {
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
     for(i = 0; i < NUM_THREADS; i++) {
         ASSERT_EQ(0, pthread_create(&threads[i], NULL, write_worker, &ctx));

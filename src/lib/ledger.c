@@ -38,7 +38,7 @@ void ledger_close_context(ledger_ctx *ctx) {
 }
 
 ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
-                                unsigned int partition_count, int flags) {
+                                unsigned int partition_count, ledger_topic_options *options) {
     ledger_status rc;
     int rv;
     ledger_topic *topic = malloc(sizeof(ledger_topic));
@@ -48,7 +48,7 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
     ledger_check_rc(rv == 1, LEDGER_ERR_GENERAL, "Failed to insert topic into context");
 
     return ledger_topic_open(topic, ctx->root_directory,
-                             name, partition_count, flags);
+                             name, partition_count, options);
 
 error:
     return rc;
