@@ -12,6 +12,20 @@
 
 #define META_FILE "meta"
 
+static ledger_journal_meta_entry *find_meta(ledger_partition *partition, uint64_t message_id) {
+    ledger_journal_meta_entry *entry = NULL;
+    int i;
+
+    for(i = partition->meta.nentries-1; i >= 0; i--) {
+        entry = &partition->meta.entries[i];
+        if(entry->first_journal_id < message_id) {
+            return entry;
+        }
+    }
+
+    return entry;
+}
+
 ledger_status open_meta(ledger_partition *partition) {
     int fd = 0;
     ledger_status rc;
@@ -166,7 +180,7 @@ error:
 ledger_status ledger_partition_write(ledger_partition *partition, void *data,
                                      size_t len) {
     ledger_status rc;
-    ledger_journal_meta_entry *latest_meta;
+    ledger_journal_meta_entry *latest_meta = NULL;
     ledger_journal journal;
 
     ledger_check_rc(partition->meta.nentries > 0, LEDGER_ERR_BAD_PARTITION, "No journal entry to write to");
@@ -197,14 +211,16 @@ error:
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
                                     size_t nmessages, bool drop_corrupt, ledger_message_set *messages) {
     ledger_status rc;
-    ledger_journal_meta_entry *latest_meta;
+    ledger_journal_meta_entry *meta;
     ledger_journal journal;
+    uint64_t message_id;
 
     ledger_check_rc(partition->meta.nentries > 0, LEDGER_ERR_BAD_PARTITION, "No journal entry to read from");
 
-    //XXX: Fix
-    latest_meta = partition->meta.entries + partition->meta.nentries - 1;
-    rc = ledger_journal_open(&journal, partition->path, latest_meta);
+    message_id = start_id;
+    meta = find_meta(partition, message_id);
+
+    rc = ledger_journal_open(&journal, partition->path, meta);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
 
     rc = ledger_journal_read(&journal, start_id, nmessages, drop_corrupt, messages);
