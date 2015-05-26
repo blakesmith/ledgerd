@@ -84,7 +84,7 @@ error:
 }
 
 ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
-                                    unsigned int partition_num, uint64_t last_id,
+                                    unsigned int partition_num, uint64_t start_id,
                                     size_t nmessages, ledger_message_set *messages) {
     ledger_status rc;
     ledger_topic *topic = NULL;
@@ -92,7 +92,7 @@ ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
     topic = lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
-    return ledger_topic_read_partition(topic, partition_num, last_id,
+    return ledger_topic_read_partition(topic, partition_num, start_id,
                                        nmessages, messages);
 
 error:

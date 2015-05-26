@@ -194,7 +194,7 @@ error:
     return rc;
 }
 
-ledger_status ledger_partition_read(ledger_partition *partition, uint64_t last_id,
+ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
                                     size_t nmessages, bool drop_corrupt, ledger_message_set *messages) {
     ledger_status rc;
     ledger_journal_meta_entry *latest_meta;
@@ -207,7 +207,7 @@ ledger_status ledger_partition_read(ledger_partition *partition, uint64_t last_i
     rc = ledger_journal_open(&journal, partition->path, latest_meta);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
 
-    rc = ledger_journal_read(&journal, last_id, nmessages, drop_corrupt, messages);
+    rc = ledger_journal_read(&journal, start_id, nmessages, drop_corrupt, messages);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read from the journal");
 
     ledger_journal_close(&journal);

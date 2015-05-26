@@ -31,7 +31,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
 void ledger_partition_close(ledger_partition *partition);
 ledger_status ledger_partition_write(ledger_partition *partition, void *data,
                                      size_t len);
-ledger_status ledger_partition_read(ledger_partition *partition, uint64_t last_id,
+ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
                                     size_t nmessages, bool drop_corrupt, ledger_message_set *messages);
 
 #if defined(__cplusplus)

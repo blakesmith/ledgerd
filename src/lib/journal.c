@@ -134,7 +134,7 @@ error:
     return rc;
 }
 
-ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
+ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
                                   size_t nmessages, bool drop_corrupt, ledger_message_set *messages) {
     ledger_status rc;
     int i;
@@ -155,7 +155,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
 
     first_journal_id = journal->metadata->first_journal_id;
-    index_id = last_id - first_journal_id;
+    index_id = start_id - first_journal_id;
     start_idx_offset = index_id * sizeof(uint64_t);
     if(start_idx_offset > idx_st.st_size) {
         // That message doesn't exist yet?
@@ -208,8 +208,8 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
             }
         }
 
-        current_message->id = last_id + i;
-        messages->next_id = last_id + i + 1;
+        current_message->id = start_id + i;
+        messages->next_id = start_id + i + 1;
         message_offsets++;
     }
 

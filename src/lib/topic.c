@@ -66,7 +66,7 @@ error:
 }
 
 ledger_status ledger_topic_read_partition(ledger_topic *topic, unsigned int partition_num,
-                                          uint64_t last_id, size_t nmessages,
+                                          uint64_t start_id, size_t nmessages,
                                           ledger_message_set *messages) {
     ledger_status rc;
     ledger_partition *partition;
@@ -75,7 +75,7 @@ ledger_status ledger_topic_read_partition(ledger_topic *topic, unsigned int part
     ledger_check_rc(partition_num < topic->npartitions, LEDGER_ERR_BAD_PARTITION, "Write to unknown partition");
     partition = topic->partitions + partition_num;
 
-    return ledger_partition_read(partition, last_id, nmessages, drop_corrupt, messages);
+    return ledger_partition_read(partition, start_id, nmessages, drop_corrupt, messages);
 
 error:
     return rc;

@@ -36,7 +36,7 @@ ledger_status ledger_journal_open(ledger_journal *journal, const char *partition
 void ledger_journal_close(ledger_journal *journal);
 ledger_status ledger_journal_write(ledger_journal *journal, void *data,
                                    size_t len);
-ledger_status ledger_journal_read(ledger_journal *journal, uint64_t last_id,
+ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
                                   size_t nmessages, bool drop_corrupt, ledger_message_set *messages);
 
 #if defined(__cplusplus)
