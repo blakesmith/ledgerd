@@ -7,7 +7,7 @@
 
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
                                 const char *name, unsigned int partition_count,
-                                int options) {
+                                int flags) {
     int i;
     ledger_status rc;
     ssize_t path_len;
@@ -19,10 +19,12 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
 
     ledger_check_rc(partition_count < MAX_PARTITIONS, LEDGER_ERR_ARGS, "Too many partitions");
 
+    topic->name = name;
+
     path_len = ledger_concat_path(root, name, &topic_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct directory path");
 
-    topic->options = options;
+    topic->flags = flags;
     topic->path_len = path_len;
     topic->path = topic_path;
     topic->npartitions = partition_count;
@@ -70,7 +72,7 @@ ledger_status ledger_topic_read_partition(ledger_topic *topic, unsigned int part
                                           ledger_message_set *messages) {
     ledger_status rc;
     ledger_partition *partition;
-    bool drop_corrupt = topic->options & LEDGER_DROP_CORRUPT;
+    bool drop_corrupt = topic->flags & LEDGER_DROP_CORRUPT;
 
     ledger_check_rc(partition_num < topic->npartitions, LEDGER_ERR_BAD_PARTITION, "Write to unknown partition");
     partition = topic->partitions + partition_num;

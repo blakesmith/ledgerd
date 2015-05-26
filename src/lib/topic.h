@@ -11,7 +11,7 @@
 typedef struct {
     const char *name;
     bool opened;
-    int options;
+    int flags;
     ledger_partition *partitions;
     size_t npartitions;
     char *path;
@@ -20,11 +20,11 @@ typedef struct {
 
 typedef enum {
     LEDGER_DROP_CORRUPT = 1,
-} ledger_topic_options;
+} ledger_topic_flags;
 
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
                                 const char *name, unsigned int partition_count,
-                                int options);
+                                int flags);
 void ledger_topic_close(ledger_topic *topic);
 ledger_status ledger_topic_write_partition(ledger_topic *topic, unsigned int partition_num,
                                            void *data, size_t len);
