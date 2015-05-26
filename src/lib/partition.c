@@ -47,7 +47,7 @@ ledger_status open_meta(ledger_partition *partition) {
         rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to set mutex attribute to shared");
 
-        rc = pthread_mutex_init(&meta_entry.partition_lock, &mattr);
+        rc = pthread_mutex_init(&meta_entry.partition_write_lock, &mattr);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize index write mutex");
 
         nentries = 1;
@@ -173,7 +173,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
 
     latest_meta = partition->meta.entries + partition->meta.nentries - 1;
 
-    rc = pthread_mutex_lock(&latest_meta->partition_lock);
+    rc = pthread_mutex_lock(&latest_meta->partition_write_lock);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to lock partition for writing");
 
     rc = ledger_journal_open(&journal, partition->path, latest_meta);
@@ -182,14 +182,14 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
     rc = ledger_journal_write(&journal, data, len);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to write to journal");
 
-    rc = pthread_mutex_unlock(&latest_meta->partition_lock);
+    rc = pthread_mutex_unlock(&latest_meta->partition_write_lock);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to unlock partition for writing");
 
     ledger_journal_close(&journal);
     return LEDGER_OK;
 
 error:
-    pthread_mutex_unlock(&latest_meta->partition_lock);
+    pthread_mutex_unlock(&latest_meta->partition_write_lock);
     ledger_journal_close(&journal);
     return rc;
 }
