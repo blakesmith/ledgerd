@@ -32,7 +32,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
     path_len = ledger_concat_path(root, name, &topic_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct directory path");
 
-    memcpy((void *)&topic->options, (void *)options, sizeof(ledger_topic_options));
+    memcpy(&topic->options, options, sizeof(ledger_topic_options));
     topic->path_len = path_len;
     topic->path = topic_path;
     topic->npartitions = partition_count;
