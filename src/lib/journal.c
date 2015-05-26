@@ -140,7 +140,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     int i;
     int ncorrupt = 0;
     struct stat idx_st;
-    size_t journal_read_len, total_messages;
+    size_t journal_read_len, previous_count, total_messages;
     uint64_t first_journal_id, index_id;
     uint64_t start_idx_offset, end_idx_offset;
     uint64_t message_offset;
@@ -176,14 +176,21 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     ledger_check_rc(journal->idx.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal index");
     journal->idx.map_len = journal_read_len;
 
-    rc = ledger_message_set_init(messages, total_messages);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
+    if(messages->initialized) {
+        previous_count = messages->nmessages;
+        rc = ledger_message_set_grow(messages, total_messages);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to grow message set");
+    } else {
+        previous_count = 0;
+        rc = ledger_message_set_init(messages, total_messages);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to allocate message set");
+    }
 
     message_offsets = (uint64_t *)journal->idx.map;
     message_offsets = message_offsets + index_id;
     for(i = 0; i < total_messages; i++) {
         message_offset = *message_offsets;
-        current_message = messages->messages + i - ncorrupt;
+        current_message = &messages->messages[i+previous_count-ncorrupt];
 
         rc = ledger_pread(journal->fd, (void *)&message_hdr,
                           sizeof(message_hdr), message_offset);

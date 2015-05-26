@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/mman.h>
@@ -214,19 +215,28 @@ ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_
     ledger_journal_meta_entry *meta;
     ledger_journal journal;
     uint64_t message_id;
+    size_t messages_left;
 
     ledger_check_rc(partition->meta.nentries > 0, LEDGER_ERR_BAD_PARTITION, "No journal entry to read from");
 
+    memset(messages, 0, sizeof(ledger_message_set));
     message_id = start_id;
-    meta = find_meta(partition, message_id);
+    messages_left = nmessages;
+    do {
+        meta = find_meta(partition, message_id);
 
-    rc = ledger_journal_open(&journal, partition->path, meta);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
+        rc = ledger_journal_open(&journal, partition->path, meta);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
 
-    rc = ledger_journal_read(&journal, start_id, nmessages, drop_corrupt, messages);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read from the journal");
+        rc = ledger_journal_read(&journal, start_id, messages_left, drop_corrupt, messages);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read from the journal");
 
-    ledger_journal_close(&journal);
+        ledger_journal_close(&journal);
+
+        messages_left = nmessages - messages->nmessages;
+        message_id = messages->next_id;
+    } while (rc == LEDGER_NEXT);
+
     return LEDGER_OK;
 
 error:

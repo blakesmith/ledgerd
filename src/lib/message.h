@@ -21,10 +21,12 @@ typedef struct {
 typedef struct {
     uint64_t next_id;
     size_t nmessages;
+    bool initialized;
     ledger_message *messages;
 } ledger_message_set;
 
 ledger_status ledger_message_set_init(ledger_message_set *messages, size_t nmessages);
+ledger_status ledger_message_set_grow(ledger_message_set *messages, size_t nmessages);
 void ledger_message_set_free(ledger_message_set *messages);
 
 void ledger_message_init(ledger_message *message);

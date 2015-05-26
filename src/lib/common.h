@@ -7,14 +7,15 @@
 
 typedef enum {
     LEDGER_OK = 0,
-    LEDGER_ERR_GENERAL = -1,
-    LEDGER_ERR_MEMORY = -2,
-    LEDGER_ERR_MKDIR = -3,
-    LEDGER_ERR_ARGS = -4,
-    LEDGER_ERR_BAD_TOPIC = -5,
-    LEDGER_ERR_BAD_PARTITION = -6,
-    LEDGER_ERR_BAD_META = -7,
-    LEDGER_ERR_IO = -8
+    LEDGER_NEXT = -1,
+    LEDGER_ERR_GENERAL = -2,
+    LEDGER_ERR_MEMORY = -3,
+    LEDGER_ERR_MKDIR = -4,
+    LEDGER_ERR_ARGS = -5,
+    LEDGER_ERR_BAD_TOPIC = -6,
+    LEDGER_ERR_BAD_PARTITION = -7,
+    LEDGER_ERR_BAD_META = -8,
+    LEDGER_ERR_IO = -9
 } ledger_status;
 
 #define ledger_check_rc(C, R, M) if(!(C)) { \
