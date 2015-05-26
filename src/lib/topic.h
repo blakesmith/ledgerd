@@ -11,9 +11,11 @@ extern "C" {
 #endif
 
 #define MAX_PARTITIONS 65536
+#define DEFAULT_JOURNAL_MAX_SIZE 536870912 // 536.871 megabytes
 
 typedef struct {
     bool drop_corrupt;
+    size_t journal_max_size_bytes;
 } ledger_topic_options;
 
 typedef struct {

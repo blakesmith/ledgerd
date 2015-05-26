@@ -13,6 +13,7 @@ static const char *WORKING_DIR = "/tmp/ledger";
 static const char *CORRUPT_WORKING_DIR = "/tmp/corrupt_ledger";
 static const char *TOPIC = "my_data";
 static const char *FULL_TOPIC = "/tmp/ledger/my_data";
+static const char *FULL_PARTITION = "/tmp/ledger/my_data/0";
 
 static int setup(const char *directory) {
     return mkdir(directory, 0777);

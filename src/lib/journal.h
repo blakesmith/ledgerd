@@ -16,7 +16,7 @@ typedef struct {
     uint32_t id;
     uint64_t first_journal_id;
     uint64_t first_journal_time;
-    pthread_mutex_t partition_write_lock;
+    pthread_mutex_t journal_write_lock;
 } ledger_journal_meta_entry;
 
 typedef struct {

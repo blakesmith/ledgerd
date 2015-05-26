@@ -8,6 +8,7 @@
 
 ledger_status ledger_topic_options_init(ledger_topic_options *options) {
     options->drop_corrupt = false;
+    options->journal_max_size_bytes = DEFAULT_JOURNAL_MAX_SIZE;
 
     return LEDGER_OK;
 }
