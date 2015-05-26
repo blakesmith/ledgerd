@@ -14,67 +14,6 @@
 
 #define JOURNAL_EXT "jnl"
 #define JOURNAL_IDX_EXT "idx"
-#define JOURNAL_LOCKFILE_EXT "lck"
-
-ledger_status open_lockfile(ledger_journal *journal, const char *partition_path,
-                           uint32_t id) {
-    ledger_status rc;
-    char *path = NULL;
-    char lock_path[13];
-    size_t path_len;
-    int fd = -1;
-    ledger_journal_locks locks;
-    pthread_mutexattr_t mattr;
-
-    journal->lockfile.map = NULL;
-
-    rc = snprintf(lock_path, 13, "%08d.%s", journal->metadata->id, JOURNAL_LOCKFILE_EXT);
-    ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building journal lockfile path");
-
-    path_len = ledger_concat_path(partition_path, lock_path, &path);
-    ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build journal index path");
-
-    fd = open(path, O_RDWR|O_CREAT, 0700);
-    ledger_check_rc(fd > 0 || errno == EEXIST, LEDGER_ERR_IO, "Failed to open journal lockfile file");
-
-    if(errno != EEXIST) {
-        rc = ledger_pwrite(fd, (void *)&locks, sizeof(ledger_journal_locks), 0);
-        ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write journal lockfile");
-    }
-    journal->lockfile.map = mmap(NULL, sizeof(ledger_journal_locks), PROT_READ|PROT_WRITE,
-                                 MAP_SHARED, fd, 0);
-    ledger_check_rc(journal->lockfile.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal lockfile");
-    journal->lockfile.map_len = sizeof(ledger_journal_locks);
-    journal->lockfile.locks = (ledger_journal_locks *)journal->lockfile.map;
-
-    rc = pthread_mutexattr_init(&mattr);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize mutex attribute");
-
-    rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to set mutex attribute to shared");
-
-    rc = pthread_mutex_init(&journal->lockfile.locks->idx_write_mutex, &mattr);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize index write mutex");
-
-    rc = pthread_mutex_init(&journal->lockfile.locks->journal_write_mutex, &mattr);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize journal write mutex");
-
-    close(fd);
-    free(path);
-    return LEDGER_OK;
-
-error:
-    if(fd) {
-        close(fd);
-    }
-    if(path) {
-        free(path);
-    }
-    if(journal->lockfile.map) {
-        munmap(journal->lockfile.map, journal->lockfile.map_len);
-    }
-    return rc;
-}
 
 ledger_status open_journal_index(ledger_journal *journal, const char *partition_path,
                                  uint32_t id) {
@@ -144,9 +83,6 @@ ledger_status ledger_journal_open(ledger_journal *journal, const char *partition
 
     journal->metadata = metadata;
 
-    rc = open_lockfile(journal, partition_path, metadata->id);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open ledger journal lockfile");
-
     rc = open_journal(journal, partition_path, metadata->id);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open ledger journal");
 
@@ -167,9 +103,6 @@ void ledger_journal_close(ledger_journal *journal) {
     if(journal->idx.fd) {
         close(journal->idx.fd);
     }
-    if(journal->lockfile.map) {
-        munmap(journal->lockfile.map, journal->lockfile.map_len);
-    }
 }
 
 ledger_status ledger_journal_write(ledger_journal *journal, void *data,
@@ -182,9 +115,6 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
     message_header.len = len;
     message_header.crc32 = crc32_compute(0, data, len);
 
-    rc = pthread_mutex_lock(&journal->lockfile.locks->journal_write_mutex);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to lock journal for writing");
-
     rc = fstat(journal->fd, &st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal file");
 
@@ -194,24 +124,13 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
     rc = ledger_pwrite(journal->fd, data, len, st.st_size + sizeof(message_header));
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write message");
 
-    rc = pthread_mutex_unlock(&journal->lockfile.locks->journal_write_mutex);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to unlock journal for writing");
-
     offset = st.st_size;
-    rc = pthread_mutex_lock(&journal->lockfile.locks->idx_write_mutex);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to lock journal index for writing");
-
     rc = ledger_pwrite(journal->idx.fd, (void *)&offset, sizeof(uint64_t), 0);
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write index offset");
-
-    rc = pthread_mutex_unlock(&journal->lockfile.locks->idx_write_mutex);
-    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to unlock journal index for writing");
 
     return LEDGER_OK;
 
 error:
-    pthread_mutex_unlock(&journal->lockfile.locks->journal_write_mutex);
-    pthread_mutex_unlock(&journal->lockfile.locks->idx_write_mutex);
     return rc;
 }
 

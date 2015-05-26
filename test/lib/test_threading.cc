@@ -30,21 +30,25 @@ static int cleanup(const char *directory) {
     return rmrf(directory);
 }
 
-static int NUM_MESSAGES = 10000;
+static const int NUM_THREADS = 2;
+static const int NUM_MESSAGES = 10000;
 
 void *write_worker(void *ctx_ptr) {
     ledger_ctx *ctx = (ledger_ctx *)ctx_ptr;
     int i;
+    ledger_status rc;
     uint32_t message = 1;
 
     for(i = 0; i < NUM_MESSAGES; i++) {
-        ledger_write_partition(ctx, TOPIC, 0, (void *)&message, sizeof(uint32_t));
+        rc = ledger_write_partition(ctx, TOPIC, 0, (void *)&message, sizeof(uint32_t));
+        if(rc != LEDGER_OK) {
+            printf("Failed to write to partition: %d\n", rc);
+            exit(rc);
+        }
     }
 
     return NULL;
 }
-
-static const int NUM_THREADS = 2;
 
 TEST(LedgerThreading, WriteThreading) {
     ledger_ctx ctx;
@@ -67,7 +71,7 @@ TEST(LedgerThreading, WriteThreading) {
     }
 
     ASSERT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, NUM_THREADS * NUM_MESSAGES, &messages));
-    EXPECT_TRUE(messages.nmessages > 0);
+    EXPECT_EQ(NUM_THREADS * NUM_MESSAGES, messages.nmessages);
 
     count = 0;
     for(i = 0; i < messages.nmessages; i++) {
