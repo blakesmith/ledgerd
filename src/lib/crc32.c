@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-unsigned long crc32_compute(unsigned long inCrc32, const void *buf,
-                                   size_t bufLen) {
+unsigned long crc32_compute(unsigned long in_crc32, const void *buf,
+                            size_t buflen) {
     static const unsigned long crcTable[256] = {
         0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,0xE963A535,
         0x9E6495A3,0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,0x09B64C2B,0x7EB17CBD,
@@ -46,9 +46,9 @@ unsigned long crc32_compute(unsigned long inCrc32, const void *buf,
     size_t i;
 
     /** accumulate crc32 for buffer **/
-    crc32 = inCrc32 ^ 0xFFFFFFFF;
+    crc32 = in_crc32 ^ 0xFFFFFFFF;
     byteBuf = (unsigned char *) buf;
-    for (i=0; i < bufLen; i++) {
+    for (i=0; i < buflen; i++) {
         crc32 = (crc32 >> 8) ^ crcTable[ (crc32 ^ byteBuf[i]) & 0xFF ];
     }
     return( crc32 ^ 0xFFFFFFFF );
