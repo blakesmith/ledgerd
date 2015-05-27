@@ -14,6 +14,7 @@
 #include "partition.h"
 
 #define META_FILE "meta"
+#define LOCK_FILE "locks"
 
 static ledger_status remove_old_journals(ledger_partition *partition) {
     // TODO: implement
@@ -95,6 +96,92 @@ static ledger_status add_journal(ledger_partition *partition, int fd) {
 
 error:
     return rc;
+}
+
+static ledger_status open_lockfile(ledger_partition *partition) {
+    int fd = 0;
+    ledger_status rc;
+    char *lock_path = NULL;
+    ssize_t path_len;
+
+    path_len = ledger_concat_path(partition->path, LOCK_FILE, &lock_path);
+    ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build lock path");
+
+    fd = open(lock_path, O_RDWR|O_CREAT, 0700);
+    ledger_check_rc(fd > 0 || errno == EEXIST, LEDGER_ERR_BAD_LOCKFILE, "Failed to open meta file");
+
+    free(lock_path);
+    return fd;
+
+error:
+    if(lock_path) {
+        free(lock_path);
+    }
+    if(fd) {
+        close(fd);
+    }
+    return rc;
+}
+
+static ledger_status create_locks(ledger_partition *partition, int fd) {
+    ledger_status rc;
+    ledger_partition_locks locks;
+    pthread_mutexattr_t mattr;
+    pthread_condattr_t cattr;
+
+    rc = pthread_mutexattr_init(&mattr);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize mutex attribute");
+
+    rc = pthread_condattr_init(&cattr);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize cond attribute");
+
+    rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to set mutex attribute to shared");
+
+    rc = pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to set cond attribute to shared");
+
+    rc = pthread_mutex_init(&locks.rotate_lock, &mattr);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize journal rotate mutex");
+
+    rc = pthread_cond_init(&locks.rotate_cond, &cattr);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize journal rotate cond");
+
+    rc = ledger_pwrite(fd, (void *)&locks, sizeof(ledger_partition_locks), 0);
+    ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write meta number of entries");
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
+static ledger_status map_lockfile(ledger_partition *partition, int fd, size_t map_len) {
+    ledger_status rc;
+    void *map = NULL;
+
+    map = mmap(NULL, map_len, PROT_READ|PROT_WRITE,
+               MAP_SHARED, fd, 0);
+    ledger_check_rc(map != MAP_FAILED, LEDGER_ERR_IO, "Failed to memory map the lock file");
+
+    partition->lockfile.locks = (ledger_partition_locks *)map;
+    partition->lockfile.map = map;
+    partition->lockfile.map_len = map_len;
+
+    return LEDGER_OK;
+
+error:
+    if(map) {
+        munmap(map, map_len);
+    }
+    return rc;
+}
+
+static ledger_status unmap_lockfile(ledger_partition *partition) {
+    if(partition->lockfile.map) {
+        munmap(partition->lockfile.map, partition->lockfile.map_len);
+    }
+    return LEDGER_OK;
 }
 
 static ledger_journal_meta_entry *find_meta(ledger_partition *partition, uint64_t message_id) {
@@ -223,6 +310,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
                                     unsigned int partition_number, ledger_partition_options *options) {
     ledger_status rc;
     int fd = 0;
+    int lock_fd = 0;
     char part_num[5];
     ssize_t path_len;
     char *partition_path = NULL;
@@ -263,7 +351,25 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     rc = remap_meta(partition, fd, st.st_size);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read memory mapped meta file");
 
+    lock_fd = open_lockfile(partition);
+    ledger_check_rc(lock_fd > 0, rc, "Failed to open lockfile");
+
+    rc = fstat(lock_fd, &st);
+    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat lockfile");
+
+    if(st.st_size == 0) {
+        rc = create_locks(partition, lock_fd);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to create partition locks");
+
+        rc = fstat(lock_fd, &st);
+        ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to restat lock file");
+    }
+
+    rc = map_lockfile(partition, lock_fd, st.st_size);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read memory mapped lock file");
+
     close(fd);
+    close(lock_fd);
 
     partition->opened = true;
 
@@ -275,6 +381,9 @@ error:
     }
     if(fd) {
         close(fd);
+    }
+    if(lock_fd) {
+        close(lock_fd);
     }
     return rc;
 }
@@ -373,6 +482,7 @@ void ledger_partition_close(ledger_partition *partition) {
         }
     }
     unmap_meta(partition);
+    unmap_lockfile(partition);
     partition->opened = false;
 }
 

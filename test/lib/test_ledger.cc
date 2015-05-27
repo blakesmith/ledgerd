@@ -314,7 +314,7 @@ TEST(Ledger, JournalRotation) {
     while((dit = readdir(dir)) != NULL) {
         journal_count++;
     }
-    EXPECT_EQ(7, journal_count);
+    EXPECT_EQ(8, journal_count);
 
     ledger_message_set_free(&messages);
     ASSERT_EQ(0, closedir(dir));

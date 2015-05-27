@@ -19,6 +19,18 @@ typedef struct {
 } ledger_partition_meta;
 
 typedef struct {
+    pthread_mutex_t rotate_lock;
+    pthread_cond_t rotate_cond;
+} ledger_partition_locks;
+
+typedef struct {
+    void *map;
+    size_t map_len;
+    bool rotating;
+    ledger_partition_locks *locks;
+} ledger_partition_lockfile;
+
+typedef struct {
     bool drop_corrupt;
     size_t journal_max_size_bytes;
 } ledger_partition_options;
@@ -30,6 +42,7 @@ typedef struct {
     size_t path_len;
     ledger_partition_options options;
     ledger_partition_meta meta;
+    ledger_partition_lockfile lockfile;
 } ledger_partition;
 
 ledger_status ledger_partition_open(ledger_partition *partition, const char *topic_path,
