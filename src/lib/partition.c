@@ -21,6 +21,10 @@ static ledger_status remove_old_journals(ledger_partition *partition) {
 }
 
 static inline ledger_journal_meta_entry *find_latest_meta(ledger_partition *partition) {
+    if(partition->meta.nentries == 0) {
+        return NULL;
+    }
+
     return &partition->meta.entries[partition->meta.nentries-1];
 }
 
@@ -29,6 +33,12 @@ static ledger_status find_latest_message_id(ledger_partition *partition, uint64_
     ledger_journal journal;
     ledger_journal_options journal_options;
     ledger_status rc;
+
+    latest_meta = find_latest_meta(partition);
+    if(latest_meta == NULL) {
+        *id = 0;
+        return LEDGER_OK;
+    }
 
     rc = ledger_journal_open(&journal, partition->path, latest_meta, &journal_options);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
@@ -44,7 +54,7 @@ error:
     return rc;
 }
 
-static ledger_status add_journal(ledger_partition *partition, int fd, bool initial) {
+static ledger_status add_journal(ledger_partition *partition, int fd) {
     ledger_status rc;
     pthread_mutexattr_t mattr;
     struct timeval tv;
@@ -64,16 +74,11 @@ static ledger_status add_journal(ledger_partition *partition, int fd, bool initi
     rc = pthread_mutex_init(&meta_entry.write_lock, &mattr);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize index write mutex");
 
-    if(initial) {
-        nentries = 1;
-        meta_entry.id = 0;
-        meta_entry.first_message_id = 0;
-    } else {
-        nentries = partition->meta.nentries + 1;
-        meta_entry.id = partition->meta.nentries;
-        rc = find_latest_message_id(partition, &meta_entry.first_message_id);
-        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to fetch the latest message id");
-    }
+    rc = find_latest_message_id(partition, &meta_entry.first_message_id);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to fetch the latest message id");
+
+    nentries = partition->meta.nentries + 1;
+    meta_entry.id = partition->meta.nentries;
 
     meta_entry.create_time = tv.tv_sec;
 
@@ -195,7 +200,7 @@ static ledger_status rotate_journals(ledger_partition *partition) {
     fd = open_meta(partition);
     ledger_check_rc(fd > 0, rc, "Failed to open meta file");
 
-    rc = add_journal(partition, fd, false);
+    rc = add_journal(partition, fd);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to add a journal");
 
     rc = fstat(fd, &st);
@@ -248,7 +253,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat meta file");
 
     if(st.st_size == 0) {
-        rc = add_journal(partition, fd, true);
+        rc = add_journal(partition, fd);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to add initial journal");
 
         rc = fstat(fd, &st);
