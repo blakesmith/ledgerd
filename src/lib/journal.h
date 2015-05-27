@@ -14,6 +14,7 @@ extern "C" {
 
 typedef struct {
     uint32_t id;
+    // TODO: Rename to 'first_message_id'
     uint64_t first_journal_id;
     uint64_t first_journal_time;
     pthread_mutex_t journal_write_lock;
@@ -42,6 +43,7 @@ ledger_status ledger_journal_open(ledger_journal *journal, const char *partition
 void ledger_journal_close(ledger_journal *journal);
 ledger_status ledger_journal_write(ledger_journal *journal, void *data,
                                    size_t len);
+ledger_status ledger_journal_latest_message_id(ledger_journal *journal, uint64_t *id);
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
                                   size_t nmessages, ledger_message_set *messages);
 

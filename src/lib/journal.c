@@ -120,6 +120,10 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
     rc = fstat(journal->fd, &st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal file");
 
+    if(st.st_size > journal->options.max_size_bytes) {
+        return LEDGER_NEXT;
+    }
+
     rc = ledger_pwrite(journal->fd, (void *)&message_header, sizeof(message_header), st.st_size);
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write message header");
 
@@ -132,6 +136,22 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
 
     return LEDGER_OK;
 
+error:
+    return rc;
+}
+
+ledger_status ledger_journal_latest_message_id(ledger_journal *journal, uint64_t *id) {
+    ledger_status rc;
+    uint64_t journal_id;
+    struct stat idx_st;
+
+    rc = fstat(journal->idx.fd, &idx_st);
+    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
+
+    journal_id = idx_st.st_size / sizeof(uint64_t);
+    *id = journal->metadata->first_journal_id + journal_id;
+
+    return LEDGER_OK;
 error:
     return rc;
 }
@@ -150,6 +170,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     uint32_t crc32_verification;
     ledger_message_hdr message_hdr;
     ledger_message *current_message;
+    bool over_journal = false;
 
     journal->idx.map = NULL;
 
@@ -160,12 +181,13 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     index_id = start_id - first_journal_id;
     start_idx_offset = index_id * sizeof(uint64_t);
     if(start_idx_offset > idx_st.st_size) {
-        // That message doesn't exist yet?
-        return LEDGER_OK;
+        // Reached the end of the journal
+        return LEDGER_NEXT;
     }
     end_idx_offset = start_idx_offset + (nmessages * sizeof(uint64_t));
     if(end_idx_offset > idx_st.st_size) {
         end_idx_offset = idx_st.st_size;
+        over_journal = true;
     }
     journal_read_len = end_idx_offset - start_idx_offset;
     total_messages = journal_read_len / sizeof(uint64_t);
@@ -223,6 +245,11 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     }
 
     munmap(journal->idx.map, journal->idx.map_len);
+
+    if(over_journal) {
+        return LEDGER_NEXT;
+    }
+
     return LEDGER_OK;
 
 error:

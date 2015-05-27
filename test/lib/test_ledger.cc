@@ -270,4 +270,55 @@ TEST(Ledger, SmallerRead) {
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
+
+TEST(Ledger, JournalRotation) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message1[] = "hello";
+    size_t mlen = sizeof(message1);
+    ledger_message_set messages;
+    int messages_count;
+    int i;
+    DIR *dir;
+    struct dirent *dit;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    options.journal_max_size_bytes = 100;
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    // Write enough messages to force a journal rotation
+    messages_count = 10;
+    for(i = 0; i < messages_count; i++) {
+        ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen));
+    }
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, messages_count, &messages));
+    EXPECT_EQ(messages_count, messages.nmessages);
+
+    // Make sure they all have the correct content, and correct ids
+    uint64_t last_id = -1;
+    for(i = 0; i < messages_count; i++) {
+        ASSERT_TRUE(messages.messages[i].id-last_id == 1);
+        ASSERT_STREQ(message1, (const char *)messages.messages[i].data);
+        ASSERT_EQ(mlen, messages.messages[i].len);
+        last_id = messages.messages[i].id;
+    }
+
+    dir = opendir(FULL_PARTITION);
+    ASSERT_TRUE(dir != NULL);
+
+    int journal_count = 0;
+    while((dit = readdir(dir)) != NULL) {
+        journal_count++;
+    }
+    EXPECT_EQ(7, journal_count);
+
+    ledger_message_set_free(&messages);
+    ASSERT_EQ(0, closedir(dir));
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
 }
