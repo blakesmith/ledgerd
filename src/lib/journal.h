@@ -14,10 +14,9 @@ extern "C" {
 
 typedef struct {
     uint32_t id;
-    // TODO: Rename to 'first_message_id'
-    uint64_t first_journal_id;
-    uint64_t first_journal_time;
-    pthread_mutex_t journal_write_lock;
+    uint64_t first_message_id;
+    uint64_t create_time;
+    pthread_mutex_t write_lock;
 } ledger_journal_meta_entry;
 
 typedef struct {

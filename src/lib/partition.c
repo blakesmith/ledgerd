@@ -61,21 +61,21 @@ static ledger_status add_journal(ledger_partition *partition, int fd, bool initi
     rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to set mutex attribute to shared");
 
-    rc = pthread_mutex_init(&meta_entry.journal_write_lock, &mattr);
+    rc = pthread_mutex_init(&meta_entry.write_lock, &mattr);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize index write mutex");
 
     if(initial) {
         nentries = 1;
         meta_entry.id = 0;
-        meta_entry.first_journal_id = 0;
+        meta_entry.first_message_id = 0;
     } else {
         nentries = partition->meta.nentries + 1;
         meta_entry.id = partition->meta.nentries;
-        rc = find_latest_message_id(partition, &meta_entry.first_journal_id);
+        rc = find_latest_message_id(partition, &meta_entry.first_message_id);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to fetch the latest message id");
     }
 
-    meta_entry.first_journal_time = tv.tv_sec;
+    meta_entry.create_time = tv.tv_sec;
 
     rc = ledger_pwrite(fd, (void *)&nentries, sizeof(uint32_t), 0);
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write meta number of entries");
@@ -98,7 +98,7 @@ static ledger_journal_meta_entry *find_meta(ledger_partition *partition, uint64_
 
     for(i = partition->meta.nentries-1; i >= 0; i--) {
         entry = &partition->meta.entries[i];
-        if(entry->first_journal_id <= message_id) {
+        if(entry->first_message_id <= message_id) {
             return entry;
         }
     }
@@ -289,7 +289,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
     do {
         latest_meta = find_latest_meta(partition);
 
-        rc = pthread_mutex_lock(&latest_meta->journal_write_lock);
+        rc = pthread_mutex_lock(&latest_meta->write_lock);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to lock partition for writing");
 
         rc = ledger_journal_open(&journal, partition->path, latest_meta, &journal_options);
@@ -304,7 +304,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
             ledger_check_rc(rc == LEDGER_OK, rc, "Failed to rotate journals");
         }
 
-        rc = pthread_mutex_unlock(&latest_meta->journal_write_lock);
+        rc = pthread_mutex_unlock(&latest_meta->write_lock);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to unlock partition for writing");
 
         ledger_journal_close(&journal);
@@ -312,7 +312,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
     return LEDGER_OK;
 
 error:
-    pthread_mutex_unlock(&latest_meta->journal_write_lock);
+    pthread_mutex_unlock(&latest_meta->write_lock);
     ledger_journal_close(&journal);
     return rc;
 }

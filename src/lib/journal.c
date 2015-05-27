@@ -149,7 +149,7 @@ ledger_status ledger_journal_latest_message_id(ledger_journal *journal, uint64_t
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
 
     journal_id = idx_st.st_size / sizeof(uint64_t);
-    *id = journal->metadata->first_journal_id + journal_id;
+    *id = journal->metadata->first_message_id + journal_id;
 
     return LEDGER_OK;
 error:
@@ -163,7 +163,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     int ncorrupt = 0;
     struct stat idx_st;
     size_t journal_read_len, previous_count, total_messages;
-    uint64_t first_journal_id, index_id;
+    uint64_t first_message_id, index_id;
     uint64_t start_idx_offset, end_idx_offset;
     uint64_t message_offset;
     uint64_t *message_offsets;
@@ -177,8 +177,8 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     rc = fstat(journal->idx.fd, &idx_st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
 
-    first_journal_id = journal->metadata->first_journal_id;
-    index_id = start_id - first_journal_id;
+    first_message_id = journal->metadata->first_message_id;
+    index_id = start_id - first_message_id;
     start_idx_offset = index_id * sizeof(uint64_t);
     if(start_idx_offset > idx_st.st_size) {
         // Reached the end of the journal
