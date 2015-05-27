@@ -19,20 +19,26 @@ typedef struct {
 } ledger_partition_meta;
 
 typedef struct {
+    bool drop_corrupt;
+    size_t journal_max_size_bytes;
+} ledger_partition_options;
+
+typedef struct {
     unsigned int number;
     bool opened;
     char *path;
     size_t path_len;
+    ledger_partition_options options;
     ledger_partition_meta meta;
 } ledger_partition;
 
 ledger_status ledger_partition_open(ledger_partition *partition, const char *topic_path,
-                                    unsigned int partition_number);
+                                    unsigned int partition_number, ledger_partition_options *options);
 void ledger_partition_close(ledger_partition *partition);
 ledger_status ledger_partition_write(ledger_partition *partition, void *data,
                                      size_t len);
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
-                                    size_t nmessages, bool drop_corrupt, ledger_message_set *messages);
+                                    size_t nmessages, ledger_message_set *messages);
 
 #if defined(__cplusplus)
 }

@@ -137,7 +137,7 @@ ledger_status close_meta(ledger_partition *partition) {
 }
 
 ledger_status ledger_partition_open(ledger_partition *partition, const char *topic_path,
-                                    unsigned int partition_number) {
+                                    unsigned int partition_number, ledger_partition_options *options) {
     ledger_status rc;
     char part_num[5];
     ssize_t path_len;
@@ -152,6 +152,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     path_len = ledger_concat_path(topic_path, part_num, &partition_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct partition directory path");
 
+    memcpy(&partition->options, options, sizeof(ledger_partition_options));
     partition->path = partition_path;
     partition->path_len = path_len;
 
@@ -183,15 +184,19 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
     ledger_status rc;
     ledger_journal_meta_entry *latest_meta = NULL;
     ledger_journal journal;
+    ledger_journal_options journal_options;
 
     ledger_check_rc(partition->meta.nentries > 0, LEDGER_ERR_BAD_PARTITION, "No journal entry to write to");
+
+    journal_options.drop_corrupt = partition->options.drop_corrupt;
+    journal_options.max_size_bytes = partition->options.journal_max_size_bytes;
 
     latest_meta = partition->meta.entries + partition->meta.nentries - 1;
 
     rc = pthread_mutex_lock(&latest_meta->journal_write_lock);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to lock partition for writing");
 
-    rc = ledger_journal_open(&journal, partition->path, latest_meta);
+    rc = ledger_journal_open(&journal, partition->path, latest_meta, &journal_options);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
 
     rc = ledger_journal_write(&journal, data, len);
@@ -210,14 +215,18 @@ error:
 }
 
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
-                                    size_t nmessages, bool drop_corrupt, ledger_message_set *messages) {
+                                    size_t nmessages, ledger_message_set *messages) {
     ledger_status rc;
     ledger_journal_meta_entry *meta;
     ledger_journal journal;
+    ledger_journal_options journal_options;
     uint64_t message_id;
     size_t messages_left;
 
     ledger_check_rc(partition->meta.nentries > 0, LEDGER_ERR_BAD_PARTITION, "No journal entry to read from");
+
+    journal_options.drop_corrupt = partition->options.drop_corrupt;
+    journal_options.max_size_bytes = partition->options.journal_max_size_bytes;
 
     memset(messages, 0, sizeof(ledger_message_set));
     message_id = start_id;
@@ -225,10 +234,10 @@ ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_
     do {
         meta = find_meta(partition, message_id);
 
-        rc = ledger_journal_open(&journal, partition->path, meta);
+        rc = ledger_journal_open(&journal, partition->path, meta, &journal_options);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
 
-        rc = ledger_journal_read(&journal, start_id, messages_left, drop_corrupt, messages);
+        rc = ledger_journal_read(&journal, start_id, messages_left, messages);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to read from the journal");
 
         ledger_journal_close(&journal);

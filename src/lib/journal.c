@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <inttypes.h>
@@ -78,10 +79,11 @@ error:
 }
 
 ledger_status ledger_journal_open(ledger_journal *journal, const char *partition_path,
-                                  ledger_journal_meta_entry *metadata) {
+                                  ledger_journal_meta_entry *metadata, ledger_journal_options *options) {
     ledger_status rc;
 
     journal->metadata = metadata;
+    memcpy(&journal->options, options, sizeof(ledger_journal_options));
 
     rc = open_journal(journal, partition_path, metadata->id);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open ledger journal");
@@ -135,7 +137,7 @@ error:
 }
 
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
-                                  size_t nmessages, bool drop_corrupt, ledger_message_set *messages) {
+                                  size_t nmessages, ledger_message_set *messages) {
     ledger_status rc;
     int i;
     int ncorrupt = 0;
@@ -205,7 +207,7 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
                           current_message->len, message_offset + sizeof(ledger_message_hdr));
         ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to read message");
 
-        if(drop_corrupt) {
+        if(journal->options.drop_corrupt) {
             crc32_verification = crc32_compute(0, current_message->data, current_message->len);
             if(crc32_verification != message_hdr.crc32) {
                 // Message is corrupt
