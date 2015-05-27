@@ -4,7 +4,11 @@
 *.lo
 *.la
 *.rl.cc
+*.log
+*.trs
+*tests
 compile
+core
 m4/lt*
 m4/libtool*
 ltmain.sh
@@ -29,8 +33,6 @@ missing
 *.libs*
 stamp-h1
 test/bin
-test/*.log
-test/*.trs
 test/*_check
 test/tests
 .vagrant
