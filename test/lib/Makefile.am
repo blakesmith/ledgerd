@@ -11,6 +11,7 @@ check_PROGRAMS = libledger_tests
 
 libledger_tests_SOURCES = \
 	test_ledger.cc \
+	test_consumer.cc \
 	test_threading.cc
 
 libledger_tests_LDADD = $(top_srcdir)/src/lib/libledger.la

@@ -96,3 +96,8 @@ ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
 error:
     return rc;
 }
+
+ledger_status ledger_attach_consumer(ledger_ctx *ctx, ledger_consumer *consumer, const char *topic_name, unsigned int partition_id) {
+    return LEDGER_OK;
+}
+
