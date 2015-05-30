@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "consumer.h"
 #include "journal.h"
 
 #if defined(__cplusplus)

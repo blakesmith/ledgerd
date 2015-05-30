@@ -28,8 +28,6 @@ ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
 ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
                                     unsigned int partition_num, uint64_t start_id,
                                     size_t nmessages, ledger_message_set *messages);
-ledger_status ledger_attach_consumer(ledger_ctx *ctx, ledger_consumer *consumer,
-                                     const char *topic_name, unsigned int partition_id);
 void ledger_close_context(ledger_ctx *ctx);
 
 

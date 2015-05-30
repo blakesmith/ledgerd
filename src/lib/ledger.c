@@ -97,7 +97,3 @@ error:
     return rc;
 }
 
-ledger_status ledger_attach_consumer(ledger_ctx *ctx, ledger_consumer *consumer, const char *topic_name, unsigned int partition_id) {
-    return LEDGER_OK;
-}
-

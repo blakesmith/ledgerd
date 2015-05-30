@@ -2,7 +2,7 @@
 
 #include <ftw.h>
 
-#include "ledger.h"
+#include "consumer.h"
 
 namespace ledger_consumer_test {
 static const char *WORKING_DIR = "/tmp/ledger";
@@ -29,8 +29,13 @@ static int cleanup(const char *directory) {
 }
 
 static ledger_consume_status consume_function(ledger_consumer_ctx *ctx, ledger_message_set *messages, void *data) {
-    bool *consumed = static_cast<bool*>(data);
-    *consumed = true;
+    size_t *consumed_size = static_cast<size_t*>(data);
+    int i;
+
+    for(i = 0; i < messages->nmessages; i++) {
+        *consumed_size = *consumed_size + messages->messages[i].len;
+    }
+
     return LEDGER_CONSUMER_OK;
 }
 
@@ -46,14 +51,21 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    bool consumed = false;
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5));
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5));
+
+    size_t consumed_size = 0;
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
-    consumer_opts.read_chunk_size = 50;
-    ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, consume_function, &consumer_opts, &consumed));
-    ASSERT_EQ(LEDGER_OK, ledger_attach_consumer(&ctx, &consumer, TOPIC, 0));
+    consumer_opts.read_chunk_size = 2;
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, consume_function, &consumer_opts, &consumed_size));
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
     
-    EXPECT_EQ(LEDGER_OK, ledger_consumer_consume_chunk(&consumer));
-    EXPECT_TRUE(consumed);
+    EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, 0));
+    // Kill once we can stop consumer after a message id
+    sleep(1);
+
+    ledger_consumer_stop(&consumer);
+    EXPECT_EQ(10, consumed_size);
 
     ledger_consumer_close(&consumer);
     ledger_close_context(&ctx);
