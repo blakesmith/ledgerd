@@ -2,6 +2,7 @@ AM_CFLAGS=$(PTHREAD_CFLAGS) -Wall -pedantic -std=c11
 lib_LTLIBRARIES = libledger.la
 
 libledger_la_HEADERS = \
+	consumer.h \
 	journal.h \
 	ledger.h \
 	message.h \
@@ -10,6 +11,7 @@ libledger_la_HEADERS = \
 
 libledger_la_SOURCES = \
 	common.h common.c \
+	consumer.c \
 	crc32.h crc32.c \
 	dict.h dict.c \
 	journal.c \
