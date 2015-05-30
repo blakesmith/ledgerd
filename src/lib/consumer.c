@@ -21,6 +21,7 @@ static void *consumer_loop(void *consumer_ptr) {
 
     consumer->func(&ctx, &messages, consumer->data);
 
+    ledger_message_set_free(&messages);
     return NULL;
 }
 
