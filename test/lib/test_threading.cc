@@ -86,4 +86,42 @@ TEST(LedgerThreading, WriteThreading) {
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
+
+TEST(LedgerThreading, DISABLED_WriteThreadingWithRotation) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    pthread_t threads[NUM_THREADS];
+    int i, count;
+    ledger_message_set messages;
+    uint32_t read_message;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    options.journal_max_size_bytes = 2000000;
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    for(i = 0; i < NUM_THREADS; i++) {
+        ASSERT_EQ(0, pthread_create(&threads[i], NULL, write_worker, &ctx));
+    }
+
+    for(i = 0; i < NUM_THREADS; i++) {
+        ASSERT_EQ(0, pthread_join(threads[i], NULL));
+    }
+
+    ASSERT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, NUM_THREADS * NUM_MESSAGES, &messages));
+    EXPECT_EQ(NUM_THREADS * NUM_MESSAGES, messages.nmessages);
+
+    count = 0;
+    for(i = 0; i < messages.nmessages; i++) {
+        read_message = *(int *)messages.messages[i].data;
+        count = count + read_message;
+    }
+    EXPECT_EQ(messages.nmessages, count);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
 }
