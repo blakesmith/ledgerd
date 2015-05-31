@@ -5,8 +5,8 @@
 #include "consumer.h"
 
 namespace ledger_consumer_test {
-static const char *WORKING_DIR = "/tmp/ledger";
-static const char *TOPIC = "my_data";
+static const char *WORKING_DIR = "/tmp/consumer_ledger";
+static const char *TOPIC = "my_consumer_data";
 
 static int setup(const char *directory) {
     return mkdir(directory, 0777);
@@ -56,7 +56,7 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
 
     size_t consumed_size = 0;
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
-    consumer_opts.read_chunk_size = 2;
+    consumer_opts.read_chunk_size = 1;
     ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, consume_function, &consumer_opts, &consumed_size));
     ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
     

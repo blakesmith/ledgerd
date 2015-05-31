@@ -13,21 +13,32 @@ static void *consumer_loop(void *consumer_ptr) {
     ctx.topic_name = consumer->topic_name;
     ctx.partition_num = consumer->partition_num;
 
-    rc = ledger_read_partition(consumer->ctx, consumer->topic_name,
-                               consumer->partition_num, next_message,
-                               consumer->options.read_chunk_size, &messages);
+    while(consumer->active) {
+        rc = ledger_read_partition(consumer->ctx, consumer->topic_name,
+                                   consumer->partition_num, next_message,
+                                   consumer->options.read_chunk_size, &messages);
 
-    if(rc != LEDGER_OK) {
-        // TODO: Somehow propagate up to the user?
+        if(rc != LEDGER_OK) {
+            // TODO: Somehow propagate up to the user?
+        }
+
+        if(messages.nmessages == 0) {
+            // TODO: Wait for more on a cond variable
+            consumer->active = false;
+            ledger_message_set_free(&messages);
+            continue;
+        }
+
+        if(rc == LEDGER_OK) {
+            consumer->func(&ctx, &messages, consumer->data);
+
+            next_message = messages.next_id;
+            last_pos = messages.messages[messages.nmessages-1].id;
+            ledger_consumer_position_set(&consumer->position, last_pos);
+
+            ledger_message_set_free(&messages);
+        }
     }
-
-    consumer->func(&ctx, &messages, consumer->data);
-
-    next_message = messages.next_id;
-    last_pos = messages.messages[messages.nmessages-1].id;
-    ledger_consumer_position_set(&consumer->position, last_pos);
-
-    ledger_message_set_free(&messages);
     return NULL;
 }
 
@@ -38,6 +49,7 @@ ledger_status ledger_init_consumer_options(ledger_consumer_options *options) {
 ledger_status ledger_consumer_init(ledger_consumer *consumer, ledger_consume_function func, ledger_consumer_options *options, void *data) {
     consumer->func = func;
     consumer->data = data;
+    consumer->active = false;
     ledger_consumer_position_init(&consumer->position);
     memcpy(&consumer->options, options, sizeof(ledger_consumer_options));
 
@@ -57,6 +69,7 @@ ledger_status ledger_consumer_start(ledger_consumer *consumer, uint64_t start_id
     ledger_status rc;
 
     consumer->start_id = start_id;
+    consumer->active = true;
 
     rc = pthread_create(&consumer->consumer_thread, NULL, consumer_loop, consumer);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to launch consumer thread");
