@@ -30,6 +30,9 @@ ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
                                     size_t nmessages, ledger_message_set *messages);
 ledger_status ledger_wait_messages(ledger_ctx *ctx, const char *name,
                                    unsigned int partition_num);
+ledger_status ledger_signal_readers(ledger_ctx *ctx, const char *name,
+                                    unsigned int partition_num);
+
 void ledger_close_context(ledger_ctx *ctx);
 
 

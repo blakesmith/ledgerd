@@ -111,4 +111,17 @@ error:
     return rc;
 }
 
+ledger_status ledger_signal_readers(ledger_ctx *ctx, const char *name,
+                                    unsigned int partition_num) {
+    ledger_status rc;
+    ledger_topic *topic = NULL;
+
+    topic = lookup_topic(ctx, name);
+    ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
+
+    return ledger_topic_signal_readers(topic, partition_num);
+
+error:
+    return rc;
+}
 

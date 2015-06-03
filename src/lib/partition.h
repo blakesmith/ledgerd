@@ -55,6 +55,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
                                     size_t nmessages, ledger_message_set *messages);
 void ledger_partition_wait_messages(ledger_partition *partition);
+void ledger_partition_signal_readers(ledger_partition *partition);
 
 #if defined(__cplusplus)
 }

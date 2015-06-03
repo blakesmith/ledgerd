@@ -421,7 +421,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
         }
 
         // Signal any waiting consumers that there are messages available
-        ledger_signal_broadcast(&partition->message_signal);
+        ledger_partition_signal_readers(partition);
         rc = pthread_mutex_unlock(&latest_meta->write_lock);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to unlock partition for writing");
 
@@ -437,6 +437,10 @@ error:
 
 void ledger_partition_wait_messages(ledger_partition *partition) {
     ledger_signal_wait(&partition->message_signal);
+}
+
+void ledger_partition_signal_readers(ledger_partition *partition) {
+    ledger_signal_broadcast(&partition->message_signal);
 }
 
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,

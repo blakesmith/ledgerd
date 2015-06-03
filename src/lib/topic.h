@@ -40,6 +40,7 @@ ledger_status ledger_topic_read_partition(ledger_topic *topic, unsigned int part
                                           ledger_message_set *messages);
 
 ledger_status ledger_topic_wait_messages(ledger_topic *topic, unsigned int partition_num);
+ledger_status ledger_topic_signal_readers(ledger_topic *topic, unsigned int partition_num);
 
 #if defined(__cplusplus)
 }

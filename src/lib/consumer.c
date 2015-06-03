@@ -26,7 +26,6 @@ static void *consumer_loop(void *consumer_ptr) {
             ledger_message_set_free(&messages);
             ledger_wait_messages(consumer->ctx, consumer->topic_name,
                                  consumer->partition_num);
-            consumer->active = false;
             continue;
         }
 
@@ -82,6 +81,11 @@ error:
 }
 
 ledger_status ledger_consumer_stop(ledger_consumer *consumer) {
+    consumer->active = false;
+    ledger_signal_readers(consumer->ctx, consumer->topic_name,
+                          consumer->partition_num);
+    pthread_join(consumer->consumer_thread, NULL);
+
     return LEDGER_OK;
 }
 
