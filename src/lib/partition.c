@@ -391,7 +391,7 @@ error:
 }
 
 ledger_status ledger_partition_write(ledger_partition *partition, void *data,
-                                     size_t len) {
+                                     size_t len, ledger_write_status *status) {
     ledger_status rc, write_status;
     ledger_journal_meta_entry *latest_meta = NULL;
     ledger_journal journal;
@@ -411,7 +411,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
         rc = ledger_journal_open(&journal, partition->path, latest_meta, &journal_options);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
 
-        rc = ledger_journal_write(&journal, data, len, NULL);
+        rc = ledger_journal_write(&journal, data, len, status);
         ledger_check_rc(rc == LEDGER_OK || rc == LEDGER_NEXT, rc, "Failed to write to journal");
 
         write_status = rc;

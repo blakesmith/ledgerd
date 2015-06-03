@@ -40,7 +40,7 @@ void *write_worker(void *ctx_ptr) {
     uint32_t message = 1;
 
     for(i = 0; i < NUM_MESSAGES; i++) {
-        rc = ledger_write_partition(ctx, TOPIC, 0, (void *)&message, sizeof(uint32_t));
+        rc = ledger_write_partition(ctx, TOPIC, 0, (void *)&message, sizeof(uint32_t), NULL);
         if(rc != LEDGER_OK) {
             printf("Failed to write to partition: %d\n", rc);
             exit(rc);

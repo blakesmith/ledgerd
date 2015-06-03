@@ -130,12 +130,12 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
     rc = ledger_pwrite(journal->fd, data, len, st.st_size + sizeof(message_header));
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write message");
 
-    offset = st.st_size;
-
     if(status != NULL) {
-        ledger_journal_latest_message_id(journal, &status->message_id);
+        rc = ledger_journal_latest_message_id(journal, &status->message_id);
+        ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_IO, "Failed to fetch the latest message ID");
     }
-    
+
+    offset = st.st_size;
     rc = ledger_pwrite(journal->idx.fd, (void *)&offset, sizeof(uint64_t), 0);
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write index offset");
 

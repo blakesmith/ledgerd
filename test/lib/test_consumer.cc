@@ -44,6 +44,7 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ledger_topic_options options;
     ledger_consumer consumer;
     ledger_consumer_options consumer_opts;
+    ledger_write_status status;
 
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
@@ -51,8 +52,8 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5));
-    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5));
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, NULL));
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5, &status));
 
     size_t consumed_size = 0;
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
@@ -62,7 +63,7 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     
     EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, 0));
 
-    ledger_consumer_wait_for_position(&consumer, 1);
+    ledger_consumer_wait_for_position(&consumer, status.message_id);
     ledger_consumer_stop(&consumer);
     EXPECT_EQ(10, consumed_size);
 

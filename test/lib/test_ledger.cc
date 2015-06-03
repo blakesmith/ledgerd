@@ -83,10 +83,10 @@ TEST(Ledger, BadWrites) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_write_partition(&ctx, "bad-topic", 0, (void *)message, mlen));
+    EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_write_partition(&ctx, "bad-topic", 0, (void *)message, mlen, NULL));
 
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
-    EXPECT_EQ(LEDGER_ERR_BAD_PARTITION, ledger_write_partition(&ctx, TOPIC, 5, (void *)message, mlen));
+    EXPECT_EQ(LEDGER_ERR_BAD_PARTITION, ledger_write_partition(&ctx, TOPIC, 5, (void *)message, mlen, NULL));
 
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
@@ -98,6 +98,7 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     const char message[] = "hello";
     size_t mlen = sizeof(message);
     ledger_message_set messages;
+    ledger_write_status status;
 
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
@@ -105,7 +106,8 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
+    EXPECT_EQ(0, status.message_id);
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(1, messages.nmessages);
     EXPECT_EQ(mlen, messages.messages[0].len);
@@ -125,6 +127,7 @@ TEST(Ledger, CorruptMessage) {
     const char message2[] = "there";
     const char message3[] = "friend";
     ledger_message_set messages;
+    ledger_write_status status;
     int fd;
 
     cleanup(CORRUPT_WORKING_DIR);
@@ -134,9 +137,10 @@ TEST(Ledger, CorruptMessage) {
     options.drop_corrupt = true;
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3), &status));
+    EXPECT_EQ(2, status.message_id);
 
     // Corrupt the middle message out of band.
     fd = open("/tmp/corrupt_ledger/my_data/0/00000000.jnl", O_RDWR, 0755);
@@ -177,9 +181,9 @@ TEST(Ledger, DoubleCorruptMessage) {
     options.drop_corrupt = true;
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3), NULL));
 
     // Corrupt the last two messages out of band
     fd = open("/tmp/corrupt_ledger/my_data/0/00000000.jnl", O_RDWR, 0755);
@@ -216,10 +220,10 @@ TEST(Ledger, MultipleMessagesAtOffset) {
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message4, sizeof(message4)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message3, sizeof(message3), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message4, sizeof(message4), NULL));
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 1, LEDGER_CHUNK_SIZE, &messages));
     EXPECT_EQ(3, messages.nmessages);
@@ -255,8 +259,8 @@ TEST(Ledger, SmallerRead) {
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
 
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1)));
-    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2)));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 1, 1, &messages));
     EXPECT_EQ(1, messages.nmessages);
@@ -292,7 +296,7 @@ TEST(Ledger, JournalRotation) {
     // Write enough messages to force a journal rotation
     messages_count = 10;
     for(i = 0; i < messages_count; i++) {
-        ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen));
+        ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen, NULL));
     }
 
     EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, messages_count, &messages));

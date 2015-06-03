@@ -24,7 +24,7 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
                                 unsigned int partition_count, ledger_topic_options *options);
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
                                      unsigned int partition_num, void *data,
-                                     size_t len);
+                                     size_t len, ledger_write_status *status);
 ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
                                     unsigned int partition_num, uint64_t start_id,
                                     size_t nmessages, ledger_message_set *messages);

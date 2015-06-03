@@ -65,14 +65,14 @@ error:
 }
 
 ledger_status ledger_topic_write_partition(ledger_topic *topic, unsigned int partition_num,
-                                           void *data, size_t len) {
+                                           void *data, size_t len, ledger_write_status *status) {
     ledger_status rc;
     ledger_partition *partition;
 
     ledger_check_rc(partition_num < topic->npartitions, LEDGER_ERR_BAD_PARTITION, "Write to unknown partition");
     partition = &topic->partitions[partition_num];
 
-    return ledger_partition_write(partition, data, len);
+    return ledger_partition_write(partition, data, len, status);
 
 error:
     return rc;

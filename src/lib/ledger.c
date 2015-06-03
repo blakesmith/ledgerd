@@ -68,14 +68,14 @@ static ledger_topic *lookup_topic(ledger_ctx *ctx, const char *name) {
 
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
                                      unsigned int partition_num, void *data,
-                                     size_t len) {
+                                     size_t len, ledger_write_status *status) {
     ledger_status rc;
     ledger_topic *topic = NULL;
 
     topic = lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
-    return ledger_topic_write_partition(topic, partition_num, data, len);
+    return ledger_topic_write_partition(topic, partition_num, data, len, status);
 
 error:
     return rc;
