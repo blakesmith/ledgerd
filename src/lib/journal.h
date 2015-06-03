@@ -37,11 +37,15 @@ typedef struct {
     ledger_journal_meta_entry *metadata;
 } ledger_journal;
 
+typedef struct {
+    uint64_t message_id;
+} ledger_write_status;
+
 ledger_status ledger_journal_open(ledger_journal *journal, const char *partition_path,
                                   ledger_journal_meta_entry *metadata, ledger_journal_options *options);
 void ledger_journal_close(ledger_journal *journal);
 ledger_status ledger_journal_write(ledger_journal *journal, void *data,
-                                   size_t len);
+                                   size_t len, ledger_write_status *status);
 ledger_status ledger_journal_latest_message_id(ledger_journal *journal, uint64_t *id);
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
                                   size_t nmessages, ledger_message_set *messages);

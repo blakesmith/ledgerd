@@ -108,7 +108,7 @@ void ledger_journal_close(ledger_journal *journal) {
 }
 
 ledger_status ledger_journal_write(ledger_journal *journal, void *data,
-                                   size_t len) {
+                                   size_t len, ledger_write_status *status) {
     ledger_status rc;
     ledger_message_hdr message_header;
     uint64_t offset;
@@ -131,6 +131,11 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write message");
 
     offset = st.st_size;
+
+    if(status != NULL) {
+        ledger_journal_latest_message_id(journal, &status->message_id);
+    }
+    
     rc = ledger_pwrite(journal->idx.fd, (void *)&offset, sizeof(uint64_t), 0);
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write index offset");
 
