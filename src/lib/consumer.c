@@ -1,4 +1,5 @@
 #include <string.h>
+#include <time.h>
 
 #include "consumer.h"
 
@@ -87,6 +88,20 @@ ledger_status ledger_consumer_stop(ledger_consumer *consumer) {
     pthread_join(consumer->consumer_thread, NULL);
 
     return LEDGER_OK;
+}
+
+void ledger_consumer_wait_for_position(ledger_consumer *consumer, uint64_t message_id) {
+    // 2 milliseconds
+    static const struct timespec time = {
+        0,
+        2 * 1000L * 1000L,
+    };
+    uint64_t pos;
+
+    do {
+        pos = ledger_consumer_position_get(&consumer->position);
+        nanosleep(&time, NULL);
+    } while(pos < message_id);
 }
 
 void ledger_consumer_close(ledger_consumer *consumer) {

@@ -61,9 +61,8 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
     
     EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, 0));
-    // Kill once we can stop consumer after a message id
-    sleep(1);
 
+    ledger_consumer_wait_for_position(&consumer, 1);
     ledger_consumer_stop(&consumer);
     EXPECT_EQ(10, consumed_size);
 
