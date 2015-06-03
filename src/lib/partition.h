@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "signal.h"
 #include "journal.h"
 
 #if defined(__cplusplus)
@@ -40,6 +41,7 @@ typedef struct {
     bool opened;
     char *path;
     size_t path_len;
+    ledger_signal message_signal;
     ledger_partition_options options;
     ledger_partition_meta meta;
     ledger_partition_lockfile lockfile;
@@ -52,6 +54,7 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
                                      size_t len);
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,
                                     size_t nmessages, ledger_message_set *messages);
+void ledger_partition_wait_messages(ledger_partition *partition);
 
 #if defined(__cplusplus)
 }

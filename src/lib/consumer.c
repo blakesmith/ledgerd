@@ -23,9 +23,10 @@ static void *consumer_loop(void *consumer_ptr) {
         }
 
         if(messages.nmessages == 0) {
-            // TODO: Wait for more on a cond variable
-            consumer->active = false;
             ledger_message_set_free(&messages);
+            ledger_wait_messages(consumer->ctx, consumer->topic_name,
+                                 consumer->partition_num);
+            consumer->active = false;
             continue;
         }
 

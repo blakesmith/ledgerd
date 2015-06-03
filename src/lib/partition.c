@@ -371,6 +371,8 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
     close(fd);
     close(lock_fd);
 
+    ledger_signal_init(&partition->message_signal);
+
     partition->opened = true;
 
     return LEDGER_OK;
@@ -418,6 +420,8 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
             ledger_check_rc(rc == LEDGER_OK, rc, "Failed to rotate journals");
         }
 
+        // Signal any waiting consumers that there are messages available
+        ledger_signal_broadcast(&partition->message_signal);
         rc = pthread_mutex_unlock(&latest_meta->write_lock);
         ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to unlock partition for writing");
 
@@ -429,6 +433,10 @@ error:
     pthread_mutex_unlock(&latest_meta->write_lock);
     ledger_journal_close(&journal);
     return rc;
+}
+
+void ledger_partition_wait_messages(ledger_partition *partition) {
+    ledger_signal_wait(&partition->message_signal);
 }
 
 ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_id,

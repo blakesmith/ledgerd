@@ -93,6 +93,21 @@ error:
     return rc;
 }
 
+ledger_status ledger_topic_wait_messages(ledger_topic *topic, unsigned int partition_num) {
+    ledger_status rc;
+    ledger_partition *partition;
+
+    ledger_check_rc(partition_num < topic->npartitions, LEDGER_ERR_BAD_PARTITION, "Waiting on unknown partition");
+    partition = &topic->partitions[partition_num];
+
+    ledger_partition_wait_messages(partition);
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
 void ledger_topic_close(ledger_topic *topic) {
     int i;
     ledger_partition *partition;
