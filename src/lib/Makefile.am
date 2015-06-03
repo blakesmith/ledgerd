@@ -7,6 +7,7 @@ libledger_la_HEADERS = \
 	ledger.h \
 	message.h \
 	partition.h \
+	signal.h \
 	topic.h
 
 libledger_la_SOURCES = \
@@ -18,6 +19,7 @@ libledger_la_SOURCES = \
 	ledger.c \
 	message.c \
 	partition.c \
+	signal.c \
 	topic.c
 
 libledger_ladir = $(includedir)/ledger
