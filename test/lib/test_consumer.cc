@@ -73,7 +73,7 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     consumer_opts.read_chunk_size = 1;
     ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, consume_function, &consumer_opts, &consumed_size));
     ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
-    EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, 0));
+    EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, LEDGER_BEGIN));
 
     ledger_consumer_wait_for_position(&consumer, status.message_id);
     ledger_consumer_stop(&consumer);
