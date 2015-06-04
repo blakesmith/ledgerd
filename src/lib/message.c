@@ -24,8 +24,10 @@ ledger_status ledger_message_set_init(ledger_message_set *messages, size_t nmess
     messages->messages = NULL;
 
     messages->nmessages = nmessages;
-    messages->messages = ledger_reallocarray(NULL, nmessages, sizeof(ledger_message));
-    ledger_check_rc(messages->messages != NULL, LEDGER_ERR_MEMORY, "Failed to allocate message set");
+    if(messages->nmessages > 0) {
+        messages->messages = ledger_reallocarray(NULL, nmessages, sizeof(ledger_message));
+        ledger_check_rc(messages->messages != NULL, LEDGER_ERR_MEMORY, "Failed to allocate message set");
+    }
 
     for(i = 0; i < nmessages; i++) {
         message = &messages->messages[i];

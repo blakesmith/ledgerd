@@ -24,6 +24,11 @@ static void *consumer_loop(void *consumer_ptr) {
         }
 
         if(messages.nmessages == 0) {
+            if(next_message == LEDGER_END) {
+                last_pos = next_message;
+                next_message = messages.next_id;
+                ledger_consumer_position_set(&consumer->position, last_pos);
+            }
             ledger_message_set_free(&messages);
             ledger_wait_messages(consumer->ctx, consumer->topic_name,
                                  consumer->partition_num);
@@ -101,7 +106,7 @@ void ledger_consumer_wait_for_position(ledger_consumer *consumer, uint64_t messa
     do {
         pos = ledger_consumer_position_get(&consumer->position);
         nanosleep(&time, NULL);
-    } while(pos < message_id);
+    } while(pos < message_id || pos == LEDGER_END);
 }
 
 void ledger_consumer_close(ledger_consumer *consumer) {

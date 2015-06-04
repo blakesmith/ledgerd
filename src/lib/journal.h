@@ -12,6 +12,10 @@ extern "C" {
 #include "common.h"
 #include "message.h"
 
+#define LEDGER_BEGIN 0
+#define LEDGER_END UINT64_MAX
+#define LEDGER_CHUNK_SIZE 64
+
 typedef struct {
     uint32_t id;
     uint64_t first_message_id;

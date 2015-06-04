@@ -179,6 +179,13 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
 
     journal->idx.map = NULL;
 
+    if(start_id == LEDGER_END) {
+        ledger_message_set_init(messages, 0);
+        rc = ledger_journal_latest_message_id(journal, &messages->next_id);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to fetch the latest message id");
+        return LEDGER_OK;
+    }
+
     rc = fstat(journal->idx.fd, &idx_st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat journal index file");
 

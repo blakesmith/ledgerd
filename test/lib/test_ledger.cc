@@ -120,6 +120,35 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, ReadEndOfJournal) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message[] = "hello";
+    size_t mlen = sizeof(message);
+    ledger_message_set messages;
+    ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
+    EXPECT_EQ(3, status.message_id);
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_END, LEDGER_CHUNK_SIZE, &messages));
+    EXPECT_EQ(4, messages.next_id);
+    EXPECT_EQ(0, messages.nmessages);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, CorruptMessage) {
     ledger_ctx ctx;
     ledger_topic_options options;
