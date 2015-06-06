@@ -29,16 +29,22 @@ ledger_status ledger_position_storage_set(ledger_position_storage *storage,
                                           const char *position_key, uint64_t pos) {
     ledger_status rc;
     uint64_t *st_pos = NULL;
+    dnode_t *dpos;
 
-    st_pos = malloc(sizeof(uint64_t));
-    ledger_check_rc(st_pos != NULL, LEDGER_ERR_MEMORY, "Failed to allocate position");
+    dpos = dict_lookup(&storage->positions, position_key);
+    if(dpos == NULL) {
+        st_pos = malloc(sizeof(uint64_t));
+        ledger_check_rc(st_pos != NULL, LEDGER_ERR_MEMORY, "Failed to allocate position");
 
+        rc = dict_alloc_insert(&storage->positions, position_key, st_pos);
+        ledger_check_rc(rc == 1, LEDGER_ERR_GENERAL, "Failed to insert position into storage");
+    } else {
+        st_pos = dnode_get(dpos);
+    }
     *st_pos = pos;
 
-    rc = dict_alloc_insert(&storage->positions, position_key, st_pos);
-    ledger_check_rc(rc == 1, LEDGER_ERR_GENERAL, "Failed to insert position into storage");
-
     return LEDGER_OK;
+
 error:
     if(st_pos) {
         free(st_pos);
