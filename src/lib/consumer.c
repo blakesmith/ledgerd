@@ -71,6 +71,7 @@ static void *consumer_loop(void *consumer_ptr) {
 ledger_status ledger_init_consumer_options(ledger_consumer_options *options) {
     options->read_chunk_size = DEFAULT_READ_CHUNK_SIZE;
     options->position_behavior = LEDGER_FORGET;
+    options->position_key = NULL;
     return LEDGER_OK;
 }
 
@@ -97,6 +98,7 @@ ledger_status ledger_consumer_start(ledger_consumer *consumer, uint64_t start_id
     ledger_status rc;
 
     if(consumer->options.position_behavior == LEDGER_STORE) {
+        ledger_check_rc(consumer->options.position_key != NULL, LEDGER_ERR_ARGS, "You must set a position key for stable storage");
         rc = ledger_position_storage_get(&consumer->ctx->position_storage,
                                          consumer->options.position_key,
                                          &consumer->start_id);

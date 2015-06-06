@@ -231,4 +231,29 @@ TEST(LedgerConsumer, StorePosition) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(LedgerConsumer, PositionWithNoKey) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    ledger_consumer consumer;
+    ledger_consumer_options consumer_opts;
+    ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
+    consumer_opts.position_behavior = LEDGER_STORE;
+
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, concat_consume_function, &consumer_opts, NULL));
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
+    EXPECT_EQ(LEDGER_ERR_ARGS, ledger_consumer_start(&consumer, LEDGER_BEGIN));
+
+    ledger_consumer_close(&consumer);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 }
