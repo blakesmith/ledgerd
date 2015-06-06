@@ -1,4 +1,4 @@
-AM_CFLAGS=$(PTHREAD_CFLAGS) -Wall -pedantic -std=c11
+AM_CFLAGS=$(PTHREAD_CFLAGS) -Wall -pedantic -std=c99
 lib_LTLIBRARIES = libledger.la
 
 libledger_la_HEADERS = \
