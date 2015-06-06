@@ -3,6 +3,8 @@
 
 #include "consumer.h"
 
+#define DEFAULT_READ_CHUNK_SIZE 64
+
 static void *consumer_loop(void *consumer_ptr) {
     ledger_status rc;
     ledger_message_set messages;
@@ -49,6 +51,8 @@ static void *consumer_loop(void *consumer_ptr) {
 }
 
 ledger_status ledger_init_consumer_options(ledger_consumer_options *options) {
+    options->read_chunk_size = DEFAULT_READ_CHUNK_SIZE;
+    options->position_behavior = LEDGER_FORGET;
     return LEDGER_OK;
 }
 

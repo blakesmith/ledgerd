@@ -14,6 +14,11 @@ typedef enum {
     LEDGER_CONSUMER_OK
 } ledger_consume_status;
 
+typedef enum {
+    LEDGER_FORGET,
+    LEDGER_STORE
+} ledger_consumer_position_behavior;
+
 typedef struct {
     uint64_t pos;
     pthread_mutex_t lock;
@@ -21,6 +26,8 @@ typedef struct {
 
 typedef struct {
     size_t read_chunk_size;
+    ledger_consumer_position_behavior position_behavior;
+    const char *position_key;
 } ledger_consumer_options;
 
 typedef struct {

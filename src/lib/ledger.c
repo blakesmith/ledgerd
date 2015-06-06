@@ -7,6 +7,7 @@
 
 #include "dict.h"
 #include "ledger.h"
+#include "position_storage.h"
 #include "topic.h"
 
 #define MAX_TOPICS 255
@@ -16,9 +17,19 @@ const char *ledger_err(ledger_ctx *ctx) {
 }
 
 ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory) {
+    ledger_status rc;
+
     ctx->root_directory = root_directory;
     dict_init(&ctx->topics, MAX_TOPICS, (dict_comp_t)strcmp);
+
+    ledger_position_storage_init(&ctx->position_storage);
+    rc = ledger_position_storage_open(&ctx->position_storage);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open position storage");
+
     return LEDGER_OK;
+
+error:
+    return rc;
 }
 
 void ledger_close_context(ledger_ctx *ctx) {
@@ -41,7 +52,9 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
                                 unsigned int partition_count, ledger_topic_options *options) {
     ledger_status rc;
     int rv;
-    ledger_topic *topic = malloc(sizeof(ledger_topic));
+    ledger_topic *topic = NULL;
+
+    topic = malloc(sizeof(ledger_topic));
     ledger_check_rc(topic != NULL, LEDGER_ERR_MEMORY, "Failed to allocate topic");
 
     rv = dict_alloc_insert(&ctx->topics, name, topic);
@@ -51,6 +64,9 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
                              name, partition_count, options);
 
 error:
+    if(topic) {
+        free(topic);
+    }
     return rc;
 }
 

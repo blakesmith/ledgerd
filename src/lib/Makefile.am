@@ -7,6 +7,7 @@ libledger_la_HEADERS = \
 	ledger.h \
 	message.h \
 	partition.h \
+	position_storage.h \
 	signal.h \
 	topic.h
 
@@ -19,6 +20,7 @@ libledger_la_SOURCES = \
 	ledger.c \
 	message.c \
 	partition.c \
+	position_storage.c \
 	signal.c \
 	topic.c
 

@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "dict.h"
+#include "position_storage.h"
 #include "topic.h"
 
 #if defined(__cplusplus)
@@ -13,6 +14,7 @@ typedef struct {
     const char *root_directory;
     const char *last_error;
     dict_t topics;
+    ledger_position_storage position_storage;
 } ledger_ctx;
 
 const char *ledger_err(ledger_ctx *ctx);
