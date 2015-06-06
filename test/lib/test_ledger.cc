@@ -92,6 +92,34 @@ TEST(Ledger, BadWrites) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, WriteWithHashing) {
+   ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message[] = "hello";
+    size_t mlen = sizeof(message);
+    ledger_message_set messages;
+    ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 5, &options));
+
+    ASSERT_EQ(LEDGER_OK, ledger_write(&ctx, TOPIC, "hello_msg", 9, (void *)message, mlen, &status));
+    ASSERT_EQ(2, status.partition_num);
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, status.partition_num, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
+    EXPECT_EQ(1, messages.nmessages);
+    EXPECT_EQ(mlen, messages.messages[0].len);
+    EXPECT_EQ(0, messages.messages[0].id);
+    EXPECT_STREQ(message, (const char *)messages.messages[0].data);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, CorrectWritesSingleTopic) {
     ledger_ctx ctx;
     ledger_topic_options options;

@@ -7,6 +7,7 @@
 
 #include "dict.h"
 #include "ledger.h"
+#include "murmur3.h"
 #include "position_storage.h"
 #include "topic.h"
 
@@ -90,6 +91,29 @@ ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
 
     topic = lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
+
+    return ledger_topic_write_partition(topic, partition_num, data, len, status);
+
+error:
+    return rc;
+}
+
+ledger_status ledger_write(ledger_ctx *ctx, const char *topic_name,
+                           const char *partition_key, size_t key_len,
+                           void *data, size_t len,
+                           ledger_write_status *status) {
+    uint32_t hash;
+    unsigned int partition_num;
+    ledger_status rc;
+    ledger_topic *topic = NULL;
+    static const uint32_t seed = 42;
+
+    topic = lookup_topic(ctx, topic_name);
+    ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
+
+    MurmurHash3_x86_32(partition_key, key_len, seed, &hash);
+    partition_num = hash % topic->npartitions;
+    printf("Partition number: %d\n", partition_num);
 
     return ledger_topic_write_partition(topic, partition_num, data, len, status);
 

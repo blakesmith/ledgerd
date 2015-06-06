@@ -43,6 +43,7 @@ typedef struct {
 
 typedef struct {
     uint64_t message_id;
+    unsigned int partition_num;
 } ledger_write_status;
 
 ledger_status ledger_journal_open(ledger_journal *journal, const char *partition_path,

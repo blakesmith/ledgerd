@@ -316,6 +316,7 @@ ledger_status ledger_partition_open(ledger_partition *partition, const char *top
 
     partition->path = NULL;
     partition->opened = false;
+    partition->number = partition_number;
 
     rc = snprintf(part_num, 5, "%d", partition_number);
     ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building partition dir part");
@@ -399,6 +400,10 @@ ledger_status ledger_partition_write(ledger_partition *partition, void *data,
 
     journal_options.drop_corrupt = partition->options.drop_corrupt;
     journal_options.max_size_bytes = partition->options.journal_max_size_bytes;
+
+    if(status != NULL) {
+        status->partition_num = partition->number;
+    }
 
     do {
         latest_meta = find_latest_meta(partition);
