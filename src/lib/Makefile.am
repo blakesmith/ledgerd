@@ -19,6 +19,7 @@ libledger_la_SOURCES = \
 	journal.c \
 	ledger.c \
 	message.c \
+	murmur3.h murmur3.c \
 	partition.c \
 	position_storage.c \
 	signal.c \
