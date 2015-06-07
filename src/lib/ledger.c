@@ -46,6 +46,7 @@ void ledger_close_context(ledger_ctx *ctx) {
         free(topic);
     }
 
+    ledger_position_storage_close(&ctx->position_storage);
     dict_free_nodes(&ctx->topics);
 }
 

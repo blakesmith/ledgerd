@@ -36,6 +36,7 @@ static void *consumer_loop(void *consumer_ptr) {
                 if(consumer->options.position_behavior == LEDGER_STORE) {
                     rc = ledger_position_storage_set(&consumer->ctx->position_storage,
                                                      consumer->options.position_key,
+                                                     consumer->partition_num,
                                                      next_message);
                     if(rc != LEDGER_OK) {
                         // TODO: Bubble somehow
@@ -58,6 +59,7 @@ static void *consumer_loop(void *consumer_ptr) {
             if(consumer->options.position_behavior == LEDGER_STORE) {
                 rc = ledger_position_storage_set(&consumer->ctx->position_storage,
                                                  consumer->options.position_key,
+                                                 consumer->partition_num,
                                                  next_message);
                 if(rc != LEDGER_OK) {
                     // TODO: Bubble somehow
@@ -103,6 +105,7 @@ ledger_status ledger_consumer_start(ledger_consumer *consumer, uint64_t start_id
         ledger_check_rc(consumer->options.position_key != NULL, LEDGER_ERR_ARGS, "You must set a position key for stable storage");
         rc = ledger_position_storage_get(&consumer->ctx->position_storage,
                                          consumer->options.position_key,
+                                         consumer->partition_num,
                                          &consumer->start_id);
         ledger_check_rc(rc == LEDGER_OK || rc == LEDGER_ERR_POSITION_NOT_FOUND, rc, "Failed to fetch consumer position");
 
