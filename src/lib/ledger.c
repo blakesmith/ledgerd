@@ -113,7 +113,6 @@ ledger_status ledger_write(ledger_ctx *ctx, const char *topic_name,
 
     MurmurHash3_x86_32(partition_key, key_len, seed, &hash);
     partition_num = hash % topic->npartitions;
-    printf("Partition number: %d\n", partition_num);
 
     return ledger_topic_write_partition(topic, partition_num, data, len, status);
 
