@@ -5,6 +5,7 @@ libledger_la_HEADERS = \
 	consumer.h \
 	journal.h \
 	ledger.h \
+	fixed_size_disk_map.h \
 	message.h \
 	partition.h \
 	position_storage.h \
@@ -18,6 +19,7 @@ libledger_la_SOURCES = \
 	dict.h dict.c \
 	journal.c \
 	ledger.c \
+	fixed_size_disk_map.c \
 	message.c \
 	murmur3.h murmur3.c \
 	partition.c \
