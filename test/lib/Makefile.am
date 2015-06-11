@@ -12,6 +12,7 @@ check_PROGRAMS = libledger_tests
 libledger_tests_SOURCES = \
 	test_ledger.cc \
 	test_consumer.cc \
+	test_fixed_size_disk_map.cc \
 	test_signal.cc \
 	test_threading.cc
 
