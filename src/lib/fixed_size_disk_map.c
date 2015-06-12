@@ -9,7 +9,7 @@
 
 #define FSD_MAP_SIZE(M) sizeof(fsd_map_hdr) +                           \
     (M)->nbuckets * sizeof(fsd_map_bucket_t) +                          \
-    (M)->nbuckets * M->ncells_per_bucket * sizeof(fsd_map_cell_t);
+    (M)->nbuckets * (M)->ncells_per_bucket * sizeof(fsd_map_cell_t);
 
 int fsd_map_init(fsd_map_t *map, uint16_t nbuckets,
                  uint8_t ncells_per_bucket) {
