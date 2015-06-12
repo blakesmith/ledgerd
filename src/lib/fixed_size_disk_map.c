@@ -7,7 +7,7 @@
 
 #include "fixed_size_disk_map.h"
 
-#define MAP_SIZE(M) sizeof(fsd_map_hdr) +                               \
+#define FSD_MAP_SIZE(M) sizeof(fsd_map_hdr) +                           \
     (M)->nbuckets * sizeof(fsd_map_bucket_t) +                          \
     (M)->nbuckets * M->ncells_per_bucket * sizeof(fsd_map_cell_t);
 
@@ -41,7 +41,7 @@ int fsd_map_open(fsd_map_t *map, const char *path) {
         created = true;
     }
 
-    map->mmap_len = MAP_SIZE(map);
+    map->mmap_len = FSD_MAP_SIZE(map);
     map->mmap = mmap(NULL, map->mmap_len, PROT_READ|PROT_WRITE,
                      MAP_SHARED, fd, 0);
     if(map->mmap == MAP_FAILED) {
