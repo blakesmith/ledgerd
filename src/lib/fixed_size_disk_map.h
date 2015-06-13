@@ -13,7 +13,10 @@ enum {
     FSD_MAP_NOT_FOUND,
     FSD_MAP_ERR_GENERAL,
     FSD_MAP_ERR_MMAP,
-    FSD_MAP_ERR_OPEN
+    FSD_MAP_ERR_OPEN,
+    FSD_MAP_ERR_INVAL,
+    FSD_MAP_ERR_IO,
+    FSD_MAP_ERR_MEMORY
 };
 
 typedef struct {
@@ -31,7 +34,7 @@ typedef struct {
 } fsd_map_hdr;
 
 typedef struct {
-    void *mmap;
+    uint8_t *mmap;
     size_t mmap_len;
     uint16_t nbuckets;
     uint8_t ncells_per_bucket;

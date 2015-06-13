@@ -37,4 +37,20 @@ TEST(FixedSizeDiskMap, TestGetAndSetEmptyMap) {
     fsd_map_close(&map);
     cleanup(MAP_PATH);
 }
+
+TEST(FixedSizeDiskMap, TestGetAndSet) {
+    fsd_map_t map;
+    uint64_t val;
+
+    cleanup(MAP_PATH);
+
+    ASSERT_EQ(0, fsd_map_init(&map, 16, 5));
+    ASSERT_EQ(0, fsd_map_open(&map, MAP_PATH));
+    EXPECT_EQ(FSD_MAP_OK, fsd_map_set(&map, "hello", 5, 10));
+    ASSERT_EQ(FSD_MAP_OK, fsd_map_get(&map, "hello", 5, &val));
+    EXPECT_EQ(10, val);
+
+    fsd_map_close(&map);
+    cleanup(MAP_PATH);
+}
 }

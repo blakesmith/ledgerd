@@ -1,15 +1,21 @@
+#define _XOPEN_SOURCE
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
 #include "fixed_size_disk_map.h"
+#include "murmur3.h"
 
 #define FSD_MAP_SIZE(M) sizeof(fsd_map_hdr) +                           \
     (M)->nbuckets * sizeof(fsd_map_bucket_t) +                          \
     (M)->nbuckets * (M)->ncells_per_bucket * sizeof(fsd_map_cell_t);
+#define MURMUR_SEED 42
 
 int fsd_map_init(fsd_map_t *map, uint16_t nbuckets,
                  uint8_t ncells_per_bucket) {
@@ -31,42 +37,113 @@ int fsd_map_open(fsd_map_t *map, const char *path) {
     int rc;
     int fd = -1;
     bool created = false;
+    fsd_map_hdr *hdr;
+    size_t written;
+    char *c = NULL;
 
     fd = open(path, O_RDWR|O_CREAT, 0644);
     if(fd < 0) {
         rc = FSD_MAP_ERR_OPEN;
         goto error;
     }
-    if(errno == EEXIST) {
+    if(errno != EEXIST) {
         created = true;
     }
 
     map->mmap_len = FSD_MAP_SIZE(map);
+    if(created) {
+        c = malloc(map->mmap_len);
+        if(c == NULL) {
+            rc = FSD_MAP_ERR_MEMORY;
+            goto error;
+        }
+        memset(c, 0, map->mmap_len);
+        written = write(fd, c, map->mmap_len);
+        if(written != map->mmap_len) {
+            rc = FSD_MAP_ERR_IO;
+            goto error;
+        }
+        free(c);
+    }
     map->mmap = mmap(NULL, map->mmap_len, PROT_READ|PROT_WRITE,
                      MAP_SHARED, fd, 0);
     if(map->mmap == MAP_FAILED) {
         rc = FSD_MAP_ERR_MMAP;
         goto error;
     }
-    close(fd);
+
+    hdr = (fsd_map_hdr *)map->mmap;
     if(created) {
-        memset(map->mmap, 0, map->mmap_len);
+        hdr->nbuckets = map->nbuckets;
+        hdr->ncells_per_bucket = map->ncells_per_bucket;
+    } else {
+        if(hdr->nbuckets != map->nbuckets ||
+           hdr->ncells_per_bucket != map->ncells_per_bucket) {
+            rc = FSD_MAP_ERR_INVAL;
+            goto error;
+        }
     }
+
+    close(fd);
     return FSD_MAP_OK;
 
 error:
     if(fd > 0) {
         close(fd);
     }
+    if(c) {
+        free(c);
+    }
     return rc;
 }
 
 int fsd_map_set(fsd_map_t *map, const char *key,
                 size_t key_len, uint64_t value) {
-    return 0;
+    uint32_t hash;
+    uint16_t bucket_idx;
+    fsd_map_bucket_t *bucket, *buckets;
+    fsd_map_cell_t *cell, *cells;
+
+    MurmurHash3_x86_32(key, key_len, MURMUR_SEED, &hash);
+    bucket_idx = hash % map->nbuckets;
+
+    buckets = (fsd_map_bucket_t *)((uint8_t *)map->mmap + sizeof(fsd_map_hdr));
+    bucket = &buckets[bucket_idx];
+
+    // TODO: Check to make sure the cell is not full
+
+    cells = (fsd_map_cell_t *)bucket++;
+    cell = &cells[bucket->n_full_cells];
+
+    cell->hash = hash;
+    cell->value = value;
+
+    return FSD_MAP_OK;
 }
 int fsd_map_get(fsd_map_t *map, const char *key,
                 size_t key_len, uint64_t *value) {
+    uint32_t hash;
+    uint16_t bucket_idx;
+    fsd_map_bucket_t *bucket, *buckets;
+    fsd_map_cell_t *cell, *cells;
+    int i;
+
+    MurmurHash3_x86_32(key, key_len, MURMUR_SEED, &hash);
+    bucket_idx = hash % map->nbuckets;
+
+    buckets = (fsd_map_bucket_t *)(map->mmap + sizeof(fsd_map_hdr));
+    bucket = &buckets[bucket_idx];
+
+    cells = (fsd_map_cell_t *)bucket++;
+
+    for(i = 0; i < bucket->n_full_cells; i++) {
+        cell = &cells[i];
+        if(cell->hash == hash) {
+            *value = cell->value;
+            return FSD_MAP_OK;
+        }
+    }
+
     return FSD_MAP_NOT_FOUND;
 }
 
