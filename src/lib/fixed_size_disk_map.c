@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "fixed_size_disk_map.h"
@@ -15,6 +16,7 @@
 #define FSD_MAP_SIZE(M) sizeof(fsd_map_hdr) +                           \
     (M)->nbuckets * sizeof(fsd_map_bucket_t) +                          \
     (M)->nbuckets * (M)->ncells_per_bucket * sizeof(fsd_map_cell_t);
+
 #define MURMUR_SEED 42
 
 int fsd_map_init(fsd_map_t *map, uint16_t nbuckets,
@@ -40,13 +42,19 @@ int fsd_map_open(fsd_map_t *map, const char *path) {
     fsd_map_hdr *hdr;
     size_t written;
     char *c = NULL;
+    struct stat st;
 
     fd = open(path, O_RDWR|O_CREAT, 0644);
     if(fd < 0) {
         rc = FSD_MAP_ERR_OPEN;
         goto error;
     }
-    if(errno != EEXIST) {
+    rc = fstat(fd, &st);
+    if(rc != 0) {
+        rc = FSD_MAP_ERR_IO;
+        goto error;
+    }
+    if(st.st_size == 0) {
         created = true;
     }
 
