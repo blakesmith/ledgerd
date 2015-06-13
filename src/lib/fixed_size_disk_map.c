@@ -25,7 +25,7 @@ int fsd_map_init(fsd_map_t *map, uint16_t nbuckets,
 
     rc =  pthread_mutex_init(&map->lock, NULL);
     if(rc != 0) {
-        return FSD_MAP_ERR_GENERAL;
+        return FSD_MAP_ERR_LOCK;
     }
     map->nbuckets = nbuckets;
     map->ncells_per_bucket = ncells_per_bucket;
@@ -107,6 +107,7 @@ error:
 
 int fsd_map_set(fsd_map_t *map, const char *key,
                 size_t key_len, uint64_t value) {
+    int rc;
     uint32_t hash;
     uint16_t bucket_idx;
     fsd_map_bucket_t *bucket, *buckets;
@@ -115,6 +116,11 @@ int fsd_map_set(fsd_map_t *map, const char *key,
     MurmurHash3_x86_32(key, key_len, MURMUR_SEED, &hash);
     bucket_idx = hash % map->nbuckets;
 
+    rc = pthread_mutex_lock(&map->lock);
+    if(rc != 0) {
+        rc = FSD_MAP_ERR_LOCK;
+        goto error;
+    }
     buckets = (fsd_map_bucket_t *)((uint8_t *)map->mmap + sizeof(fsd_map_hdr));
     bucket = &buckets[bucket_idx];
 
@@ -126,19 +132,29 @@ int fsd_map_set(fsd_map_t *map, const char *key,
     cell->hash = hash;
     cell->value = value;
 
+    pthread_mutex_unlock(&map->lock);
     return FSD_MAP_OK;
+
+error:
+    pthread_mutex_unlock(&map->lock);
+    return rc;
 }
 int fsd_map_get(fsd_map_t *map, const char *key,
                 size_t key_len, uint64_t *value) {
+    int rc, i;
     uint32_t hash;
     uint16_t bucket_idx;
     fsd_map_bucket_t *bucket, *buckets;
     fsd_map_cell_t *cell, *cells;
-    int i;
 
     MurmurHash3_x86_32(key, key_len, MURMUR_SEED, &hash);
     bucket_idx = hash % map->nbuckets;
 
+    rc = pthread_mutex_lock(&map->lock);
+    if(rc != 0) {
+        rc = FSD_MAP_ERR_LOCK;
+        goto error;
+    }
     buckets = (fsd_map_bucket_t *)(map->mmap + sizeof(fsd_map_hdr));
     bucket = &buckets[bucket_idx];
 
@@ -148,11 +164,17 @@ int fsd_map_get(fsd_map_t *map, const char *key,
         cell = &cells[i];
         if(cell->hash == hash) {
             *value = cell->value;
+            pthread_mutex_unlock(&map->lock);
             return FSD_MAP_OK;
         }
     }
 
+    pthread_mutex_unlock(&map->lock);
     return FSD_MAP_NOT_FOUND;
+
+error:
+    pthread_mutex_unlock(&map->lock);
+    return rc;
 }
 
 void fsd_map_close(fsd_map_t *map) {

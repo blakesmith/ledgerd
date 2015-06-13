@@ -11,12 +11,12 @@ extern "C" {
 enum {
     FSD_MAP_OK,
     FSD_MAP_NOT_FOUND,
-    FSD_MAP_ERR_GENERAL,
     FSD_MAP_ERR_MMAP,
     FSD_MAP_ERR_OPEN,
     FSD_MAP_ERR_INVAL,
     FSD_MAP_ERR_IO,
-    FSD_MAP_ERR_MEMORY
+    FSD_MAP_ERR_MEMORY,
+    FSD_MAP_ERR_LOCK
 };
 
 typedef struct {
