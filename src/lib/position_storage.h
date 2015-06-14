@@ -14,10 +14,11 @@ extern "C" {
 
 typedef struct {
     dict_t positions;
+    char *position_path;
 } ledger_position_storage;
 
 void ledger_position_storage_init(ledger_position_storage *storage);
-ledger_status ledger_position_storage_open(ledger_position_storage *storage);
+ledger_status ledger_position_storage_open(ledger_position_storage *storage, const char *position_path);
 void ledger_position_storage_close(ledger_position_storage *storage);
 
 ledger_status ledger_position_storage_set(ledger_position_storage *storage,

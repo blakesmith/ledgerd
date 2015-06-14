@@ -24,7 +24,7 @@ ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory) {
     dict_init(&ctx->topics, MAX_TOPICS, (dict_comp_t)strcmp);
 
     ledger_position_storage_init(&ctx->position_storage);
-    rc = ledger_position_storage_open(&ctx->position_storage);
+    rc = ledger_position_storage_open(&ctx->position_storage, root_directory);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open position storage");
 
     return LEDGER_OK;

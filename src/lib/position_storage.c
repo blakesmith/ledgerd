@@ -34,11 +34,26 @@ error:
 }
 
 void ledger_position_storage_init(ledger_position_storage *storage) {
+    storage->position_path = NULL;
     dict_init(&storage->positions, MAX_CONSUMERS, (dict_comp_t)strcmp);
 }
 
-ledger_status ledger_position_storage_open(ledger_position_storage *storage) {
+ledger_status ledger_position_storage_open(ledger_position_storage *storage, const char *root_directory) {
+    ledger_status rc;
+    ssize_t size;
+    char *position_path = NULL;
+
+    size = ledger_concat_path(root_directory, "position_storage.map", &position_path);
+    ledger_check_rc(size > 0, size, "Failed to build position storage map path");
+
+    storage->position_path = position_path;
     return LEDGER_OK;
+
+error:
+    if(position_path) {
+        free(position_path);
+    }
+    return rc;
 }
 
 void ledger_position_storage_close(ledger_position_storage *storage) {
@@ -57,6 +72,10 @@ void ledger_position_storage_close(ledger_position_storage *storage) {
     }
 
     dict_free_nodes(&storage->positions);
+
+    if(storage->position_path) {
+        free(storage->position_path);
+    }
 }
 
 ledger_status ledger_position_storage_set(ledger_position_storage *storage,
