@@ -128,6 +128,7 @@ int fsd_map_set(fsd_map_t *map, const char *key,
 
     cells = (fsd_map_cell_t *)bucket++;
     cell = &cells[bucket->n_full_cells];
+    bucket->n_full_cells++;
 
     cell->hash = hash;
     cell->value = value;

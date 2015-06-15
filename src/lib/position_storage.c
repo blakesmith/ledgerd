@@ -8,7 +8,7 @@
 static ssize_t make_key(const char *position_key, unsigned int partition_num,
                               char **key_out) {
     ledger_status rc;
-    size_t key_len;
+    size_t key_len, total_len;
     char part_num[6];
     char *key_with_part = NULL;
 
@@ -16,8 +16,9 @@ static ssize_t make_key(const char *position_key, unsigned int partition_num,
     ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building partition number");
 
     key_len = strlen(position_key);
+    total_len = key_len+6;
 
-    key_with_part = malloc(key_len+6);
+    key_with_part = malloc(total_len);
     ledger_check_rc(key_with_part != NULL, LEDGER_ERR_MEMORY, "Error allocating key memory");
 
     memcpy(key_with_part, position_key, key_len);
@@ -25,7 +26,7 @@ static ssize_t make_key(const char *position_key, unsigned int partition_num,
 
     *key_out = key_with_part;
 
-    return key_len;
+    return total_len;
 
 error:
     if(key_with_part) {
