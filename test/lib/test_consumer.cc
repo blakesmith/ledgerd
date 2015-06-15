@@ -231,7 +231,7 @@ TEST(LedgerConsumer, StorePosition) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
-TEST(LedgerConsumer, StoreTwoPositionsDifferentPartitions) {
+TEST(DISABLED_LedgerConsumer, StoreTwoPositionsDifferentPartitions) {
     ledger_ctx ctx;
     ledger_topic_options options;
     ledger_consumer consumer, consumer2;

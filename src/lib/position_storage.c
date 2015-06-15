@@ -2,9 +2,10 @@
 
 #include <stdio.h>
 
-#define MAX_CONSUMERS 255
+#define N_BUCKETS 255
+#define N_CELLS 5
 
-static ledger_status make_key(const char *position_key, unsigned int partition_num,
+static ssize_t make_key(const char *position_key, unsigned int partition_num,
                               char **key_out) {
     ledger_status rc;
     size_t key_len;
@@ -24,7 +25,7 @@ static ledger_status make_key(const char *position_key, unsigned int partition_n
 
     *key_out = key_with_part;
 
-    return LEDGER_OK;
+    return key_len;
 
 error:
     if(key_with_part) {
@@ -35,10 +36,11 @@ error:
 
 void ledger_position_storage_init(ledger_position_storage *storage) {
     storage->position_path = NULL;
-    dict_init(&storage->positions, MAX_CONSUMERS, (dict_comp_t)strcmp);
+    fsd_map_init(&storage->positions, N_BUCKETS, N_CELLS);
 }
 
 ledger_status ledger_position_storage_open(ledger_position_storage *storage, const char *root_directory) {
+    int rs;
     ledger_status rc;
     ssize_t size;
     char *position_path = NULL;
@@ -47,6 +49,10 @@ ledger_status ledger_position_storage_open(ledger_position_storage *storage, con
     ledger_check_rc(size > 0, size, "Failed to build position storage map path");
 
     storage->position_path = position_path;
+
+    rs = fsd_map_open(&storage->positions, storage->position_path);
+    ledger_check_rc(rs == FSD_MAP_OK, LEDGER_ERR_GENERAL, "Failed to open position storage map");
+
     return LEDGER_OK;
 
 error:
@@ -57,21 +63,7 @@ error:
 }
 
 void ledger_position_storage_close(ledger_position_storage *storage) {
-    dnode_t *cur;
-    uint64_t *pos = NULL;
-    const char *key = NULL;
-
-    for(cur = dict_first(&storage->positions);
-        cur != NULL;
-        cur = dict_next(&storage->positions, cur)) {
-
-        pos = dnode_get(cur);
-        key = dnode_getkey(cur);
-        free(pos);
-        free((char *)key);
-    }
-
-    dict_free_nodes(&storage->positions);
+    fsd_map_close(&storage->positions);
 
     if(storage->position_path) {
         free(storage->position_path);
@@ -81,32 +73,20 @@ void ledger_position_storage_close(ledger_position_storage *storage) {
 ledger_status ledger_position_storage_set(ledger_position_storage *storage,
                                           const char *position_key, unsigned int partition_num,
                                           uint64_t pos) {
-    ledger_status rc;
-    uint64_t *st_pos = NULL;
-    dnode_t *dpos;
+    ssize_t rc;
     char *key_with_part = NULL;
 
     rc = make_key(position_key, partition_num, &key_with_part);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Error building position storage key");
+    ledger_check_rc(rc > 0, rc, "Error building position storage key");
 
-    dpos = dict_lookup(&storage->positions, key_with_part);
-    if(dpos == NULL) {
-        st_pos = malloc(sizeof(uint64_t));
-        ledger_check_rc(st_pos != NULL, LEDGER_ERR_MEMORY, "Failed to allocate position");
+    rc = fsd_map_set(&storage->positions, (const char *)key_with_part,
+                     rc, pos);
+    ledger_check_rc(rc == FSD_MAP_OK, LEDGER_ERR_GENERAL, "Failed to set the position storage map location");
 
-        rc = dict_alloc_insert(&storage->positions, key_with_part, st_pos);
-        ledger_check_rc(rc == 1, LEDGER_ERR_GENERAL, "Failed to insert position into storage");
-    } else {
-        st_pos = dnode_get(dpos);
-    }
-    *st_pos = pos;
-
+    free(key_with_part);
     return LEDGER_OK;
 
 error:
-    if(st_pos) {
-        free(st_pos);
-    }
     if(key_with_part) {
         free(key_with_part);
     }
@@ -116,21 +96,18 @@ error:
 ledger_status ledger_position_storage_get(ledger_position_storage *storage,
                                           const char *position_key, unsigned int partition_num,
                                           uint64_t *pos) {
-    ledger_status rc;
-    uint64_t *st_pos = NULL;
-    dnode_t *dpos;
+    ssize_t rc;
     char *key_with_part = NULL;
 
     rc = make_key(position_key, partition_num, &key_with_part);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Error building position storage key");
+    ledger_check_rc(rc > 0, rc, "Error building position storage key");
 
-    dpos = dict_lookup(&storage->positions, key_with_part);
-    if(dpos == NULL) {
-        free(key_with_part);
+    rc = fsd_map_get(&storage->positions, (const char *)key_with_part,
+                     rc, pos);
+    ledger_check_rc(rc == FSD_MAP_OK || rc == FSD_MAP_NOT_FOUND, LEDGER_ERR_GENERAL, "Failed to get the position storage map location");
+    if(rc == FSD_MAP_NOT_FOUND) {
         return LEDGER_ERR_POSITION_NOT_FOUND;
     }
-    st_pos = dnode_get(dpos);
-    *pos = *st_pos;
 
     free(key_with_part);
     return LEDGER_OK;

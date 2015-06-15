@@ -6,14 +6,14 @@
 #include <string.h>
 
 #include "common.h"
-#include "dict.h" // Replace with something persistent
+#include "fixed_size_disk_map.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 typedef struct {
-    dict_t positions;
+    fsd_map_t positions;
     char *position_path;
 } ledger_position_storage;
 
