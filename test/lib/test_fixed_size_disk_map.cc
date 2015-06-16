@@ -74,4 +74,29 @@ TEST(FixedSizeDiskMap, TestMultipleOpens) {
 
     cleanup(MAP_PATH);
 }
+
+TEST(DISABLED_FixedSizeDiskMap, ResizeFromOverflow) {
+    fsd_map_t map;
+    uint64_t val;
+
+    cleanup(MAP_PATH);
+
+    ASSERT_EQ(0, fsd_map_init(&map, 1, 2));
+    ASSERT_EQ(0, fsd_map_open(&map, MAP_PATH));
+    EXPECT_EQ(FSD_MAP_OK, fsd_map_set(&map, "hello", 5, 10));
+    EXPECT_EQ(FSD_MAP_OK, fsd_map_set(&map, "there", 5, 15));
+    EXPECT_EQ(FSD_MAP_OK, fsd_map_set(&map, "friend", 6, 20));
+
+    ASSERT_EQ(FSD_MAP_OK, fsd_map_get(&map, "hello", 5, &val));
+    EXPECT_EQ(10, val);
+
+    ASSERT_EQ(FSD_MAP_OK, fsd_map_get(&map, "there", 5, &val));
+    EXPECT_EQ(15, val);
+
+    ASSERT_EQ(FSD_MAP_OK, fsd_map_get(&map, "friend", 6, &val));
+    EXPECT_EQ(20, val);
+
+    fsd_map_close(&map);
+    cleanup(MAP_PATH);
+}
 }
