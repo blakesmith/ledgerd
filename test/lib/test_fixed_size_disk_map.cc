@@ -96,6 +96,9 @@ TEST(FixedSizeDiskMap, ResizeFromOverflow) {
     ASSERT_EQ(FSD_MAP_OK, fsd_map_get(&map, "friend", 6, &val));
     EXPECT_EQ(20, val);
 
+    EXPECT_EQ(2, map.nbuckets);
+    EXPECT_EQ(2, map.ncells_per_bucket);
+
     fsd_map_close(&map);
     cleanup(MAP_PATH);
 }
