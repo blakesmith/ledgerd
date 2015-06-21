@@ -17,7 +17,8 @@
     (M)->nbuckets * sizeof(fsd_map_bucket_t) +                          \
     (M)->nbuckets * (M)->ncells_per_bucket * sizeof(fsd_map_cell_t);
 
-#define FSD_MAP_GET_BUCKET(M, I) (fsd_map_bucket_t *)map->mmap + sizeof(fsd_map_hdr) +  \
+#define FSD_MAP_GET_BUCKET(M, I) (fsd_map_bucket_t *)(M)->mmap + \
+    sizeof(fsd_map_hdr) +                                               \
     ((I) * (sizeof(fsd_map_bucket_t) +                                  \
             (sizeof(fsd_map_cell_t) * (M)->ncells_per_bucket)));
 
