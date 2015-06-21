@@ -75,7 +75,7 @@ TEST(FixedSizeDiskMap, TestMultipleOpens) {
     cleanup(MAP_PATH);
 }
 
-TEST(DISABLED_FixedSizeDiskMap, ResizeFromOverflow) {
+TEST(FixedSizeDiskMap, ResizeFromOverflow) {
     fsd_map_t map;
     uint64_t val;
 

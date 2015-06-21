@@ -34,6 +34,7 @@ typedef struct {
 } fsd_map_hdr;
 
 typedef struct {
+    const char *path;
     uint8_t *mmap;
     size_t mmap_len;
     uint16_t nbuckets;
