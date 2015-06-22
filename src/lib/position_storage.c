@@ -107,7 +107,8 @@ ledger_status ledger_position_storage_get(ledger_position_storage *storage,
                      rc, pos);
     ledger_check_rc(rc == FSD_MAP_OK || rc == FSD_MAP_NOT_FOUND, LEDGER_ERR_GENERAL, "Failed to get the position storage map location");
     if(rc == FSD_MAP_NOT_FOUND) {
-        return LEDGER_ERR_POSITION_NOT_FOUND;
+        rc = LEDGER_ERR_POSITION_NOT_FOUND;
+        goto error;
     }
 
     free(key_with_part);
