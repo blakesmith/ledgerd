@@ -42,15 +42,35 @@ static void place_cell(fsd_map_t *map, fsd_map_cell_t *o_cell) {
     cell->value = o_cell->value;
 }
 
+static void copy_map(fsd_map_t *map, fsd_map_t *new_map) {
+    uint16_t i;
+    uint8_t j;
+    fsd_map_hdr *hdr;
+    fsd_map_bucket_t *bucket;
+    fsd_map_cell_t *cell, *cells;
+
+    memset(new_map->mmap, 0, new_map->mmap_len);
+
+    // First write out the header
+    hdr = (fsd_map_hdr *)new_map->mmap;
+    hdr->nbuckets = new_map->nbuckets;
+    hdr->ncells_per_bucket = new_map->ncells_per_bucket;
+
+    // Then write out all the buckets
+    for(i = 0; i < map->nbuckets; i++) {
+        bucket = FSD_MAP_GET_BUCKET(map, i);
+        cells = FSD_MAP_GET_CELLS(bucket);
+        for(j = 0; j < bucket->n_full_cells; j++) {
+            cell = &cells[j];
+            place_cell(new_map, cell);
+        }
+    }
+}
+
 static int resize_map(fsd_map_t *map) {
     int rc;
     int fd = -1;
     fsd_map_t new_map;
-    fsd_map_bucket_t *bucket;
-    fsd_map_cell_t *cell, *cells;
-    fsd_map_hdr *hdr;
-    uint16_t i;
-    uint8_t j;
     ssize_t written;
 
     new_map.nbuckets = map->nbuckets * 2;
@@ -61,22 +81,7 @@ static int resize_map(fsd_map_t *map) {
         rc = FSD_MAP_ERR_MEMORY;
         goto error;
     }
-    memset(new_map.mmap, 0, new_map.mmap_len);
-
-    // First write out the header
-    hdr = (fsd_map_hdr *)new_map.mmap;
-    hdr->nbuckets = new_map.nbuckets;
-    hdr->ncells_per_bucket = new_map.ncells_per_bucket;
-
-    // Then write out all the buckets
-    for(i = 0; i < map->nbuckets; i++) {
-        bucket = FSD_MAP_GET_BUCKET(map, i);
-        cells = FSD_MAP_GET_CELLS(bucket);
-        for(j = 0; j < bucket->n_full_cells; j++) {
-            cell = &cells[j];
-            place_cell(&new_map, cell);
-        }
-    }
+    copy_map(map, &new_map);
 
     // Persist to disk
     fd = open(map->path, O_RDWR, 0644);
