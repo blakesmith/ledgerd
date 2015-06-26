@@ -7,6 +7,10 @@
 *.log
 *.trs
 *tests
+.dirstamp
+*.pb.cc
+*.pb.h
+src/ledgerd
 compile
 core
 m4/lt*

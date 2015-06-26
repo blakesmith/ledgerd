@@ -10,7 +10,8 @@ bin_PROGRAMS = ledgerd
 ledgerd_SOURCES = \
 	proto/ledgerd.pb.cc \
 	proto/ledgerd.grpc.pb.cc \
-	ledgerd.cc
+	ledgerd.cc \
+	server.h server.cc
 
 ledgerd_LDADD = $(top_srcdir)/src/lib/libledger.la
 

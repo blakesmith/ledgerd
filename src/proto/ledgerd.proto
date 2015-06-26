@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package ledgerd;
 
-service LedgerdService {
+service Ledgerd {
     rpc Ping(PingRequest) returns (PingResponse) {}
 }
 
