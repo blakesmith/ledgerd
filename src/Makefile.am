@@ -5,7 +5,13 @@ AM_CPPFLAGS = -I/usr/local/include -pthread
 AM_CXXFLAGS = -std=c++11
 AM_LDFLAGS = -L/usr/local/lib -lgrpc++_unsecure -lgrpc -lgpr -lprotobuf -lpthread -ldl
 
-bin_PROGRAMS = ledgerd
+bin_PROGRAMS = ledgerd ledger_client
+
+ledger_client_SOURCES = \
+	proto/ledgerd.pb.cc \
+	proto/ledgerd.grpc.pb.cc \
+	client.h client.cc \
+	ledger_client.h ledger_client.cc
 
 ledgerd_SOURCES = \
 	proto/ledgerd.pb.cc \

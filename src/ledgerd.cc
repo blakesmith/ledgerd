@@ -9,7 +9,7 @@
 
 using namespace ledgerd;
 
-int main() {
+int main(int argc, char **argv) {
     std::string server_address("0.0.0.0:50051");
     LedgerdServiceImpl service;
     grpc::ServerBuilder builder;
