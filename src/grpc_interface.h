@@ -1,3 +1,6 @@
+#ifndef LEDGERD_GRPC_INTERFACE_H_
+#define LEDGERD_GRPC_INTERFACE_H_
+
 #include "proto/ledgerd.grpc.pb.h"
 
 #include <grpc/grpc.h>
@@ -9,3 +12,5 @@ class GrpcInterface final : public Ledgerd::Service {
                       PingResponse *resp) override;
 };
 }
+
+#endif

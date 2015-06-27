@@ -1,3 +1,6 @@
+#ifndef LEDGERD_CLIENT_H_
+#define LEDGERD_CLIENT_H_
+
 #include <memory>
 
 #include "proto/ledgerd.grpc.pb.h"
@@ -14,3 +17,5 @@ public:
     std::string Ping();
 };
 }
+
+#endif

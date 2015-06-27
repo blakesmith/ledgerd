@@ -11,6 +11,7 @@
 *.pb.cc
 *.pb.h
 src/ledgerd
+src/ledger_client
 compile
 core
 m4/lt*
