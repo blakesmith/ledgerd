@@ -6,11 +6,11 @@
 #include <grpc++/server_credentials.h>
 #include <grpc++/status.h>
 
-#include "server.h"
+#include "grpc_interface.h"
 
 
 namespace ledgerd {
-grpc::Status LedgerdServiceImpl::Ping(grpc::ServerContext *context, const PingRequest *req,
+grpc::Status GrpcInterface::Ping(grpc::ServerContext *context, const PingRequest *req,
                                       PingResponse *resp) {
     resp->set_pong("pong");
     return grpc::Status::OK;

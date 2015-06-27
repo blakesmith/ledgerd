@@ -16,8 +16,9 @@ ledger_client_SOURCES = \
 ledgerd_SOURCES = \
 	proto/ledgerd.pb.cc \
 	proto/ledgerd.grpc.pb.cc \
-	ledgerd.cc \
-	server.h server.cc
+	grpc_interface.h grpc_interface.cc \
+	ledgerd.cc
+
 
 ledgerd_LDADD = $(top_srcdir)/src/lib/libledger.la
 
