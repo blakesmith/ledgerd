@@ -12,6 +12,7 @@
 namespace ledgerd {
 GrpcInterface::GrpcInterface(LedgerdService& ledgerd_service)
     : ledgerd_service_(ledgerd_service) { }
+
 grpc::Status GrpcInterface::Ping(grpc::ServerContext *context, const PingRequest *req,
                                  PingResponse *resp) {
     resp->set_pong("pong");

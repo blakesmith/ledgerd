@@ -12,16 +12,17 @@
 using namespace ledgerd;
 
 int main(int argc, char **argv) {
-    // TODO: Populate config
+    // TODO: Populate config correctly
     LedgerdServiceConfig config;
+    config.set_grpc_address("0.0.0.0:50051");
+    config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
     GrpcInterface grpc_interface(ledgerd_service);;
     grpc::ServerBuilder builder;
-    std::string server_address("0.0.0.0:50051");
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << server_address << std::endl;
+    std::cout << "Server listening on " << config.get_grpc_address() << std::endl;
     server->Wait();
 
     return 0;
