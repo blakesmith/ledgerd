@@ -1,6 +1,10 @@
 #ifndef LIB_LEDGER_H
 #define LIB_LEDGER_H
 
+#if defined(__cplusplus)
+#include <cstddef>
+#endif
+
 #include "common.h"
 #include "dict.h"
 #include "position_storage.h"

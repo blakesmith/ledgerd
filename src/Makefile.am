@@ -1,7 +1,7 @@
 SUBDIRS = lib
 
 # TODO: Don't hardcode these
-AM_CPPFLAGS = -I/usr/local/include -pthread
+AM_CPPFLAGS = -I/usr/local/include -I$(top_srcdir)/src/lib -pthread
 AM_CXXFLAGS = -std=c++11
 AM_LDFLAGS = -L/usr/local/lib -lgrpc++_unsecure -lgrpc -lgpr -lprotobuf -lpthread -ldl
 
