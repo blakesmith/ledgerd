@@ -14,6 +14,11 @@ public:
     GrpcInterface(LedgerdService& ledgerd_service);
     grpc::Status Ping(grpc::ServerContext *context, const PingRequest *req,
                       PingResponse *resp) override;
+
+    grpc::Status OpenTopic(grpc::ServerContext *context, const OpenTopicRequest *req,
+                           LedgerdResponse *resp) override;
+
+    LedgerdStatus translate_status(ledger_status rc);
 };
 }
 

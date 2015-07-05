@@ -2,13 +2,46 @@ syntax = "proto3";
 
 package ledgerd;
 
-service Ledgerd {
-    rpc Ping(PingRequest) returns (PingResponse) {}
-}
-
 message PingRequest {
     string ping = 1;
 }
 message PingResponse {
     string pong = 1;
 }
+
+message TopicOptions {
+    bool drop_corrupt = 1;
+    uint32 journal_max_size_bytes = 2;
+}
+
+enum LedgerdStatus {
+    LEDGER_OK = 0;
+    LEDGER_NEXT = 1;
+    LEDGER_ERR_GENERAL = 2;
+    LEDGER_ERR_MEMORY = 3;
+    LEDGER_ERR_MKDIR = 4;
+    LEDGER_ERR_ARGS = 5;
+    LEDGER_ERR_BAD_TOPIC = 6;
+    LEDGER_ERR_BAD_PARTITION = 7;
+    LEDGER_ERR_BAD_META = 8;
+    LEDGER_ERR_BAD_LOCKFILE = 9;
+    LEDGER_ERR_IO = 10;
+    LEDGER_ERR_POSITION_NOT_FOUND = 11;
+}
+
+message LedgerdResponse {
+    LedgerdStatus status = 1;
+    string error_message = 2;
+}
+
+message OpenTopicRequest {
+    string name = 1;
+    uint32 partition_count = 2;
+    TopicOptions options = 3;
+}
+
+service Ledgerd {
+    rpc Ping(PingRequest) returns (PingResponse) {}
+    rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
+}
+

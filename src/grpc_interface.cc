@@ -13,9 +13,63 @@ namespace ledgerd {
 GrpcInterface::GrpcInterface(LedgerdService& ledgerd_service)
     : ledgerd_service_(ledgerd_service) { }
 
+LedgerdStatus GrpcInterface::translate_status(ledger_status rc) {
+    switch(rc) {
+        case ::LEDGER_OK:
+            return LedgerdStatus::LEDGER_OK;
+        case ::LEDGER_NEXT:
+            return LedgerdStatus::LEDGER_NEXT;
+        case ::LEDGER_ERR_GENERAL:
+            return LedgerdStatus::LEDGER_ERR_GENERAL;
+        case ::LEDGER_ERR_MEMORY:
+            return LedgerdStatus::LEDGER_ERR_MEMORY;
+        case ::LEDGER_ERR_MKDIR:
+            return LedgerdStatus::LEDGER_ERR_MKDIR;
+        case ::LEDGER_ERR_ARGS:
+            return LedgerdStatus::LEDGER_ERR_ARGS;
+        case ::LEDGER_ERR_BAD_TOPIC:
+            return LedgerdStatus::LEDGER_ERR_BAD_TOPIC;
+        case ::LEDGER_ERR_BAD_PARTITION:
+            return LedgerdStatus::LEDGER_ERR_BAD_PARTITION;
+        case ::LEDGER_ERR_BAD_META:
+            return LedgerdStatus::LEDGER_ERR_BAD_META;
+        case ::LEDGER_ERR_BAD_LOCKFILE:
+            return LedgerdStatus::LEDGER_ERR_BAD_LOCKFILE;
+        case ::LEDGER_ERR_IO:
+            return LedgerdStatus::LEDGER_ERR_IO;
+        case ::LEDGER_ERR_POSITION_NOT_FOUND:
+            return LedgerdStatus::LEDGER_ERR_POSITION_NOT_FOUND;
+    }
+
+    return LedgerdStatus::LEDGER_OK;
+}
+
 grpc::Status GrpcInterface::Ping(grpc::ServerContext *context, const PingRequest *req,
                                  PingResponse *resp) {
     resp->set_pong("pong");
+    return grpc::Status::OK;
+}
+
+grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTopicRequest *req,
+                                      LedgerdResponse *resp) {
+    ledger_topic_options topic_options;
+    ledger_status rc;
+
+    ledger_topic_options_init(&topic_options);
+
+    if(req->has_options()) {
+        const TopicOptions& opts = req->options();
+        topic_options.drop_corrupt = opts.drop_corrupt();
+        topic_options.journal_max_size_bytes = opts.journal_max_size_bytes();
+    }
+
+    rc = ledgerd_service_.OpenTopic(req->name(), req->partition_count(), &topic_options);
+    resp->set_status(translate_status(rc));
+    if(rc != ::LEDGER_OK) {
+        // TODO: I REALLY need a reliable way to get error messages out
+        resp->set_error_message("Something went wrong");
+    }
+
     return grpc::Status::OK;
 }
 }

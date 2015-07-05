@@ -16,4 +16,8 @@ LedgerdService::LedgerdService(const LedgerdServiceConfig& config)
 LedgerdService::~LedgerdService() {
     ledger_close_context(&ctx);
 }
+
+ledger_status LedgerdService::OpenTopic(const std::string& name, uint32_t partition_count, ledger_topic_options *options) {
+    return ledger_open_topic(&ctx, name.c_str(), partition_count, options);
+}
 }

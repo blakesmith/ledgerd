@@ -12,6 +12,8 @@ class LedgerdService final {
 public:
     LedgerdService(const LedgerdServiceConfig& config);
     ~LedgerdService();
+
+    ledger_status OpenTopic(const std::string& name, uint32_t partition_count, ledger_topic_options *options);
 };
 }
 
