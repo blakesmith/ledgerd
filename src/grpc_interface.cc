@@ -72,4 +72,20 @@ grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTo
 
     return grpc::Status::OK;
 }
+
+grpc::Status GrpcInterface::WritePartition(grpc::ServerContext *context, const WritePartitionRequest *req,
+                            WriteResponse *resp) {
+    ledger_status rc;
+    ledger_write_status status;
+
+    rc = ledgerd_service_.WritePartition(req->topic_name(), req->partition_num(), req->data(), &status);
+    resp->mutable_ledger_response()->set_status(translate_status(rc));
+    if(rc != ::LEDGER_OK) {
+        resp->mutable_ledger_response()->set_error_message("Something went wrong");
+    }
+    resp->set_message_id(status.message_id);
+    resp->set_partition_num(status.partition_num);
+
+    return grpc::Status::OK;
+}
 }

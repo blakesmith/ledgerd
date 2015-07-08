@@ -20,4 +20,8 @@ LedgerdService::~LedgerdService() {
 ledger_status LedgerdService::OpenTopic(const std::string& name, uint32_t partition_count, ledger_topic_options *options) {
     return ledger_open_topic(&ctx, name.c_str(), partition_count, options);
 }
+
+ledger_status LedgerdService::WritePartition(const std::string& topic_name, uint32_t partition_number, const std::string& data, ledger_write_status *status) {
+    return ledger_write_partition(&ctx, topic_name.c_str(), partition_number, const_cast<char*>(data.data()), data.size(), status);
+}
 }
