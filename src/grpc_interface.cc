@@ -82,10 +82,37 @@ grpc::Status GrpcInterface::WritePartition(grpc::ServerContext *context, const W
     resp->mutable_ledger_response()->set_status(translate_status(rc));
     if(rc != ::LEDGER_OK) {
         resp->mutable_ledger_response()->set_error_message("Something went wrong");
+        return grpc::Status::OK;
     }
     resp->set_message_id(status.message_id);
     resp->set_partition_num(status.partition_num);
 
     return grpc::Status::OK;
 }
+
+grpc::Status GrpcInterface::ReadPartition(grpc::ServerContext *context, const ReadPartitionRequest *req,
+                                          ReadResponse *resp) {
+    ledger_status rc;
+    ledger_message_set messages;
+
+    rc = ledgerd_service_.ReadPartition(req->topic_name(), req->partition_num(), req->start_id(), req->nmessages(), &messages);
+    resp->mutable_ledger_response()->set_status(translate_status(rc));
+    if(rc != ::LEDGER_OK) {
+        resp->mutable_ledger_response()->set_error_message("Something went wrong");
+        return grpc::Status::OK;
+    }
+    LedgerdMessageSet* message_set = resp->mutable_messages();
+    message_set->set_next_id(messages.next_id);
+
+    for(int i = 0; i < messages.nmessages; ++i) {
+        LedgerdMessage* message = message_set->add_messages();
+        message->set_id(messages.messages[i].id);
+        message->set_data(messages.messages[i].data, messages.messages[i].len);
+    }
+
+    ledger_message_set_free(&messages);
+
+    return grpc::Status::OK;
+}
+
 }

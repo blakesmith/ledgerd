@@ -10,6 +10,7 @@ TEST(LedgerService, SimpleWriteRead) {
     ledger_status rc;
     ledger_write_status write_status;
     ledger_topic_options topic_options;
+    ledger_message_set messages;
 
     LedgerdServiceConfig config;
     config.set_root_directory("/tmp/ledgerd");
@@ -21,5 +22,9 @@ TEST(LedgerService, SimpleWriteRead) {
     ASSERT_EQ(LEDGER_OK, rc);
     rc = ledger_service.WritePartition("my_topic", 0, "hello", &write_status);
     ASSERT_EQ(LEDGER_OK, rc);
+    rc = ledger_service.ReadPartition("my_topic", 0, write_status.message_id, 1, &messages);
+    ASSERT_EQ(LEDGER_OK, rc);
+    EXPECT_EQ(1, messages.nmessages);
+    ledger_message_set_free(&messages);
 }
 }

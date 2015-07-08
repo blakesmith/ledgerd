@@ -52,9 +52,32 @@ message WriteResponse {
     uint32 partition_num = 3;
 }
 
+message ReadPartitionRequest {
+    string topic_name = 1;
+    uint32 partition_num = 2;
+    uint64 start_id = 3;
+    uint32 nmessages = 4;
+}
+
+message LedgerdMessage {
+    uint64 id = 1;
+    bytes data = 2;
+}
+
+message LedgerdMessageSet {
+    uint64 next_id = 1;
+    repeated LedgerdMessage messages = 2;
+}
+
+message ReadResponse {
+    LedgerdResponse ledger_response = 1;
+    LedgerdMessageSet messages = 2;
+}
+
 service Ledgerd {
     rpc Ping(PingRequest) returns (PingResponse) {}
     rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
     rpc WritePartition(WritePartitionRequest) returns (WriteResponse) {}
+    rpc ReadPartition(ReadPartitionRequest) returns (ReadResponse) {}
 }
 

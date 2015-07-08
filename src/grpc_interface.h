@@ -22,6 +22,9 @@ public:
                                 WriteResponse *resp) override;
 
     LedgerdStatus translate_status(ledger_status rc);
+
+    grpc::Status ReadPartition(grpc::ServerContext *context, const ReadPartitionRequest *req,
+                               ReadResponse *resp) override;
 };
 }
 
