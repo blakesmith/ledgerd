@@ -56,14 +56,14 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
     int rv;
     ledger_topic *topic = NULL;
 
-    topic = malloc(sizeof(ledger_topic));
-    ledger_check_rc(topic != NULL, LEDGER_ERR_MEMORY, "Failed to allocate topic");
+    rc = ledger_topic_new(name, &topic);
+    ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_MEMORY, "Failed to allocate topic");
 
-    rv = dict_alloc_insert(&ctx->topics, name, topic);
+    rv = dict_alloc_insert(&ctx->topics, topic->name, topic);
     ledger_check_rc(rv == 1, LEDGER_ERR_GENERAL, "Failed to insert topic into context");
 
     return ledger_topic_open(topic, ctx->root_directory,
-                             name, partition_count, options);
+                             partition_count, options);
 
 error:
     if(topic) {

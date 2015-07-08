@@ -19,7 +19,7 @@ typedef struct {
 } ledger_topic_options;
 
 typedef struct {
-    const char *name;
+    char *name;
     bool opened;
     ledger_topic_options options;
     ledger_partition *partitions;
@@ -28,9 +28,10 @@ typedef struct {
     size_t path_len;
 } ledger_topic;
 
+ledger_status ledger_topic_new(const char *name, ledger_topic **topic_out);
 ledger_status ledger_topic_options_init(ledger_topic_options *options);
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
-                                const char *name, unsigned int partition_count,
+                                unsigned int partition_count,
                                 ledger_topic_options *options);
 void ledger_topic_close(ledger_topic *topic);
 ledger_status ledger_topic_write_partition(ledger_topic *topic, unsigned int partition_num,

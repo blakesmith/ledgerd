@@ -6,6 +6,33 @@
 #include "common.h"
 #include "topic.h"
 
+ledger_status ledger_topic_new(const char *name, ledger_topic **topic_out) {
+    size_t tlen;
+    ledger_status rc;
+    ledger_topic *topic;
+    char *tname = NULL;
+    
+    topic = malloc(sizeof(ledger_topic));
+    ledger_check_rc(topic != NULL, LEDGER_ERR_MEMORY, "Failed to allocate topic");
+    tlen = strlen(name)+1;
+    tname = malloc(tlen);
+    ledger_check_rc(tname != NULL, LEDGER_ERR_MEMORY, "Failed to allocate topic name");
+    strncpy(tname, name, tlen);
+    topic->name = tname;
+    *topic_out = topic;
+    
+    return LEDGER_OK;
+
+error:
+    if(topic) {
+        free(topic);
+    }
+    if(tname) {
+        free(tname);
+    }
+    return rc;
+}
+
 ledger_status ledger_topic_options_init(ledger_topic_options *options) {
     options->drop_corrupt = false;
     options->journal_max_size_bytes = DEFAULT_JOURNAL_MAX_SIZE;
@@ -14,7 +41,7 @@ ledger_status ledger_topic_options_init(ledger_topic_options *options) {
 }
 
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
-                                const char *name, unsigned int partition_count,
+                                unsigned int partition_count,
                                 ledger_topic_options *options) {
     int i;
     ledger_status rc;
@@ -28,9 +55,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
 
     ledger_check_rc(partition_count < MAX_PARTITIONS, LEDGER_ERR_ARGS, "Too many partitions");
 
-    topic->name = name;
-
-    path_len = ledger_concat_path(root, name, &topic_path);
+    path_len = ledger_concat_path(root, topic->name, &topic_path);
     ledger_check_rc(path_len > 0, path_len, "Failed to construct directory path");
 
     memcpy(&topic->options, options, sizeof(ledger_topic_options));
@@ -137,5 +162,6 @@ void ledger_topic_close(ledger_topic *topic) {
             free(topic->path);
         }
     }
+    free(topic->name);
     topic->opened = false;
 }

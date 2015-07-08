@@ -148,6 +148,42 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, HeapAllocatedTopicNames) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message[] = "hello";
+    size_t mlen = sizeof(message);
+    ledger_message_set messages;
+    ledger_write_status status;
+
+    // Make the open topic call memory be different than the write call
+    size_t tsize = strlen(TOPIC) * sizeof(char);
+    char *topic_open = (char *)malloc(tsize);
+    ASSERT_TRUE(topic_open != NULL);
+    strncpy(topic_open, TOPIC, tsize);
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, topic_open, 1, &options));
+    // Now destroy the heap allocation to enforce the correct topic name ownershipe
+    free(topic_open);
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
+    EXPECT_EQ(0, status.message_id);
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, LEDGER_CHUNK_SIZE, &messages));
+    EXPECT_EQ(1, messages.nmessages);
+    EXPECT_EQ(mlen, messages.messages[0].len);
+    EXPECT_EQ(0, messages.messages[0].id);
+    EXPECT_STREQ(message, (const char *)messages.messages[0].data);
+    EXPECT_EQ(1, messages.next_id);
+
+    ledger_message_set_free(&messages);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, ReadEndOfJournal) {
     ledger_ctx ctx;
     ledger_topic_options options;
