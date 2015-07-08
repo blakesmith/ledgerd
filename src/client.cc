@@ -17,4 +17,9 @@ std::string LedgerdClient::Ping() {
         return "Rpc failed";
     }
 }
+
+grpc::Status LedgerdClient::OpenTopic(const OpenTopicRequest& req, LedgerdResponse *res) {
+    grpc::ClientContext context;
+    return stub_->OpenTopic(&context, req, res);
+}
 }

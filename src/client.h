@@ -15,6 +15,7 @@ class LedgerdClient {
 public:
     LedgerdClient(std::shared_ptr<grpc::ChannelInterface> channel);
     std::string Ping();
+    grpc::Status OpenTopic(const OpenTopicRequest& req, LedgerdResponse *res);
 };
 }
 
