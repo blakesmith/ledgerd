@@ -22,4 +22,14 @@ grpc::Status LedgerdClient::OpenTopic(const OpenTopicRequest& req, LedgerdRespon
     grpc::ClientContext context;
     return stub_->OpenTopic(&context, req, res);
 }
+
+grpc::Status LedgerdClient::WritePartition(const WritePartitionRequest &req, WriteResponse *res) {
+    grpc::ClientContext context;
+    return stub_->WritePartition(&context, req, res);
+}
+
+grpc::Status LedgerdClient::ReadPartition(const ReadPartitionRequest &req, ReadResponse *res) {
+    grpc::ClientContext context;
+    return stub_->ReadPartition(&context, req, res);
+}
 }
