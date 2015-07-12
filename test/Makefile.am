@@ -13,13 +13,16 @@ check_PROGRAMS = ledgerd_tests
 
 ledgerd_tests_SOURCES = \
 	test_grpc_interface.cc \
-	test_ledger_service.cc
+	test_ledger_service.cc \
+	test_command_parser.cc
 
 ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
 	$(top_srcdir)/src/ledgerd_service.o \
 	$(top_srcdir)/src/ledgerd_service_config.o \
 	$(top_srcdir)/src/grpc_interface.o \
 	$(top_srcdir)/src/client.o \
+	$(top_srcdir)/src/command.o \
+	$(top_srcdir)/src/command_parser.o \
 	$(top_srcdir)/src/proto/ledgerd.grpc.pb.o \
 	$(top_srcdir)/src/proto/ledgerd.pb.o
 
