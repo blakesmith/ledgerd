@@ -13,8 +13,16 @@ enum CommandType {
     READ_PARTITION
 };
 
+struct CommonOptions {
+    std::string host;
+    int port;
+};
+
 class Command {
+    CommonOptions common_opts_;
 public:
+    Command(const CommonOptions& common_opts);
+    const CommonOptions& common_opts() const;
     virtual CommandType type() const = 0;
     virtual const std::string name() const = 0;
 };
@@ -22,7 +30,8 @@ public:
 class UnknownCommand : public Command {
     std::string command_name_;
 public:
-    UnknownCommand(const std::string& command_name);
+    UnknownCommand(const CommonOptions& common_opts,
+                   const std::string& command_name);
     CommandType type() const;
     const std::string name() const;
     const std::string& command_name() const;
@@ -30,6 +39,7 @@ public:
 
 class PingCommand : public Command {
 public:
+    PingCommand(const CommonOptions& common_opts);
     CommandType type() const;
     const std::string name() const;
 };
@@ -38,7 +48,8 @@ class OpenTopicCommand : public Command {
     std::string topic_name_;
     uint32_t partition_count_;
 public:
-    OpenTopicCommand(const std::string& topic_name,
+    OpenTopicCommand(const CommonOptions& common_opts,
+                     const std::string& topic_name,
                      uint32_t partition_count);
 
     CommandType type() const;
@@ -53,7 +64,8 @@ class WritePartitionCommand : public Command {
     uint32_t partition_num_;
     std::string data_;
 public:
-    WritePartitionCommand(const std::string& topic_name,
+    WritePartitionCommand(const CommonOptions& common_opts,
+                          const std::string& topic_name,
                           uint32_t partition_num,
                           const std::string& data);
     
@@ -71,7 +83,8 @@ class ReadPartitionCommand : public Command {
     uint64_t start_id_;
     uint32_t nmessages_;
 public:
-    ReadPartitionCommand(const std::string& topic_name,
+    ReadPartitionCommand(const CommonOptions& common_opts,
+                         const std::string& topic_name,
                          uint32_t partition_num,
                          uint64_t start_id,
                          uint32_t nmessages);
