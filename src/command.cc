@@ -1,12 +1,28 @@
 #include "command.h"
 
 namespace ledgerd {
+
 CommandType PingCommand::type() const {
     return CommandType::PING;
 }
 
 const std::string PingCommand::name() const {
     return "ping";
+}
+
+UnknownCommand::UnknownCommand(const std::string& command_name)
+    : command_name_(command_name) { }
+
+CommandType UnknownCommand::type() const {
+    return CommandType::UNKNOWN;
+}
+
+const std::string UnknownCommand::name() const {
+    return "unknown";
+}
+
+const std::string& UnknownCommand::command_name() const {
+    return command_name_;
 }
 
 OpenTopicCommand::OpenTopicCommand(const std::string& topic_name,

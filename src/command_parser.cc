@@ -85,6 +85,6 @@ std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
                                             full_opts.nmessages));
     }
 
-    throw std::invalid_argument("Invalid command name");
+    return std::unique_ptr<Command>(new UnknownCommand(full_opts.command_name));
 };
 }

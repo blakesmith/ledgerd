@@ -6,6 +6,7 @@
 namespace ledgerd {
 
 enum CommandType {
+    UNKNOWN,
     PING,
     OPEN_TOPIC,
     WRITE_PARTITION,
@@ -16,6 +17,15 @@ class Command {
 public:
     virtual CommandType type() const = 0;
     virtual const std::string name() const = 0;
+};
+
+class UnknownCommand : public Command {
+    std::string command_name_;
+public:
+    UnknownCommand(const std::string& command_name);
+    CommandType type() const;
+    const std::string name() const;
+    const std::string& command_name() const;
 };
 
 class PingCommand : public Command {
