@@ -44,4 +44,34 @@ TEST(CommandParser, WritePartition) {
     EXPECT_EQ("hello", cmd->data());
 }
 
+TEST(CommandParser, ReadPartition) {
+    CommandParser parser;
+    const char *argv[] { "ledgerd_client", "--command", "read_partition", "--topic", "my_topic", "--partition", "0", "--start", "42", "--nmessages", "2" };
+    int argc = 11;
+
+    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    EXPECT_EQ("read_partition", command->name());
+    ASSERT_EQ(CommandType::READ_PARTITION, command->type());
+    ReadPartitionCommand* cmd = static_cast<ReadPartitionCommand*>(command.get());
+    EXPECT_EQ("my_topic", cmd->topic_name());
+    EXPECT_EQ(0, cmd->partition_num());
+    EXPECT_EQ(42, cmd->start_id());
+    EXPECT_EQ(2, cmd->nmessages());
+}
+
+TEST(CommandParser, ReadPartitionNoStartOrNmessages) {
+    CommandParser parser;
+    const char *argv[] { "ledgerd_client", "--command", "read_partition", "--topic", "my_topic", "--partition", "0" };
+    int argc = 7;
+
+    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    EXPECT_EQ("read_partition", command->name());
+    ASSERT_EQ(CommandType::READ_PARTITION, command->type());
+    ReadPartitionCommand* cmd = static_cast<ReadPartitionCommand*>(command.get());
+    EXPECT_EQ("my_topic", cmd->topic_name());
+    EXPECT_EQ(0, cmd->partition_num());
+    EXPECT_EQ(0, cmd->start_id());
+    EXPECT_EQ(1, cmd->nmessages());
+}
+
 }

@@ -12,6 +12,8 @@ struct Options {
     std::string data;
     uint32_t partition_count;
     uint32_t partition_num;
+    uint32_t nmessages;
+    uint64_t start_id;
 };
 
 CommandParser::CommandParser() {
@@ -25,12 +27,17 @@ std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
         { "partition_count", required_argument, 0, 'P' },
         { "partition", required_argument, 0, 'p' },
         { "data", required_argument, 0, 'd' },
+        { "start", required_argument, 0, 's' },
+        { "nmessages", required_argument, 0, 'n' },
         { 0, 0, 0, 0 }
     };
     int ch;
     Options full_opts;
 
-    while((ch = getopt_long(argc, argv, "c:t:P:p:d:", longopts, NULL)) != -1) {
+    full_opts.nmessages = 1;
+    full_opts.start_id = 0;
+
+    while((ch = getopt_long(argc, argv, "c:t:P:p:d:s:n:", longopts, NULL)) != -1) {
         switch(ch) {
             case 'c':
                 full_opts.command_name = std::string(optarg, strlen(optarg));
@@ -46,6 +53,12 @@ std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
                 break;
             case 'd':
                 full_opts.data = std::string(optarg, strlen(optarg));
+                break;
+            case 's':
+                full_opts.start_id = atoi(optarg);
+                break;
+            case 'n':
+                full_opts.nmessages = atoi(optarg);
                 break;
             default:
                 break;
@@ -64,6 +77,12 @@ std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
                                             full_opts.topic,
                                             full_opts.partition_num,
                                             full_opts.data));
+    } else if(full_opts.command_name == "read_partition") {
+        return std::unique_ptr<Command>(new ReadPartitionCommand(
+                                            full_opts.topic,
+                                            full_opts.partition_num,
+                                            full_opts.start_id,
+                                            full_opts.nmessages));
     }
 
     throw std::invalid_argument("Invalid command name");

@@ -56,4 +56,37 @@ uint32_t WritePartitionCommand::partition_num() const {
 const std::string& WritePartitionCommand::data() const {
     return data_;
 }
+
+ReadPartitionCommand::ReadPartitionCommand(const std::string& topic_name,
+                                           uint32_t partition_num,
+                                           uint64_t start_id,
+                                           uint32_t nmessages)
+    : topic_name_(topic_name),
+      partition_num_(partition_num),
+      start_id_(start_id),
+      nmessages_(nmessages) { }
+
+CommandType ReadPartitionCommand::type() const {
+    return CommandType::READ_PARTITION;
+}
+
+const std::string ReadPartitionCommand::name() const {
+    return "read_partition";
+}
+
+const std::string& ReadPartitionCommand::topic_name() const {
+    return topic_name_;
+}
+
+uint32_t ReadPartitionCommand::partition_num() const {
+    return partition_num_;
+}
+
+uint64_t ReadPartitionCommand::start_id() const {
+    return start_id_;
+}
+
+uint32_t ReadPartitionCommand::nmessages() const {
+    return nmessages_;
+}
 }
