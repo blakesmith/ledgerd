@@ -106,4 +106,16 @@ TEST(CommandParser, UnknownCommand) {
     EXPECT_EQ("fake_command", cmd->command_name());
 }
 
+TEST(CommandParser, Help) {
+    CommandParser parser;
+    const char *argv[] { "ledgerd_client", "--help" };
+    int argc = 3;
+
+    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    EXPECT_EQ("unknown", command->name());
+    ASSERT_EQ(CommandType::UNKNOWN, command->type());
+    UnknownCommand* cmd = static_cast<UnknownCommand*>(command.get());
+    EXPECT_EQ("", cmd->command_name());
+}
+
 }

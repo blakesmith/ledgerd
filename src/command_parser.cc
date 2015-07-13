@@ -23,6 +23,7 @@ CommandParser::CommandParser() {
 
 std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
     static struct option longopts[] = {
+        { "help", required_argument, 0, 'H' },
         { "host", required_argument, 0, 'h' },
         { "port", required_argument, 0, 'p' },
         { "command", required_argument, 0, 'c' },
@@ -44,6 +45,10 @@ std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
 
     while((ch = getopt_long(argc, argv, "h:p:c:t:P:C:d:s:n:", longopts, NULL)) != -1) {
         switch(ch) {
+            case 'H':
+                return std::unique_ptr<Command>(new UnknownCommand(
+                                                    full_opts.common_opts,
+                                                    ""));
             case 'h':
                 full_opts.common_opts.host = std::string(optarg, strlen(optarg));
                 break;
