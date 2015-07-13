@@ -7,7 +7,8 @@ namespace ledgerd {
 
 enum CommandType {
     PING,
-    OPEN_TOPIC
+    OPEN_TOPIC,
+    WRITE_PARTITION
 };
 
 class Command {
@@ -34,6 +35,23 @@ public:
 
     const std::string& topic_name() const;
     uint32_t partition_count() const;
+};
+
+class WritePartitionCommand : public Command {
+    std::string topic_name_;
+    uint32_t partition_num_;
+    std::string data_;
+public:
+    WritePartitionCommand(const std::string& topic_name,
+                          uint32_t partition_num,
+                          const std::string& data);
+    
+    CommandType type() const;
+    const std::string name() const;
+
+    const std::string& topic_name() const;
+    uint32_t partition_num() const;
+    const std::string& data() const;
 };
 }
 
