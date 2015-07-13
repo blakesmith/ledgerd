@@ -8,6 +8,7 @@
 namespace ledgerd {
 class CommandParser final {
 public:
+    CommandParser();
     std::unique_ptr<Command> MakeCommand(char **argv, int argc);
 };
 }

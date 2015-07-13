@@ -7,6 +7,7 @@ namespace ledgerd {
 
 enum CommandType {
     PING,
+    OPEN_TOPIC
 };
 
 class Command {
@@ -19,6 +20,20 @@ class PingCommand : public Command {
 public:
     CommandType type() const;
     const std::string name() const;
+};
+
+class OpenTopicCommand : public Command {
+    std::string topic_name_;
+    uint32_t partition_count_;
+public:
+    OpenTopicCommand(const std::string& topic_name,
+                     uint32_t partition_count);
+
+    CommandType type() const;
+    const std::string name() const;
+
+    const std::string& topic_name() const;
+    uint32_t partition_count() const;
 };
 }
 
