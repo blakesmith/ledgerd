@@ -1,4 +1,3 @@
-#include <iostream>
 #include <sstream>
 
 #include <grpc/grpc.h>
@@ -17,34 +16,41 @@
 
 
 namespace ledgerd {
-void GrpcCommandExecutor::Execute(std::unique_ptr<Command> cmd) {
+
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_ptr<Command> cmd) {
     std::unique_ptr<Ledgerd::Stub> stub = connect(cmd->common_opts());
     switch(cmd->type()) {
         case CommandType::UNKNOWN: {
             UnknownCommand* command = static_cast<UnknownCommand*>(cmd.get());
-            execute_unknown(stub.get(), command);
+            return execute_unknown(stub.get(), command);
         } break;
         case CommandType::PING: {
             PingCommand* command = static_cast<PingCommand*>(cmd.get());
-            execute_ping(stub.get(), command);
+            return execute_ping(stub.get(), command);
         } break;
         case CommandType::OPEN_TOPIC: {
             OpenTopicCommand* command = static_cast<OpenTopicCommand*>(cmd.get());
-            execute_open_topic(stub.get(), command);
+            return execute_open_topic(stub.get(), command);
         } break;
         case CommandType::WRITE_PARTITION: {
             WritePartitionCommand* command = static_cast<WritePartitionCommand*>(cmd.get());
-            execute_write_partition(stub.get(), command);
+            return execute_write_partition(stub.get(), command);
         } break;
         case CommandType::READ_PARTITION: {
             ReadPartitionCommand* command = static_cast<ReadPartitionCommand*>(cmd.get());
-            execute_read_partition(stub.get(), command);
+            return execute_read_partition(stub.get(), command);
         } break;
         default: {
             UnknownCommand unknown(cmd->common_opts(), "");
-            execute_unknown(stub.get(), &unknown);
+            return execute_unknown(stub.get(), &unknown);
         } break;
     }
+
+    return std::unique_ptr<CommandExecutorStatus>(
+        new CommandExecutorStatus {
+            .code = CommandExecutorCode::OK,
+                .lines = { "OK!" },
+        });
 }
 
 std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions& opts) {
@@ -56,23 +62,38 @@ std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions&
                             grpc::ChannelArguments()));
 }
 
-void GrpcCommandExecutor::execute_unknown(Ledgerd::Stub* stub, const UnknownCommand* cmd) {
-    std::cout << "Executing unknown" << std::endl;
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_unknown(Ledgerd::Stub* stub, const UnknownCommand* cmd) {
+    return std::unique_ptr<CommandExecutorStatus>(
+        new CommandExecutorStatus {
+            .code = CommandExecutorCode::OK,
+                .lines = { "Unknown OK!" }});
 }
 
-void GrpcCommandExecutor::execute_ping(Ledgerd::Stub* stub, const PingCommand* cmd) {
-    std::cout << "Executing ping" << std::endl;
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_ping(Ledgerd::Stub* stub, const PingCommand* cmd) {
+    return std::unique_ptr<CommandExecutorStatus>(
+        new CommandExecutorStatus {
+            .code = CommandExecutorCode::OK,
+                .lines = { "Ping OK!" }});
 }
 
-void GrpcCommandExecutor::execute_open_topic(Ledgerd::Stub* stub, const OpenTopicCommand* cmd) {
-    std::cout << "Executing open topic" << std::endl;
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(Ledgerd::Stub* stub, const OpenTopicCommand* cmd) {
+    return std::unique_ptr<CommandExecutorStatus>(
+        new CommandExecutorStatus {
+            .code = CommandExecutorCode::OK,
+                .lines = { "Open Topic OK!" }});
 }
 
-void GrpcCommandExecutor::execute_write_partition(Ledgerd::Stub* stub, const WritePartitionCommand* cmd) {
-    std::cout << "Executing write partition" << std::endl;    
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_write_partition(Ledgerd::Stub* stub, const WritePartitionCommand* cmd) {
+    return std::unique_ptr<CommandExecutorStatus>(
+        new CommandExecutorStatus {
+            .code = CommandExecutorCode::OK,
+                .lines = { "Write partition OK!" }});
 }
 
-void GrpcCommandExecutor::execute_read_partition(Ledgerd::Stub* stub, const ReadPartitionCommand* cmd) {
-    std::cout << "Executing read partition" << std::endl;
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partition(Ledgerd::Stub* stub, const ReadPartitionCommand* cmd) {
+    return std::unique_ptr<CommandExecutorStatus>(
+        new CommandExecutorStatus {
+            .code = CommandExecutorCode::OK,
+                .lines = { "Read partition OK!" }});
 }
 }
