@@ -12,7 +12,9 @@ ledger_client_SOURCES = \
 	proto/ledgerd.grpc.pb.cc \
 	client.h client.cc \
 	command.h command.cc \
+	command_executor.h \
 	command_parser.h command_parser.cc \
+	grpc_command_executor.h grpc_command_executor.cc \
 	ledger_client.h ledger_client.cc
 
 ledgerd_SOURCES = \
