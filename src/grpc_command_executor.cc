@@ -8,9 +8,6 @@
 #include <grpc++/credentials.h>
 #include <grpc++/create_channel.h>
 
-
-#include "proto/ledgerd.grpc.pb.h"
-
 #include "command_executor.h"
 #include "grpc_command_executor.h"
 
@@ -70,30 +67,123 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_unknown(Ledg
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_ping(Ledgerd::Stub* stub, const PingCommand* cmd) {
-    return std::unique_ptr<CommandExecutorStatus>(
-        new CommandExecutorStatus {
-            .code = CommandExecutorCode::OK,
-                .lines = { "Ping OK!" }});
+    PingRequest request;
+    PingResponse response;
+    request.set_ping("ping");
+    grpc::ClientContext context;
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus());
+
+    grpc::Status status = stub->Ping(&context, request, &response);
+    if(status.ok()) {
+        exec_status->code = CommandExecutorCode::OK;
+        exec_status->lines.push_back("Pong!");
+    }
+
+    exec_status->code = CommandExecutorCode::ERROR;
+    exec_status->lines.push_back("Error pinging");
+    exec_status->lines.push_back(status.error_message());
+    return exec_status;
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(Ledgerd::Stub* stub, const OpenTopicCommand* cmd) {
-    return std::unique_ptr<CommandExecutorStatus>(
-        new CommandExecutorStatus {
-            .code = CommandExecutorCode::OK,
-                .lines = { "Open Topic OK!" }});
+    OpenTopicRequest request;
+    LedgerdResponse response;
+    request.set_name(cmd->topic_name());
+    request.set_partition_count(cmd->partition_count());
+    grpc::ClientContext context;
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus());
+
+    grpc::Status status = stub->OpenTopic(&context, request, &response);
+
+    if(status.ok()) {
+        if(response.status() == LedgerdStatus::OK) {
+            std::stringstream ss;
+            ss << "OPENED: " << cmd->topic_name();
+            exec_status->code = CommandExecutorCode::OK;
+            exec_status->lines.push_back(ss.str());
+        } else {
+            std::stringstream ss;
+            ss << "Ledger code: " << response.status();
+            exec_status->code = CommandExecutorCode::ERROR;
+            exec_status->lines.push_back("Ledger error when wrting to partition");
+            exec_status->lines.push_back(response.error_message());
+            exec_status->lines.push_back(ss.str());
+        }
+    }
+
+    exec_status->code = CommandExecutorCode::ERROR;
+    exec_status->lines.push_back("Error opening topic");
+    exec_status->lines.push_back(status.error_message());
+    return exec_status;
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_write_partition(Ledgerd::Stub* stub, const WritePartitionCommand* cmd) {
-    return std::unique_ptr<CommandExecutorStatus>(
-        new CommandExecutorStatus {
-            .code = CommandExecutorCode::OK,
-                .lines = { "Write partition OK!" }});
+    WritePartitionRequest request;
+    WriteResponse response;
+    request.set_topic_name(cmd->topic_name());
+    request.set_partition_num(cmd->partition_num());
+    request.set_data(cmd->data());
+    grpc::ClientContext context;
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus());
+
+    grpc::Status status = stub->WritePartition(&context, request, &response);
+    if(status.ok()) {
+        const LedgerdResponse& lresponse = response.ledger_response();
+        if(lresponse.status() == LedgerdStatus::OK) {
+            std::stringstream ss;
+            ss << "ID: " << response.message_id();
+            exec_status->code = CommandExecutorCode::OK;
+            exec_status->lines.push_back(ss.str());
+        } else {
+            std::stringstream ss;
+            ss << "Ledger code: " << lresponse.status();
+            exec_status->code = CommandExecutorCode::ERROR;
+            exec_status->lines.push_back("Ledger error when wrting to partition");
+            exec_status->lines.push_back(lresponse.error_message());
+            exec_status->lines.push_back(ss.str());
+        }
+    }
+
+    exec_status->code = CommandExecutorCode::ERROR;
+    exec_status->lines.push_back("Grpc error writing to partition");
+    exec_status->lines.push_back(status.error_message());
+    return exec_status;
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partition(Ledgerd::Stub* stub, const ReadPartitionCommand* cmd) {
-    return std::unique_ptr<CommandExecutorStatus>(
-        new CommandExecutorStatus {
-            .code = CommandExecutorCode::OK,
-                .lines = { "Read partition OK!" }});
+    ReadPartitionRequest request;
+    ReadResponse response;
+    request.set_topic_name(cmd->topic_name());
+    request.set_partition_num(cmd->partition_num());
+    request.set_start_id(cmd->start_id());
+    request.set_nmessages(cmd->nmessages());
+    grpc::ClientContext context;
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus());
+    
+    grpc::Status status = stub->ReadPartition(&context, request, &response);
+    if(status.ok()) {
+        const LedgerdResponse& lresponse = response.ledger_response();
+        if(lresponse.status() == LedgerdStatus::OK) {
+            exec_status->code = CommandExecutorCode::OK;
+            exec_status->lines.push_back(lresponse.error_message());
+        } else {
+            std::stringstream ss;
+            ss << "Ledger code: " << lresponse.status();
+            exec_status->code = CommandExecutorCode::ERROR;
+            exec_status->lines.push_back("Ledger error when reading from partition");
+            exec_status->lines.push_back(lresponse.error_message());
+            exec_status->lines.push_back(ss.str());
+        }
+
+        return exec_status;
+    }
+    exec_status->code = CommandExecutorCode::ERROR;
+    exec_status->lines.push_back("Grpc error when reading partition");
+    exec_status->lines.push_back(status.error_message());
+    return exec_status;
 }
 }

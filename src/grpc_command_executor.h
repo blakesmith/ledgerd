@@ -1,6 +1,9 @@
 #ifndef LEDGERD_GRPC_COMMAND_EXECUTOR_H
 #define LEDGERD_GRPC_COMMAND_EXECUTOR_H
 
+#include "proto/ledgerd.grpc.pb.h"
+#include "command_executor.h"
+
 #include <memory>
 
 namespace ledgerd {

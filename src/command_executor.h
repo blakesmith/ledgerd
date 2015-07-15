@@ -2,12 +2,13 @@
 #define LEDGERD_COMMAND_EXECUTOR_H
 
 #include <memory>
+#include <vector>
 
 #include "command.h"
 
 namespace ledgerd {
 
-enum CommandExecutorCode {
+enum struct CommandExecutorCode {
     OK,
     ERROR
 };

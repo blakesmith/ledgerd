@@ -16,32 +16,32 @@ GrpcInterface::GrpcInterface(LedgerdService& ledgerd_service)
 LedgerdStatus GrpcInterface::translate_status(ledger_status rc) {
     switch(rc) {
         case ::LEDGER_OK:
-            return LedgerdStatus::LEDGER_OK;
+            return LedgerdStatus::OK;
         case ::LEDGER_NEXT:
-            return LedgerdStatus::LEDGER_NEXT;
+            return LedgerdStatus::NEXT;
         case ::LEDGER_ERR_GENERAL:
-            return LedgerdStatus::LEDGER_ERR_GENERAL;
+            return LedgerdStatus::ERR_GENERAL;
         case ::LEDGER_ERR_MEMORY:
-            return LedgerdStatus::LEDGER_ERR_MEMORY;
+            return LedgerdStatus::ERR_MEMORY;
         case ::LEDGER_ERR_MKDIR:
-            return LedgerdStatus::LEDGER_ERR_MKDIR;
+            return LedgerdStatus::ERR_MKDIR;
         case ::LEDGER_ERR_ARGS:
-            return LedgerdStatus::LEDGER_ERR_ARGS;
+            return LedgerdStatus::ERR_ARGS;
         case ::LEDGER_ERR_BAD_TOPIC:
-            return LedgerdStatus::LEDGER_ERR_BAD_TOPIC;
+            return LedgerdStatus::ERR_BAD_TOPIC;
         case ::LEDGER_ERR_BAD_PARTITION:
-            return LedgerdStatus::LEDGER_ERR_BAD_PARTITION;
+            return LedgerdStatus::ERR_BAD_PARTITION;
         case ::LEDGER_ERR_BAD_META:
-            return LedgerdStatus::LEDGER_ERR_BAD_META;
+            return LedgerdStatus::ERR_BAD_META;
         case ::LEDGER_ERR_BAD_LOCKFILE:
-            return LedgerdStatus::LEDGER_ERR_BAD_LOCKFILE;
+            return LedgerdStatus::ERR_BAD_LOCKFILE;
         case ::LEDGER_ERR_IO:
-            return LedgerdStatus::LEDGER_ERR_IO;
+            return LedgerdStatus::ERR_IO;
         case ::LEDGER_ERR_POSITION_NOT_FOUND:
-            return LedgerdStatus::LEDGER_ERR_POSITION_NOT_FOUND;
+            return LedgerdStatus::ERR_POSITION_NOT_FOUND;
     }
 
-    return LedgerdStatus::LEDGER_OK;
+    return LedgerdStatus::OK;
 }
 
 grpc::Status GrpcInterface::Ping(grpc::ServerContext *context, const PingRequest *req,
