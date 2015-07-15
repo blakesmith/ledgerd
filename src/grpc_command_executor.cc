@@ -78,6 +78,7 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_ping(Ledgerd
     if(status.ok()) {
         exec_status->code = CommandExecutorCode::OK;
         exec_status->lines.push_back("Pong!");
+        return exec_status;
     }
 
     exec_status->code = CommandExecutorCode::ERROR;
@@ -111,6 +112,8 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(L
             exec_status->lines.push_back(response.error_message());
             exec_status->lines.push_back(ss.str());
         }
+
+        return exec_status;
     }
 
     exec_status->code = CommandExecutorCode::ERROR;
@@ -145,6 +148,8 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_write_partit
             exec_status->lines.push_back(lresponse.error_message());
             exec_status->lines.push_back(ss.str());
         }
+
+        return exec_status;
     }
 
     exec_status->code = CommandExecutorCode::ERROR;
@@ -169,7 +174,15 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partiti
         const LedgerdResponse& lresponse = response.ledger_response();
         if(lresponse.status() == LedgerdStatus::OK) {
             exec_status->code = CommandExecutorCode::OK;
-            exec_status->lines.push_back(lresponse.error_message());
+            const LedgerdMessageSet& messages = response.messages();
+            std::stringstream ss;
+            ss << "Next message ID: " << messages.next_id();
+            exec_status->lines.push_back(ss.str());
+            
+            for(int i = 0; i < messages.messages_size(); ++i) {
+                const LedgerdMessage& message = messages.messages(i);
+                exec_status->lines.push_back(message.data());
+            }
         } else {
             std::stringstream ss;
             ss << "Ledger code: " << lresponse.status();

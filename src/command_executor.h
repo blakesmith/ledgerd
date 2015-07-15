@@ -9,8 +9,8 @@
 namespace ledgerd {
 
 enum struct CommandExecutorCode {
-    OK,
-    ERROR
+    OK = 0,
+    ERROR = -1
 };
 
 struct CommandExecutorStatus {
@@ -20,7 +20,7 @@ struct CommandExecutorStatus {
 
 class CommandExecutor {
 public:
-    virtual std::unique_ptr<CommandExecutorStatus> Execute(const Command& cmd) = 0;
+    virtual std::unique_ptr<CommandExecutorStatus> Execute(std::unique_ptr<Command> cmd) = 0;
 };
 }
 
