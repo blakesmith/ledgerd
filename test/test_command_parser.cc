@@ -12,7 +12,7 @@ TEST(CommandParser, Ping) {
     const char *argv[] { "ledgerd_client", "--command", "ping" };
     int argc = 3;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("ping", command->name());
     EXPECT_EQ(CommandType::PING, command->type());
 }
@@ -22,7 +22,7 @@ TEST(CommandParser, CommonOptions) {
     const char *argv[] { "ledgerd_client", "--command", "ping", "--host", "blah.com", "--port", "6789" };
     int argc = 7;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("blah.com", command->common_opts().host);
     EXPECT_EQ(6789, command->common_opts().port);
 }
@@ -32,7 +32,7 @@ TEST(CommandParser, CommonOptionsDefaults) {
     const char *argv[] { "ledgerd_client", "--command", "ping" };
     int argc = 3;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("localhost", command->common_opts().host);
     EXPECT_EQ(64399, command->common_opts().port);
 }
@@ -42,7 +42,7 @@ TEST(CommandParser, OpenTopic) {
     const char *argv[] { "ledgerd_client", "--command", "open_topic", "--topic", "my_topic", "--partition_count", "1" };
     int argc = 7;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("open_topic", command->name());
     ASSERT_EQ(CommandType::OPEN_TOPIC, command->type());
     OpenTopicCommand* cmd = static_cast<OpenTopicCommand*>(command.get());
@@ -55,7 +55,7 @@ TEST(CommandParser, WritePartition) {
     const char *argv[] { "ledgerd_client", "--command", "write_partition", "--topic", "my_topic", "--partition", "0", "--data", "hello" };
     int argc = 9;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("write_partition", command->name());
     ASSERT_EQ(CommandType::WRITE_PARTITION, command->type());
     WritePartitionCommand* cmd = static_cast<WritePartitionCommand*>(command.get());
@@ -69,7 +69,7 @@ TEST(CommandParser, ReadPartition) {
     const char *argv[] { "ledgerd_client", "--command", "read_partition", "--topic", "my_topic", "--partition", "0", "--start", "42", "--nmessages", "2" };
     int argc = 11;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("read_partition", command->name());
     ASSERT_EQ(CommandType::READ_PARTITION, command->type());
     ReadPartitionCommand* cmd = static_cast<ReadPartitionCommand*>(command.get());
@@ -84,7 +84,7 @@ TEST(CommandParser, ReadPartitionNoStartOrNmessages) {
     const char *argv[] { "ledgerd_client", "--command", "read_partition", "--topic", "my_topic", "--partition", "0" };
     int argc = 7;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("read_partition", command->name());
     ASSERT_EQ(CommandType::READ_PARTITION, command->type());
     ReadPartitionCommand* cmd = static_cast<ReadPartitionCommand*>(command.get());
@@ -99,7 +99,7 @@ TEST(CommandParser, UnknownCommand) {
     const char *argv[] { "ledgerd_client", "--command", "fake_command" };
     int argc = 3;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("unknown", command->name());
     ASSERT_EQ(CommandType::UNKNOWN, command->type());
     UnknownCommand* cmd = static_cast<UnknownCommand*>(command.get());
@@ -111,7 +111,7 @@ TEST(CommandParser, Help) {
     const char *argv[] { "ledgerd_client", "--help" };
     int argc = 3;
 
-    auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
     EXPECT_EQ("unknown", command->name());
     ASSERT_EQ(CommandType::UNKNOWN, command->type());
     UnknownCommand* cmd = static_cast<UnknownCommand*>(command.get());

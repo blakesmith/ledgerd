@@ -21,7 +21,7 @@ CommandParser::CommandParser() {
     optind = 1;
 }
 
-std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
+std::unique_ptr<Command> CommandParser::MakeCommand(int argc, char **argv) {
     static struct option longopts[] = {
         { "help", no_argument, 0, 'H' },
         { "host", required_argument, 0, 'h' },
