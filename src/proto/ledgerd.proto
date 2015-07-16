@@ -59,6 +59,12 @@ message ReadPartitionRequest {
     uint32 nmessages = 4;
 }
 
+message StreamPartitionRequest {
+    string topic_name = 1;
+    uint32 partition_num = 2;
+    uint64 start_id = 3;
+}
+
 message LedgerdMessage {
     uint64 id = 1;
     bytes data = 2;
@@ -79,5 +85,6 @@ service Ledgerd {
     rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
     rpc WritePartition(WritePartitionRequest) returns (WriteResponse) {}
     rpc ReadPartition(ReadPartitionRequest) returns (ReadResponse) {}
+    rpc StreamPartition(StreamPartitionRequest) returns (stream LedgerdMessage) {}
 }
 
