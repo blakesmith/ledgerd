@@ -14,7 +14,7 @@ using namespace ledgerd;
 int main(int argc, char **argv) {
     // TODO: Populate config correctly
     LedgerdServiceConfig config;
-    config.set_grpc_address("0.0.0.0:50051");
+    config.set_grpc_address("0.0.0.0:64399");
     config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
     GrpcInterface grpc_interface(ledgerd_service);;

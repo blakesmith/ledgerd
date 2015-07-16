@@ -34,7 +34,7 @@ TEST(CommandParser, CommonOptionsDefaults) {
 
     auto command = parser.MakeCommand(const_cast<char**>(argv), argc);
     EXPECT_EQ("localhost", command->common_opts().host);
-    EXPECT_EQ(50051, command->common_opts().port);
+    EXPECT_EQ(64399, command->common_opts().port);
 }
 
 TEST(CommandParser, OpenTopic) {

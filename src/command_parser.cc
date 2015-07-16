@@ -23,7 +23,7 @@ CommandParser::CommandParser() {
 
 std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
     static struct option longopts[] = {
-        { "help", required_argument, 0, 'H' },
+        { "help", no_argument, 0, 'H' },
         { "host", required_argument, 0, 'h' },
         { "port", required_argument, 0, 'p' },
         { "command", required_argument, 0, 'c' },
@@ -39,7 +39,7 @@ std::unique_ptr<Command> CommandParser::MakeCommand(char **argv, int argc) {
     Options full_opts;
 
     full_opts.common_opts.host = "localhost";
-    full_opts.common_opts.port = 50051;
+    full_opts.common_opts.port = 64399;
     full_opts.nmessages = 1;
     full_opts.start_id = 0;
 

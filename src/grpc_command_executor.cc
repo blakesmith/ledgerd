@@ -60,10 +60,29 @@ std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions&
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_unknown(Ledgerd::Stub* stub, const UnknownCommand* cmd) {
-    return std::unique_ptr<CommandExecutorStatus>(
-        new CommandExecutorStatus {
-            .code = CommandExecutorCode::OK,
-                .lines = { "Unknown OK!" }});
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus());
+    if(cmd->command_name() == "") {
+        exec_status->code = CommandExecutorCode::OK;
+    } else {
+        std::stringstream ss;
+        ss << "Unknown command: " << cmd->command_name();
+        exec_status->code = CommandExecutorCode::ERROR;
+        exec_status->lines.push_back(ss.str());
+    }
+    exec_status->lines.push_back("Usage: ledger_client [ options ...]");
+    exec_status->lines.push_back("    -H --help            Print this message and exit.");
+    exec_status->lines.push_back("    -h --host            Ledgerd hostname. Defaults to: 'localhost'");
+    exec_status->lines.push_back("    -p --port            Ledgerd port. Defaults to: 64399");
+    exec_status->lines.push_back("    -c --command         Ledgerd command.");
+    exec_status->lines.push_back("    -t --topic           The topic to read or write from.");
+    exec_status->lines.push_back("    -C --partition_count Number of partitions.");
+    exec_status->lines.push_back("    -P --partition       The partition to read or write from.");
+    exec_status->lines.push_back("    -d --data            The data to write.");
+    exec_status->lines.push_back("    -s --start           The start_id to begin reading from, defaults to: 0.");
+    exec_status->lines.push_back("    -n --nmessages       Number of messages to read. Defaults to: 1");
+
+    return exec_status;
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_ping(Ledgerd::Stub* stub, const PingCommand* cmd) {
