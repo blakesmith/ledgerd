@@ -103,4 +103,63 @@ TEST(GrpcInterface, SimpleReadWrite) {
     server->Shutdown();
 }
 
+TEST(GrpcInterface, StreamPartition) {
+    LedgerdServiceConfig config;
+    config.set_grpc_address("0.0.0.0:50051");
+    config.set_root_directory("/tmp/ledgerd");
+    LedgerdService ledgerd_service(config);
+    GrpcInterface grpc_interface(ledgerd_service);;
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
+    builder.RegisterService(&grpc_interface);
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    auto client = build_client();
+
+    OpenTopicRequest treq;
+    LedgerdResponse tres;
+    treq.set_name("grpc_interface_topic");
+    treq.set_partition_count(1);
+
+    grpc::ClientContext ocontext;
+    grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
+    ASSERT_EQ(true, ostatus.ok());
+    ASSERT_EQ(LedgerdStatus::OK, tres.status());
+
+    WritePartitionRequest wreq;
+    WriteResponse wres;
+    wreq.set_topic_name("grpc_interface_topic");
+    wreq.set_partition_num(0);
+    wreq.set_data("hello");
+    grpc::ClientContext wcontext;
+    grpc::Status wstatus = client->WritePartition(&wcontext, wreq, &wres);
+    ASSERT_EQ(LedgerdStatus::OK, wres.ledger_response().status());
+    ASSERT_EQ(true, wstatus.ok());
+
+    uint64_t message_id = wres.message_id();
+
+    StreamPartitionRequest sreq;
+    LedgerdMessageSet messages;
+    PositionSettings* position_settings = sreq.mutable_position_settings();
+    position_settings->set_behavior(PositionBehavior::FORGET);
+    sreq.set_topic_name("grpc_interface_topic");
+    sreq.set_partition_num(0);
+    sreq.set_start_id(message_id);
+    sreq.set_read_chunk_size(64);
+
+    grpc::ClientContext rcontext;
+    std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(client->StreamPartition(&rcontext, sreq));
+
+    ASSERT_EQ(true, reader->Read(&messages));
+    grpc::Status sstatus = reader->Finish();
+
+    ASSERT_EQ(true, sstatus.ok());
+    ASSERT_EQ(1, messages.messages_size());
+
+    const LedgerdMessage& message = messages.messages(0);
+    EXPECT_EQ(message_id, message.id());
+    EXPECT_EQ("hello", message.data());
+
+    server->Shutdown();
+}
+
 }

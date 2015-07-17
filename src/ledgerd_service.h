@@ -3,6 +3,7 @@
 
 #include "ledger.h"
 
+#include "ledgerd_consumer.h"
 #include "ledgerd_service_config.h"
 
 namespace ledgerd {
@@ -18,6 +19,8 @@ public:
     ledger_status WritePartition(const std::string& topic_name, uint32_t partition_number, const std::string& data, ledger_write_status *status);
 
     ledger_status ReadPartition(const std::string& topic_name, uint32_t partition_number, uint64_t start_id, uint32_t nmessages, ledger_message_set *messages);
+
+    ledger_status StartConsumer(Consumer* consumer, const std::string& topic_name, uint32_t partition_number, uint64_t start_id);
 };
 }
 

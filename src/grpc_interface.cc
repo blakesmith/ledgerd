@@ -115,4 +115,8 @@ grpc::Status GrpcInterface::ReadPartition(grpc::ServerContext *context, const Re
     return grpc::Status::OK;
 }
 
+grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const StreamPartitionRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) {
+    return grpc::Status::OK;
+}
+
 }

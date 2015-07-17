@@ -25,6 +25,8 @@ public:
 
     grpc::Status ReadPartition(grpc::ServerContext *context, const ReadPartitionRequest *req,
                                ReadResponse *resp) override;
+
+    grpc::Status StreamPartition(grpc::ServerContext *context, const StreamPartitionRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) override;
 };
 }
 
