@@ -6,6 +6,7 @@
 #include <grpc++/server_credentials.h>
 #include <grpc++/status.h>
 
+#include "ledgerd_consumer.h"
 #include "grpc_interface.h"
 
 
@@ -115,7 +116,50 @@ grpc::Status GrpcInterface::ReadPartition(grpc::ServerContext *context, const Re
     return grpc::Status::OK;
 }
 
+static ledger_consume_status stream_f(ledger_consumer_ctx* ctx,
+                                      ledger_message_set* messages,
+                                      void* data) {
+    auto writer = static_cast<grpc::ServerWriter<LedgerdMessageSet>*>(data);
+    LedgerdMessageSet message_set;
+    message_set.set_next_id(messages->next_id);
+    for(int i = 0; i < messages->nmessages; i++) {
+        LedgerdMessage* message = message_set.add_messages();
+        message->set_id(messages->messages[i].id);
+        message->set_data(messages->messages[i].data,
+                          messages->messages[i].len);
+    }
+    writer->Write(message_set);
+}
+
 grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const StreamPartitionRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) {
+    ledger_status rc;
+    ledger_consumer_options consumer_options;
+    const std::string position_key = request->position_settings().position_key();
+
+    ledger_init_consumer_options(&consumer_options);
+    consumer_options.read_chunk_size = request->read_chunk_size();
+    if(request->position_settings().behavior() == PositionBehavior::STORE) {
+        consumer_options.position_behavior = ::LEDGER_STORE;
+        consumer_options.position_key = position_key.c_str();
+    } else {
+        consumer_options.position_behavior = ::LEDGER_FORGET;
+    }
+
+    try {
+        Consumer consumer(stream_f, &consumer_options, writer);
+        rc = ledgerd_service_.StartConsumer(&consumer,
+                                            request->topic_name(),
+                                            request->partition_num(),
+                                            request->start_id());
+        if(rc != ::LEDGER_OK) {
+            return grpc::Status(grpc::StatusCode::INTERNAL, "Something went wrong");
+        }
+
+        consumer.Wait();
+    } catch (std::invalid_argument& e) {
+        return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
+    }
+
     return grpc::Status::OK;
 }
 

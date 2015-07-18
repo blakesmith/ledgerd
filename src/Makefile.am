@@ -21,6 +21,7 @@ ledgerd_SOURCES = \
 	proto/ledgerd.grpc.pb.cc \
 	grpc_interface.h grpc_interface.cc \
 	ledgerd.cc \
+	ledgerd_consumer.h ledgerd_consumer.cc \
 	ledgerd_service.h ledgerd_service.cc \
 	ledgerd_service_config.h ledgerd_service_config.cc
 

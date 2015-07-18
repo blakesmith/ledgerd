@@ -17,6 +17,7 @@ ledgerd_tests_SOURCES = \
 	test_command_parser.cc
 
 ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
+	$(top_srcdir)/src/ledgerd_consumer.o \
 	$(top_srcdir)/src/ledgerd_service.o \
 	$(top_srcdir)/src/ledgerd_service_config.o \
 	$(top_srcdir)/src/grpc_interface.o \
