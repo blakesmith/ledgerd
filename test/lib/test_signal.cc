@@ -24,4 +24,14 @@ TEST(LedgerSignal, BasicWait) {
     ledger_signal_wait(&sig);
     ASSERT_TRUE(signaled);
 }
+
+TEST(LedgerSignal, WithTimeout) {
+    ledger_signal sig;
+    pthread_t leader_thread;
+
+    ledger_signal_init(&sig);
+    pthread_create(&leader_thread, NULL, leader_exec, &sig);
+    ledger_signal_wait_with_timeout(&sig, 2);
+    ASSERT_TRUE(signaled);
+}
 }

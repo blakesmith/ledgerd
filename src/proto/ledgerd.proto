@@ -27,6 +27,7 @@ enum LedgerdStatus {
     ERR_BAD_LOCKFILE = 9;
     ERR_IO = 10;
     ERR_POSITION_NOT_FOUND = 11;
+    ERR_CONSUMER = 12;
 }
 
 message LedgerdResponse {

@@ -150,9 +150,10 @@ TEST(GrpcInterface, StreamPartition) {
     std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(client->StreamPartition(&rcontext, sreq));
 
     ASSERT_EQ(true, reader->Read(&messages));
+    rcontext.TryCancel();
     grpc::Status sstatus = reader->Finish();
 
-    ASSERT_EQ(true, sstatus.ok());
+    ASSERT_EQ(grpc::StatusCode::CANCELLED, sstatus.error_code());
     ASSERT_EQ(1, messages.messages_size());
 
     const LedgerdMessage& message = messages.messages(0);

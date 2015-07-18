@@ -52,6 +52,19 @@ static ledger_consume_status concat_consume_function(ledger_consumer_ctx *ctx, l
     return LEDGER_CONSUMER_OK;
 }
 
+static ledger_consume_status stop_consume_function(ledger_consumer_ctx *ctx,
+                                                  ledger_message_set *messages,
+                                                  void *data) {
+    size_t *consumed_size = static_cast<size_t*>(data);
+    int i;
+
+    for(i = 0; i < messages->nmessages; i++) {
+        *consumed_size = *consumed_size + messages->messages[i].len;
+    }
+
+    return LEDGER_CONSUMER_STOP;
+}
+
 TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ledger_ctx ctx;
     ledger_topic_options options;
@@ -77,6 +90,7 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
 
     ledger_consumer_wait_for_position(&consumer, status.message_id);
     ledger_consumer_stop(&consumer);
+    ledger_consumer_wait(&consumer);
     EXPECT_EQ(10, consumed_size);
 
     ledger_consumer_close(&consumer);
@@ -111,6 +125,7 @@ TEST(LedgerConsumer, ConsumingMessagesWithDelay) {
 
     ledger_consumer_wait_for_position(&consumer, status.message_id);
     ledger_consumer_stop(&consumer);
+    ledger_consumer_wait(&consumer);
     EXPECT_EQ("hellothere", concated_str);
 
     ledger_consumer_close(&consumer);
@@ -145,6 +160,7 @@ TEST(LedgerConsumer, ConsumingMessagesAtTheBeginningAndEnd) {
     ledger_consumer_wait_for_position(&consumer, status.message_id);
 
     ledger_consumer_stop(&consumer);
+    ledger_consumer_wait(&consumer);
     EXPECT_EQ(0, ledger_consumer_position_get(&consumer.position));
     EXPECT_EQ("hello", concated_str);
 
@@ -181,6 +197,7 @@ TEST(LedgerConsumer, ConsumingMessagesAtTheEnd) {
     ledger_consumer_wait_for_position(&consumer, status.message_id);
 
     ledger_consumer_stop(&consumer);
+    ledger_consumer_wait(&consumer);
     EXPECT_EQ(1, ledger_consumer_position_get(&consumer.position));
     EXPECT_EQ("hello", concated_str);
 
@@ -215,6 +232,7 @@ TEST(LedgerConsumer, StorePosition) {
 
     ledger_consumer_wait_for_position(&consumer, status.message_id);
     ledger_consumer_stop(&consumer);
+    ledger_consumer_wait(&consumer);
     EXPECT_EQ(0, ledger_consumer_position_get(&consumer.position));
 
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5, &status));
@@ -222,6 +240,7 @@ TEST(LedgerConsumer, StorePosition) {
     EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, LEDGER_BEGIN));
     ledger_consumer_wait_for_position(&consumer, status.message_id);
     ledger_consumer_stop(&consumer);
+    ledger_consumer_wait(&consumer);
     EXPECT_EQ(1, ledger_consumer_position_get(&consumer.position));
 
     EXPECT_EQ("hellothere", concated_str);
@@ -267,6 +286,8 @@ TEST(LedgerConsumer, StoreTwoPositionsDifferentPartitions) {
 
     ledger_consumer_stop(&consumer);
     ledger_consumer_stop(&consumer2);
+    ledger_consumer_wait(&consumer);
+    ledger_consumer_wait(&consumer2);
 
     EXPECT_EQ(0, ledger_consumer_position_get(&consumer.position));
     EXPECT_EQ(1, ledger_consumer_position_get(&consumer2.position));
@@ -282,6 +303,8 @@ TEST(LedgerConsumer, StoreTwoPositionsDifferentPartitions) {
 
     ledger_consumer_stop(&consumer);
     ledger_consumer_stop(&consumer2);
+    ledger_consumer_wait(&consumer);
+    ledger_consumer_wait(&consumer2);
 
     EXPECT_EQ(1, ledger_consumer_position_get(&consumer.position));
     EXPECT_EQ(2, ledger_consumer_position_get(&consumer2.position));
@@ -315,6 +338,37 @@ TEST(LedgerConsumer, PositionWithNoKey) {
     ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, concat_consume_function, &consumer_opts, NULL));
     ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
     EXPECT_EQ(LEDGER_ERR_ARGS, ledger_consumer_start(&consumer, LEDGER_BEGIN));
+
+    ledger_consumer_close(&consumer);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
+TEST(LedgerConsumer, ConsumerTriggersStopAndWait) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    ledger_consumer consumer;
+    ledger_consumer_options consumer_opts;
+    ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, NULL));
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5, &status));
+
+    size_t consumed_size = 0;
+    ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
+    consumer_opts.read_chunk_size = 2;
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, stop_consume_function, &consumer_opts, &consumed_size));
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
+    EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, LEDGER_BEGIN));
+
+    ledger_consumer_wait(&consumer);
+    EXPECT_EQ(10, consumed_size);
 
     ledger_consumer_close(&consumer);
     ledger_close_context(&ctx);

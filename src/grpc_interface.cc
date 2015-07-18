@@ -1,3 +1,4 @@
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -40,6 +41,8 @@ LedgerdStatus GrpcInterface::translate_status(ledger_status rc) {
             return LedgerdStatus::ERR_IO;
         case ::LEDGER_ERR_POSITION_NOT_FOUND:
             return LedgerdStatus::ERR_POSITION_NOT_FOUND;
+        case ::LEDGER_ERR_CONSUMER:
+            return LedgerdStatus::ERR_CONSUMER;
     }
 
     return LedgerdStatus::OK;
@@ -128,7 +131,12 @@ static ledger_consume_status stream_f(ledger_consumer_ctx* ctx,
         message->set_data(messages->messages[i].data,
                           messages->messages[i].len);
     }
-    writer->Write(message_set);
+    bool written = writer->Write(message_set);
+    if(written) {
+        return LEDGER_CONSUMER_OK;
+    } else {
+        return LEDGER_CONSUMER_STOP;
+    }
 }
 
 grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const StreamPartitionRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) {
@@ -155,6 +163,8 @@ grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const 
             return grpc::Status(grpc::StatusCode::INTERNAL, "Something went wrong");
         }
 
+        sleep(1);
+        consumer.Stop();
         consumer.Wait();
     } catch (std::invalid_argument& e) {
         return grpc::Status(grpc::StatusCode::INTERNAL, e.what());

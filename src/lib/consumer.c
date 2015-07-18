@@ -12,6 +12,7 @@ static void *consumer_loop(void *consumer_ptr) {
     ledger_message_set messages;
     ledger_consumer_ctx ctx;
     ledger_consumer *consumer = (ledger_consumer *)consumer_ptr;
+    ledger_consume_status consume_status;
     uint64_t next_message = consumer->start_id;
     uint64_t last_pos;
 
@@ -50,7 +51,12 @@ static void *consumer_loop(void *consumer_ptr) {
         }
 
         if(rc == LEDGER_OK) {
-            consumer->func(&ctx, &messages, consumer->data);
+            consume_status = consumer->func(&ctx, &messages, consumer->data);
+            if(consume_status == LEDGER_CONSUMER_ERROR) {
+                ledger_message_set_free(&messages);
+                return NULL;
+//                return LEDGER_ERR_CONSUMER;
+            }
 
             next_message = messages.next_id;
             last_pos = messages.messages[messages.nmessages-1].id;
@@ -67,6 +73,10 @@ static void *consumer_loop(void *consumer_ptr) {
             }
 
             ledger_message_set_free(&messages);
+
+            if(consume_status == LEDGER_CONSUMER_STOP) {
+                ledger_consumer_stop(consumer);
+            }
         }
     }
     return NULL;
@@ -131,9 +141,23 @@ ledger_status ledger_consumer_stop(ledger_consumer *consumer) {
     consumer->active = false;
     ledger_signal_readers(consumer->ctx, consumer->topic_name,
                           consumer->partition_num);
-    pthread_join(consumer->consumer_thread, NULL);
-
     return LEDGER_OK;
+}
+
+void ledger_consumer_wait(ledger_consumer *consumer) {
+    // 2 milliseconds
+    static const struct timespec time = {
+        0,
+        2 * 1000L * 1000L,
+    };
+
+    while(consumer->active) {
+        ledger_signal_readers(consumer->ctx, consumer->topic_name,
+                              consumer->partition_num);
+        nanosleep(&time, NULL);
+    }
+
+   pthread_join(consumer->consumer_thread, NULL);
 }
 
 void ledger_consumer_wait_for_position(ledger_consumer *consumer, uint64_t message_id) {

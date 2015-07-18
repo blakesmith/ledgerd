@@ -11,7 +11,9 @@ extern "C" {
 #endif
 
 typedef enum {
-    LEDGER_CONSUMER_OK
+    LEDGER_CONSUMER_OK,
+    LEDGER_CONSUMER_STOP,
+    LEDGER_CONSUMER_ERROR
 } ledger_consume_status;
 
 typedef enum {
@@ -57,6 +59,7 @@ ledger_status ledger_consumer_attach(ledger_consumer *consumer, ledger_ctx *ctx,
                                      const char *topic_name, unsigned int partition_id);
 ledger_status ledger_consumer_start(ledger_consumer *consumer, uint64_t start_id);
 ledger_status ledger_consumer_stop(ledger_consumer *consumer);
+void ledger_consumer_wait(ledger_consumer *consumer);
 void ledger_consumer_wait_for_position(ledger_consumer *consumer, uint64_t message_id);
 void ledger_consumer_close(ledger_consumer *consumer);
 

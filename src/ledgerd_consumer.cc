@@ -31,9 +31,7 @@ ledger_status Consumer::Stop() {
 }
 
 void Consumer::Wait() {
-    // TODO: Replace
-    sleep(1);
-    Stop();
+    ledger_consumer_wait(&consumer_);
 }
 
 uint64_t Consumer::get_position() const {
