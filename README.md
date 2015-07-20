@@ -25,9 +25,9 @@ tool that can help with that goal.
 - Scales up and down: You should be able to use the correct messaging
   abstractions early on in your project lifecycle. Many messaging
   tools are reached for too late, only because they add unecessary
-  overhead to the development process. I should be able to embed
-  ledger inside my process if I want to, or scale ledger up to a large
-  distributed infrastructure as my project grows.
+  overhead to the development process. You should be able to embed
+  ledger inside my process if you want to, or scale ledger up to a large
+  distributed infrastructure as your project grows.
 - Custom protocols: Ledger attempts to make all interface boundaries
   open and accessible: We use the [GRPC](http://grpc.io) RPC protocol
   to make interactions with the server statically typed, and usable by
