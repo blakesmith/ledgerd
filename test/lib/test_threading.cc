@@ -63,6 +63,7 @@ TEST(LedgerThreading, WriteThreading) {
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    memset(threads, 0, NUM_THREADS * sizeof(pthread_t));
 
     for(i = 0; i < NUM_THREADS; i++) {
         ASSERT_EQ(0, pthread_create(&threads[i], NULL, write_worker, &ctx));
