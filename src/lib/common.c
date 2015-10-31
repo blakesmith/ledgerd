@@ -101,8 +101,3 @@ int ledger_pread(int fd, void *buf, size_t count, off_t offset) {
 
     return 1;
 }
-
-// Uses thread local storage.
-const char *ledger_get_error() {
-    return ledger_error_message;
-}
