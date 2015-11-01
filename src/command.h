@@ -10,7 +10,8 @@ enum CommandType {
     PING,
     OPEN_TOPIC,
     WRITE_PARTITION,
-    READ_PARTITION
+    READ_PARTITION,
+    STREAM_PARTITION
 };
 
 struct CommonOptions {
@@ -95,6 +96,24 @@ public:
     const std::string& topic_name() const;
     uint32_t partition_num() const;
     uint32_t nmessages() const;
+    uint64_t start_id() const;
+};
+
+class StreamPartitionCommand : public Command {
+    std::string topic_name_;
+    uint32_t partition_num_;
+    uint64_t start_id_;
+public:
+    StreamPartitionCommand(const CommonOptions& common_opts,
+                           const std::string& topic_name,
+                           uint32_t partition_num,
+                           uint64_t start_id);
+
+    CommandType type() const;
+    const std::string name() const;
+
+    const std::string& topic_name() const;
+    uint32_t partition_num() const;
     uint64_t start_id() const;
 };
 }

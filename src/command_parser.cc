@@ -103,6 +103,12 @@ std::unique_ptr<Command> CommandParser::MakeCommand(int argc, char **argv) {
                                             full_opts.partition_num,
                                             full_opts.start_id,
                                             full_opts.nmessages));
+    } else if(full_opts.command_name == "stream_partition") {
+        return std::unique_ptr<Command>(new StreamPartitionCommand(
+                                            full_opts.common_opts,
+                                            full_opts.topic,
+                                            full_opts.partition_num,
+                                            full_opts.start_id));
     }
 
     return std::unique_ptr<Command>(new UnknownCommand(

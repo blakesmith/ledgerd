@@ -79,6 +79,20 @@ TEST(CommandParser, ReadPartition) {
     EXPECT_EQ(2, cmd->nmessages());
 }
 
+TEST(CommandParser, StreamPartition) {
+    CommandParser parser;
+    const char *argv[] { "ledgerd_client", "--command", "stream_partition", "--topic", "my_topic", "--partition", "0", "--start", "42" };
+    int argc = 9;
+
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
+    EXPECT_EQ("stream_partition", command->name());
+    ASSERT_EQ(CommandType::STREAM_PARTITION, command->type());
+    StreamPartitionCommand* cmd = static_cast<StreamPartitionCommand*>(command.get());
+    EXPECT_EQ("my_topic", cmd->topic_name());
+    EXPECT_EQ(0, cmd->partition_num());
+    EXPECT_EQ(42, cmd->start_id());
+}
+
 TEST(CommandParser, ReadPartitionNoStartOrNmessages) {
     CommandParser parser;
     const char *argv[] { "ledgerd_client", "--command", "read_partition", "--topic", "my_topic", "--partition", "0" };

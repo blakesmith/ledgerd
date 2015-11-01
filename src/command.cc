@@ -123,4 +123,33 @@ uint64_t ReadPartitionCommand::start_id() const {
 uint32_t ReadPartitionCommand::nmessages() const {
     return nmessages_;
 }
+
+StreamPartitionCommand::StreamPartitionCommand(const CommonOptions& common_opts,
+                                               const std::string& topic_name,
+                                               uint32_t partition_num,
+                                               uint64_t start_id)
+    : Command(common_opts),
+      topic_name_(topic_name),
+      partition_num_(partition_num),
+      start_id_(start_id) { }
+
+CommandType StreamPartitionCommand::type() const {
+    return CommandType::STREAM_PARTITION;
+}
+
+const std::string StreamPartitionCommand::name() const {
+    return "stream_partition";
+}
+
+const std::string& StreamPartitionCommand::topic_name() const {
+    return topic_name_;
+}
+
+uint32_t StreamPartitionCommand::partition_num() const {
+    return partition_num_;
+}
+
+uint64_t StreamPartitionCommand::start_id() const {
+    return start_id_;
+}
 }
