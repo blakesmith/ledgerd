@@ -4,8 +4,8 @@
 
 #include <grpc++/server.h>
 #include <grpc++/server_builder.h>
-#include <grpc++/server_credentials.h>
-#include <grpc++/status.h>
+#include <grpc++/security/server_credentials.h>
+#include <grpc++/support/status.h>
 
 #include "ledgerd_consumer.h"
 #include "grpc_interface.h"
@@ -163,7 +163,9 @@ grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const 
             return grpc::Status(grpc::StatusCode::INTERNAL, "Something went wrong");
         }
 
-        sleep(1);
+        while(!context->IsCancelled()) {
+            sleep(1);
+        }
         consumer.Stop();
         consumer.Wait();
     } catch (std::invalid_argument& e) {

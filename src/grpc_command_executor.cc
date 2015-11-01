@@ -1,11 +1,10 @@
 #include <sstream>
 
 #include <grpc/grpc.h>
-#include <grpc++/channel_interface.h>
+#include <grpc++/channel.h>
 #include <grpc++/client_context.h>
 
-#include <grpc++/channel_arguments.h>
-#include <grpc++/credentials.h>
+#include <grpc++/security/credentials.h>
 #include <grpc++/create_channel.h>
 
 #include "command_executor.h"
@@ -55,8 +54,7 @@ std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions&
     host_and_port << opts.host << ":" << opts.port;
     return Ledgerd::NewStub(
         grpc::CreateChannel(host_and_port.str(),
-                            grpc::InsecureCredentials(),
-                            grpc::ChannelArguments()));
+                            grpc::InsecureCredentials()));
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_unknown(Ledgerd::Stub* stub, const UnknownCommand* cmd) {

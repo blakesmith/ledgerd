@@ -3,7 +3,7 @@
 
 #include <grpc++/server.h>
 #include <grpc++/server_builder.h>
-#include <grpc++/server_credentials.h>
+#include <grpc++/security/server_credentials.h>
 
 #include "ledgerd_service.h"
 #include "ledgerd_service_config.h"

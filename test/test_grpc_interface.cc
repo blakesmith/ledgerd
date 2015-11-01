@@ -5,9 +5,9 @@
 
 #include <grpc++/server.h>
 #include <grpc++/server_builder.h>
-#include <grpc++/server_credentials.h>
-#include <grpc++/channel_arguments.h>
-#include <grpc++/credentials.h>
+#include <grpc++/security/server_credentials.h>
+#include <grpc++/channel.h>
+#include <grpc++/security/credentials.h>
 #include <grpc++/create_channel.h>
 
 #include "ledgerd_service.h"
@@ -21,8 +21,7 @@ using namespace ledgerd;
 static std::unique_ptr<Ledgerd::Stub> build_client() {
     return Ledgerd::NewStub(
         grpc::CreateChannel("localhost:50051",
-                            grpc::InsecureCredentials(),
-                            grpc::ChannelArguments()));
+                            grpc::InsecureCredentials()));
 }
 
 TEST(GrpcInterface, PingPong) {
