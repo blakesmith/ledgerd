@@ -2,7 +2,8 @@
 #define LEDGERD_COMMAND_EXECUTOR_H
 
 #include <memory>
-#include <vector>
+#include <mutex>
+#include <queue>
 
 #include "command.h"
 
@@ -13,9 +14,28 @@ enum struct CommandExecutorCode {
     ERROR = -1
 };
 
-struct CommandExecutorStatus {
-    CommandExecutorCode code;
-    std::vector<std::string> lines;
+class CommandExecutorStatus {
+    CommandExecutorCode _code;
+    std::vector<std::string> _lines;
+    bool _stream_open;
+    bool _has_next;
+    std::mutex _lock;
+
+    void flush();
+public:
+    CommandExecutorStatus();
+    CommandExecutorStatus(const CommandExecutorCode code);
+
+    bool HasNext();
+    std::vector<std::string> Next();
+    bool StreamIsOpen();
+
+    void Close();
+    void AddLine(const std::string& line);
+    void Flush();
+
+    const CommandExecutorCode code();
+    void set_code(const CommandExecutorCode code);
 };
 
 class CommandExecutor {

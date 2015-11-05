@@ -42,11 +42,11 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_
         } break;
     }
 
-    return std::unique_ptr<CommandExecutorStatus>(
-        new CommandExecutorStatus {
-            .code = CommandExecutorCode::OK,
-                .lines = { "OK!" },
-        });
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus(CommandExecutorCode::OK));
+    exec_status->AddLine("OK!");
+    exec_status->Close();
+    return exec_status;
 }
 
 std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions& opts) {
@@ -61,24 +61,25 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_unknown(Ledg
     std::unique_ptr<CommandExecutorStatus> exec_status(
         new CommandExecutorStatus());
     if(cmd->command_name() == "") {
-        exec_status->code = CommandExecutorCode::OK;
+        exec_status->set_code(CommandExecutorCode::OK);
     } else {
         std::stringstream ss;
         ss << "Unknown command: " << cmd->command_name();
-        exec_status->code = CommandExecutorCode::ERROR;
-        exec_status->lines.push_back(ss.str());
+        exec_status->set_code(CommandExecutorCode::ERROR);
+        exec_status->AddLine(ss.str());
     }
-    exec_status->lines.push_back("Usage: ledger_client [ options ...]");
-    exec_status->lines.push_back("    -H --help            Print this message and exit.");
-    exec_status->lines.push_back("    -h --host            Ledgerd hostname. Defaults to: 'localhost'");
-    exec_status->lines.push_back("    -p --port            Ledgerd port. Defaults to: 64399");
-    exec_status->lines.push_back("    -c --command         Ledgerd command.");
-    exec_status->lines.push_back("    -t --topic           The topic to read or write from.");
-    exec_status->lines.push_back("    -C --partition_count Number of partitions.");
-    exec_status->lines.push_back("    -P --partition       The partition to read or write from.");
-    exec_status->lines.push_back("    -d --data            The data to write.");
-    exec_status->lines.push_back("    -s --start           The start_id to begin reading from, defaults to: 0.");
-    exec_status->lines.push_back("    -n --nmessages       Number of messages to read. Defaults to: 1");
+    exec_status->AddLine("Usage: ledger_client [ options ...]");
+    exec_status->AddLine("    -H --help            Print this message and exit.");
+    exec_status->AddLine("    -h --host            Ledgerd hostname. Defaults to: 'localhost'");
+    exec_status->AddLine("    -p --port            Ledgerd port. Defaults to: 64399");
+    exec_status->AddLine("    -c --command         Ledgerd command.");
+    exec_status->AddLine("    -t --topic           The topic to read or write from.");
+    exec_status->AddLine("    -C --partition_count Number of partitions.");
+    exec_status->AddLine("    -P --partition       The partition to read or write from.");
+    exec_status->AddLine("    -d --data            The data to write.");
+    exec_status->AddLine("    -s --start           The start_id to begin reading from, defaults to: 0.");
+    exec_status->AddLine("    -n --nmessages       Number of messages to read. Defaults to: 1");
+    exec_status->Close();
 
     return exec_status;
 }
@@ -90,17 +91,18 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_ping(Ledgerd
     grpc::ClientContext context;
     std::unique_ptr<CommandExecutorStatus> exec_status(
         new CommandExecutorStatus());
-
     grpc::Status status = stub->Ping(&context, request, &response);
     if(status.ok()) {
-        exec_status->code = CommandExecutorCode::OK;
-        exec_status->lines.push_back("Pong!");
+        exec_status->set_code(CommandExecutorCode::OK);
+        exec_status->AddLine("Pong!");
+        exec_status->Close();
         return exec_status;
     }
 
-    exec_status->code = CommandExecutorCode::ERROR;
-    exec_status->lines.push_back("Error pinging");
-    exec_status->lines.push_back(status.error_message());
+    exec_status->set_code(CommandExecutorCode::ERROR);
+    exec_status->AddLine("Error pinging");
+    exec_status->AddLine(status.error_message());
+    exec_status->Close();
     return exec_status;
 }
 
@@ -119,23 +121,25 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(L
         if(response.status() == LedgerdStatus::OK) {
             std::stringstream ss;
             ss << "OPENED: " << cmd->topic_name();
-            exec_status->code = CommandExecutorCode::OK;
-            exec_status->lines.push_back(ss.str());
+            exec_status->set_code(CommandExecutorCode::OK);
+            exec_status->AddLine(ss.str());
         } else {
             std::stringstream ss;
             ss << "Ledger code: " << response.status();
-            exec_status->code = CommandExecutorCode::ERROR;
-            exec_status->lines.push_back("Ledger error when wrting to partition");
-            exec_status->lines.push_back(response.error_message());
-            exec_status->lines.push_back(ss.str());
+            exec_status->set_code(CommandExecutorCode::ERROR);
+            exec_status->AddLine("Ledger error when wrting to partition");
+            exec_status->AddLine(response.error_message());
+            exec_status->AddLine(ss.str());
         }
 
+        exec_status->Close();
         return exec_status;
     }
 
-    exec_status->code = CommandExecutorCode::ERROR;
-    exec_status->lines.push_back("Error opening topic");
-    exec_status->lines.push_back(status.error_message());
+    exec_status->set_code(CommandExecutorCode::ERROR);
+    exec_status->AddLine("Error opening topic");
+    exec_status->AddLine(status.error_message());
+    exec_status->Close();
     return exec_status;
 }
 
@@ -155,23 +159,25 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_write_partit
         if(lresponse.status() == LedgerdStatus::OK) {
             std::stringstream ss;
             ss << "ID: " << response.message_id();
-            exec_status->code = CommandExecutorCode::OK;
-            exec_status->lines.push_back(ss.str());
+            exec_status->set_code(CommandExecutorCode::OK);
+            exec_status->AddLine(ss.str());
         } else {
             std::stringstream ss;
             ss << "Ledger code: " << lresponse.status();
-            exec_status->code = CommandExecutorCode::ERROR;
-            exec_status->lines.push_back("Ledger error when wrting to partition");
-            exec_status->lines.push_back(lresponse.error_message());
-            exec_status->lines.push_back(ss.str());
+            exec_status->set_code(CommandExecutorCode::ERROR);
+            exec_status->AddLine("Ledger error when wrting to partition");
+            exec_status->AddLine(lresponse.error_message());
+            exec_status->AddLine(ss.str());
         }
 
+        exec_status->Close();
         return exec_status;
     }
 
-    exec_status->code = CommandExecutorCode::ERROR;
-    exec_status->lines.push_back("Grpc error writing to partition");
-    exec_status->lines.push_back(status.error_message());
+    exec_status->set_code(CommandExecutorCode::ERROR);
+    exec_status->AddLine("Grpc error writing to partition");
+    exec_status->AddLine(status.error_message());
+    exec_status->Close();
     return exec_status;
 }
 
@@ -185,35 +191,37 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partiti
     grpc::ClientContext context;
     std::unique_ptr<CommandExecutorStatus> exec_status(
         new CommandExecutorStatus());
-    
+
     grpc::Status status = stub->ReadPartition(&context, request, &response);
     if(status.ok()) {
         const LedgerdResponse& lresponse = response.ledger_response();
         if(lresponse.status() == LedgerdStatus::OK) {
-            exec_status->code = CommandExecutorCode::OK;
+            exec_status->set_code(CommandExecutorCode::OK);
             const LedgerdMessageSet& messages = response.messages();
             std::stringstream ss;
             ss << "Next message ID: " << messages.next_id();
-            exec_status->lines.push_back(ss.str());
+            exec_status->AddLine(ss.str());
             
             for(int i = 0; i < messages.messages_size(); ++i) {
                 const LedgerdMessage& message = messages.messages(i);
-                exec_status->lines.push_back(message.data());
+                exec_status->AddLine(message.data());
             }
         } else {
             std::stringstream ss;
             ss << "Ledger code: " << lresponse.status();
-            exec_status->code = CommandExecutorCode::ERROR;
-            exec_status->lines.push_back("Ledger error when reading from partition");
-            exec_status->lines.push_back(lresponse.error_message());
-            exec_status->lines.push_back(ss.str());
+            exec_status->set_code(CommandExecutorCode::ERROR);
+            exec_status->AddLine("Ledger error when reading from partition");
+            exec_status->AddLine(lresponse.error_message());
+            exec_status->AddLine(ss.str());
         }
 
+        exec_status->Close();
         return exec_status;
     }
-    exec_status->code = CommandExecutorCode::ERROR;
-    exec_status->lines.push_back("Grpc error when reading partition");
-    exec_status->lines.push_back(status.error_message());
+    exec_status->set_code(CommandExecutorCode::ERROR);
+    exec_status->AddLine("Grpc error when reading partition");
+    exec_status->AddLine(status.error_message());
+    exec_status->Close();
     return exec_status;
 }
 }

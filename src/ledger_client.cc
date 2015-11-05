@@ -12,9 +12,14 @@ int main(int argc, char **argv) {
 
     std::unique_ptr<Command> command = parser.MakeCommand(argc, argv);
     std::unique_ptr<CommandExecutorStatus> status = executor.Execute(std::move(command));
-    for(auto& line : status->lines) {
-        std::cout << line << std::endl;
-    }
+    do {
+        while(status->HasNext()) {
+//            std::cout << "Has next!" << std::endl;
+            for(auto& line : status->Next()) {
+                std::cout << line << std::endl;
+            }
+        }
+    } while(status->StreamIsOpen());
 
-    return static_cast<int>(status->code);
+    return static_cast<int>(status->code());
 }
