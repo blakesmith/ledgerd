@@ -36,6 +36,10 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_
             ReadPartitionCommand* command = static_cast<ReadPartitionCommand*>(cmd.get());
             return execute_read_partition(stub.get(), command);
         } break;
+        case CommandType::STREAM_PARTITION: {
+            StreamPartitionCommand* command = static_cast<StreamPartitionCommand*>(cmd.get());
+            return execute_stream_partition(stub.get(), command);
+        } break;
         default: {
             UnknownCommand unknown(cmd->common_opts(), "");
             return execute_unknown(stub.get(), &unknown);
@@ -221,6 +225,14 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partiti
     exec_status->set_code(CommandExecutorCode::ERROR);
     exec_status->AddLine("Grpc error when reading partition");
     exec_status->AddLine(status.error_message());
+    exec_status->Close();
+    return exec_status;
+}
+
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_stream_partition(Ledgerd::Stub* stub, const StreamPartitionCommand* cmd) {
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus(CommandExecutorCode::OK));
+    exec_status->AddLine("Streaming OK!");
     exec_status->Close();
     return exec_status;
 }
