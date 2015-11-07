@@ -38,7 +38,7 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_
         } break;
         case CommandType::STREAM_PARTITION: {
             StreamPartitionCommand* command = static_cast<StreamPartitionCommand*>(cmd.get());
-            return execute_stream_partition(stub.get(), command);
+            return execute_stream_partition(std::move(stub), command);
         } break;
         default: {
             UnknownCommand unknown(cmd->common_opts(), "");
@@ -51,6 +51,12 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_
     exec_status->AddLine("OK!");
     exec_status->Close();
     return exec_status;
+}
+
+void GrpcCommandExecutor::Stop() {
+    if(stream_thread.joinable()) {
+        stream_thread.join();
+    }
 }
 
 std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions& opts) {
@@ -229,11 +235,44 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partiti
     return exec_status;
 }
 
-std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_stream_partition(Ledgerd::Stub* stub, const StreamPartitionCommand* cmd) {
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_stream_partition(std::unique_ptr<Ledgerd::Stub> stub, const StreamPartitionCommand* cmd) {
     std::unique_ptr<CommandExecutorStatus> exec_status(
         new CommandExecutorStatus(CommandExecutorCode::OK));
-    exec_status->AddLine("Streaming OK!");
-    exec_status->Close();
+    stream_thread = std::thread(GrpcCommandExecutor::stream_read,
+                                std::move(stub),
+                                cmd,
+                                exec_status.get());
     return exec_status;
 }
+
+void GrpcCommandExecutor::stream_read(std::unique_ptr<Ledgerd::Stub> stub,
+                                      const StreamPartitionCommand* cmd,
+                                      CommandExecutorStatus* exec_status) {
+
+    StreamPartitionRequest sreq;
+    LedgerdMessageSet messages;
+    PositionSettings* position_settings = sreq.mutable_position_settings();
+    position_settings->set_behavior(PositionBehavior::FORGET);
+    sreq.set_topic_name(cmd->topic_name());
+    sreq.set_partition_num(cmd->partition_num());
+    sreq.set_start_id(cmd->start_id());
+    sreq.set_read_chunk_size(64);
+
+    grpc::ClientContext rcontext;
+    std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(stub->StreamPartition(&rcontext, sreq));
+
+    bool read = reader->Read(&messages);
+    if(read) {
+        exec_status->AddLine("Streaming OK!");
+    } else {
+        exec_status->AddLine("Failed to read!");
+    }
+    rcontext.TryCancel();
+    reader->Finish();
+
+    exec_status->Close();
 }
+}
+
+
+
