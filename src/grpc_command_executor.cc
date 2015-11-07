@@ -1,4 +1,5 @@
 #include <sstream>
+#include <iostream>
 
 #include <grpc/grpc.h>
 #include <grpc++/channel.h>
@@ -261,15 +262,14 @@ void GrpcCommandExecutor::stream_read(std::unique_ptr<Ledgerd::Stub> stub,
     grpc::ClientContext rcontext;
     std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(stub->StreamPartition(&rcontext, sreq));
 
-    bool read = reader->Read(&messages);
-    if(read) {
-        exec_status->AddLine("Streaming OK!");
-    } else {
-        exec_status->AddLine("Failed to read!");
+    while(reader->Read(&messages)) {
+        for(int i = 0; i < messages.messages_size(); i++) {
+            const LedgerdMessage& message = messages.messages(i);
+            exec_status->AddLine(message.data());
+        }
+        exec_status->Flush();
     }
-    rcontext.TryCancel();
     reader->Finish();
-
     exec_status->Close();
 }
 }
