@@ -1,5 +1,7 @@
 #include <iostream>
+#include <chrono>
 #include <memory>
+#include <thread>
 
 #include "command_parser.h"
 #include "grpc_command_executor.h"
@@ -18,6 +20,7 @@ int main(int argc, char **argv) {
                 std::cout << line << std::endl;
             }
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     } while(status->StreamIsOpen());
 
     executor.Stop();
