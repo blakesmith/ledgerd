@@ -1,6 +1,8 @@
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include <grpc++/server.h>
 #include <grpc++/server_builder.h>
@@ -164,7 +166,7 @@ grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const 
         }
 
         while(!context->IsCancelled()) {
-            sleep(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         consumer.Stop();
         consumer.Wait();
