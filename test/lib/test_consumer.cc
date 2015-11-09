@@ -98,6 +98,33 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(LedgerConsumer, ConsumerError) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    ledger_consumer consumer;
+    ledger_consumer_options consumer_opts;
+    ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+
+    size_t consumed_size = 0;
+    ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
+    consumer_opts.read_chunk_size = 1;
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, consume_function, &consumer_opts, &consumed_size));
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
+    EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, LEDGER_BEGIN));
+
+    ledger_consumer_wait(&consumer);
+    ledger_consumer_stop(&consumer);
+    EXPECT_EQ(0, consumed_size);
+
+    ledger_consumer_close(&consumer);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(LedgerConsumer, ConsumingMessagesWithDelay) {
     ledger_ctx ctx;
     ledger_topic_options options;

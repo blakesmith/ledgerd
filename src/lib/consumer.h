@@ -48,6 +48,7 @@ typedef struct {
     unsigned int partition_num;
     uint64_t start_id;
     bool active; // TOOD: Needs locking?
+    ledger_status status;
     ledger_consumer_position position;
     pthread_t consumer_thread;
 } ledger_consumer;

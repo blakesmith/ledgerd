@@ -93,6 +93,7 @@ ledger_status ledger_consumer_init(ledger_consumer *consumer, ledger_consume_fun
     consumer->func = func;
     consumer->data = data;
     consumer->active = false;
+    consumer->status = LEDGER_OK;
     ledger_consumer_position_init(&consumer->position);
     memcpy(&consumer->options, options, sizeof(ledger_consumer_options));
 
