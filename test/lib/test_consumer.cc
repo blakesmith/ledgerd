@@ -113,11 +113,10 @@ TEST(LedgerConsumer, ConsumerError) {
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
     consumer_opts.read_chunk_size = 1;
     ASSERT_EQ(LEDGER_OK, ledger_consumer_init(&consumer, consume_function, &consumer_opts, &consumed_size));
-    ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, TOPIC, 0));
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_attach(&consumer, &ctx, "BAD_TOPIC", 0));
     EXPECT_EQ(LEDGER_OK, ledger_consumer_start(&consumer, LEDGER_BEGIN));
 
     ledger_consumer_wait(&consumer);
-    ledger_consumer_stop(&consumer);
     EXPECT_EQ(0, consumed_size);
     EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, consumer.status);
 

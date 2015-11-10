@@ -51,6 +51,7 @@ typedef struct {
     ledger_status status;
     ledger_consumer_position position;
     pthread_t consumer_thread;
+    pthread_mutex_t lock;
 } ledger_consumer;
 
 ledger_status ledger_init_consumer_options(ledger_consumer_options *options);

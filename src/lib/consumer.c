@@ -25,7 +25,9 @@ static void *consumer_loop(void *consumer_ptr) {
                                    consumer->options.read_chunk_size, &messages);
 
         if(rc != LEDGER_OK) {
-            // TODO: Somehow propagate up to the user?
+            consumer->status = rc;
+            ledger_consumer_stop(consumer);
+            return NULL;
         }
 
         if(messages.nmessages == 0) {
@@ -40,7 +42,9 @@ static void *consumer_loop(void *consumer_ptr) {
                                                      consumer->partition_num,
                                                      next_message);
                     if(rc != LEDGER_OK) {
-                        // TODO: Bubble somehow
+                        consumer->status = rc;
+                        ledger_consumer_stop(consumer);
+                        return NULL;
                     }
                 }
             }
@@ -55,7 +59,6 @@ static void *consumer_loop(void *consumer_ptr) {
             if(consume_status == LEDGER_CONSUMER_ERROR) {
                 ledger_message_set_free(&messages);
                 return NULL;
-//                return LEDGER_ERR_CONSUMER;
             }
 
             next_message = messages.next_id;
@@ -68,7 +71,9 @@ static void *consumer_loop(void *consumer_ptr) {
                                                  consumer->partition_num,
                                                  next_message);
                 if(rc != LEDGER_OK) {
-                    // TODO: Bubble somehow
+                    consumer->status = rc;
+                    ledger_consumer_stop(consumer);
+                    return NULL;
                 }
             }
 

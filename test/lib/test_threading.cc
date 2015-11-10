@@ -30,7 +30,7 @@ static int cleanup(const char *directory) {
     return rmrf(directory);
 }
 
-static const int NUM_THREADS = 20;
+static const int NUM_THREADS = 5;
 static const int NUM_MESSAGES = 10000;
 
 void *write_worker(void *ctx_ptr) {
@@ -43,7 +43,7 @@ void *write_worker(void *ctx_ptr) {
         rc = ledger_write_partition(ctx, TOPIC, 0, (void *)&message, sizeof(uint32_t), NULL);
         if(rc != LEDGER_OK) {
             printf("Failed to write to partition: %d\n", rc);
-            exit(rc);
+            return NULL;
         }
     }
 
