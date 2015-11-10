@@ -119,6 +119,7 @@ TEST(LedgerConsumer, ConsumerError) {
     ledger_consumer_wait(&consumer);
     ledger_consumer_stop(&consumer);
     EXPECT_EQ(0, consumed_size);
+    EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, consumer.status);
 
     ledger_consumer_close(&consumer);
     ledger_close_context(&ctx);
