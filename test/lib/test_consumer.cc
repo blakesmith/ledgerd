@@ -402,4 +402,12 @@ TEST(LedgerConsumer, ConsumerTriggersStopAndWait) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(LedgerConsumerGroup, ConsumerGroupMultiplePartitions) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    ledger_consumer_options consumer_opts;
+    ledger_consumer_group consumers;
+    ledger_write_status status;
+}
+
 }

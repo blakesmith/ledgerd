@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 199309L
 
+#include <assert.h>
 #include <string.h>
 #include <time.h>
 
@@ -44,6 +45,7 @@ static void *consumer_loop(void *consumer_ptr) {
                     if(rc != LEDGER_OK) {
                         consumer->status = rc;
                         ledger_consumer_stop(consumer);
+
                         return NULL;
                     }
                 }
@@ -200,4 +202,95 @@ uint64_t ledger_consumer_position_get(ledger_consumer_position *position) {
     p = position->pos;
     pthread_mutex_unlock(&position->lock);
     return p;
+}
+
+ledger_status ledger_consumer_group_init(ledger_consumer_group *group, unsigned int nconsumers,
+                                         ledger_consume_function func, ledger_consumer_options *options,
+                                         void *data) {
+    ledger_status rc;
+    int i;
+
+    group->nconsumers = nconsumers;
+    group->consumers = ledger_reallocarray(group->consumers,
+                                           nconsumers,
+                                           sizeof(ledger_consumer));
+    ledger_check_rc(group->consumers != NULL, LEDGER_ERR_MEMORY, "Failed to allocate consumers");
+
+    for(i = 0; i < nconsumers; i++) {
+        rc = ledger_consumer_init(&group->consumers[i], func, options, data);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to init consumer");
+    }
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
+ledger_status ledger_consumer_group_attach(ledger_consumer_group *group, ledger_ctx *ctx,
+                                           const char *topic_name, unsigned int *partition_ids) {
+    ledger_status rc = LEDGER_OK;
+    int i;
+
+    for(i = 0; i < group->nconsumers; i++) {
+        rc = ledger_consumer_attach(&group->consumers[i], ctx, topic_name, partition_ids[i]);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to attach consumer from group");
+    }
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
+ledger_status ledger_consumer_group_start(ledger_consumer_group *group) {
+    ledger_status rc = LEDGER_OK;
+    int i;
+
+    for(i = 0; i < group->nconsumers; i++) {
+        rc = ledger_consumer_start(&group->consumers[i], LEDGER_BEGIN);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to start consumer in group");
+    }
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
+ledger_status ledger_consumer_group_stop(ledger_consumer_group *group) {
+    ledger_status rc = LEDGER_OK;
+    int i;
+
+    for(i = 0; i < group->nconsumers; i++) {
+        rc = ledger_consumer_stop(&group->consumers[i]);
+        ledger_check_rc(rc == LEDGER_OK, rc, "Failed to start consumer in group");
+    }
+
+    return LEDGER_OK;
+
+error:
+    return rc;
+}
+
+void ledger_consumer_group_wait_for_positions(ledger_consumer_group *group, uint64_t *positions, unsigned int npositions) {
+    int i;
+
+    assert(npositions == group->nconsumers);
+
+    for(i = 0; i < group->nconsumers; i++) {
+        ledger_consumer_wait_for_position(&group->consumers[i], positions[i]);
+    }
+}
+
+void ledger_consumer_group_wait(ledger_consumer_group *group) {
+    int i;
+
+    for(i = 0; i < group->nconsumers; i++) {
+        ledger_consumer_wait(&group->consumers[i]);
+    }
+}
+
+void ledger_consumer_group_free(ledger_consumer_group *group) {
+    free(group->consumers);
 }

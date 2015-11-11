@@ -54,6 +54,13 @@ typedef struct {
     pthread_mutex_t lock;
 } ledger_consumer;
 
+typedef struct {
+    unsigned int nconsumers;
+    unsigned int *partition_ids;
+    ledger_consumer *consumers;
+} ledger_consumer_group;
+
+// Consumer
 ledger_status ledger_init_consumer_options(ledger_consumer_options *options);
 ledger_status ledger_consumer_init(ledger_consumer *consumer, ledger_consume_function func,
                                    ledger_consumer_options *options, void *data);
@@ -65,9 +72,28 @@ void ledger_consumer_wait(ledger_consumer *consumer);
 void ledger_consumer_wait_for_position(ledger_consumer *consumer, uint64_t message_id);
 void ledger_consumer_close(ledger_consumer *consumer);
 
+
+// Consumer position
 void ledger_consumer_position_init(ledger_consumer_position *position);
 void ledger_consumer_position_set(ledger_consumer_position *position, uint64_t p);
 uint64_t ledger_consumer_position_get(ledger_consumer_position *position);
+
+// Consumer group
+ledger_status leger_consumer_group_init(ledger_consumer_group *group, unsigned int nconsumers,
+                                        ledger_consume_function func, ledger_consumer_options *options,
+                                        void *data);
+
+ledger_status ledger_consumer_group_attach(ledger_consumer_group *group, ledger_ctx *ctx,
+                                           const char *topic_name, unsigned int *partition_ids);
+
+ledger_status ledger_consumer_group_start(ledger_consumer_group *group);
+ledger_status ledger_consumer_group_stop(ledger_consumer_group *group);
+
+void ledger_consumer_group_wait_for_positions(ledger_consumer_group *group, uint64_t *positions, unsigned int npositions);
+void ledger_consumer_group_wait(ledger_consumer_group *group);
+
+
+void ledger_consumer_group_free(ledger_consumer_group *group);
 
 #if defined(__cplusplus)
 }
