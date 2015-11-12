@@ -79,7 +79,7 @@ void ledger_consumer_position_set(ledger_consumer_position *position, uint64_t p
 uint64_t ledger_consumer_position_get(ledger_consumer_position *position);
 
 // Consumer group
-ledger_status leger_consumer_group_init(ledger_consumer_group *group, unsigned int nconsumers,
+ledger_status ledger_consumer_group_init(ledger_consumer_group *group, unsigned int nconsumers,
                                         ledger_consume_function func, ledger_consumer_options *options,
                                         void *data);
 
@@ -93,7 +93,7 @@ void ledger_consumer_group_wait_for_positions(ledger_consumer_group *group, uint
 void ledger_consumer_group_wait(ledger_consumer_group *group);
 
 
-void ledger_consumer_group_free(ledger_consumer_group *group);
+void ledger_consumer_group_close(ledger_consumer_group *group);
 
 #if defined(__cplusplus)
 }

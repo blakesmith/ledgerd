@@ -211,7 +211,7 @@ ledger_status ledger_consumer_group_init(ledger_consumer_group *group, unsigned 
     int i;
 
     group->nconsumers = nconsumers;
-    group->consumers = ledger_reallocarray(group->consumers,
+    group->consumers = ledger_reallocarray(NULL,
                                            nconsumers,
                                            sizeof(ledger_consumer));
     ledger_check_rc(group->consumers != NULL, LEDGER_ERR_MEMORY, "Failed to allocate consumers");
@@ -291,6 +291,6 @@ void ledger_consumer_group_wait(ledger_consumer_group *group) {
     }
 }
 
-void ledger_consumer_group_free(ledger_consumer_group *group) {
+void ledger_consumer_group_close(ledger_consumer_group *group) {
     free(group->consumers);
 }

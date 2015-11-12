@@ -65,6 +65,20 @@ static ledger_consume_status stop_consume_function(ledger_consumer_ctx *ctx,
     return LEDGER_CONSUMER_STOP;
 }
 
+static pthread_mutex_t group_lock;
+static ledger_consume_status group_consume_function(ledger_consumer_ctx *ctx, ledger_message_set *messages, void *data) {
+    int i;
+
+    pthread_mutex_lock(&group_lock);
+    size_t *consumed_size = static_cast<size_t*>(data);
+    for(i = 0; i < messages->nmessages; i++) {
+        *consumed_size = *consumed_size + messages->messages[i].len;
+    }
+    pthread_mutex_unlock(&group_lock);
+
+    return LEDGER_CONSUMER_OK;
+}
+
 TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ledger_ctx ctx;
     ledger_topic_options options;
@@ -406,8 +420,37 @@ TEST(LedgerConsumerGroup, ConsumerGroupMultiplePartitions) {
     ledger_ctx ctx;
     ledger_topic_options options;
     ledger_consumer_options consumer_opts;
-    ledger_consumer_group consumers;
+    ledger_consumer_group group;
     ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 3, &options));
+
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, NULL));
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 1, (void *)"hello", 5, NULL));
+    ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 2, (void *)"hello", 5, NULL));
+
+    size_t consumed_size = 0;
+    pthread_mutex_init(&group_lock, NULL);
+    ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
+    consumer_opts.read_chunk_size = 2;
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_group_init(&group, 3, group_consume_function, &consumer_opts, &consumed_size));
+    unsigned int partition_ids[] = {0, 1, 2};
+    ASSERT_EQ(LEDGER_OK, ledger_consumer_group_attach(&group, &ctx, TOPIC, partition_ids));
+    EXPECT_EQ(LEDGER_OK, ledger_consumer_group_start(&group));
+
+    uint64_t positions[] = {0, 0, 0};
+    ledger_consumer_group_wait_for_positions(&group, positions, 3);
+    ledger_consumer_group_stop(&group);
+    ledger_consumer_group_wait(&group);
+    EXPECT_EQ(15, consumed_size);
+
+    ledger_consumer_group_close(&group);
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
 }
