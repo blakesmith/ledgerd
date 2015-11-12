@@ -148,6 +148,29 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, LookupTopic) {
+    ledger_ctx ctx;
+    ledger_topic *topic;
+    ledger_topic_options options;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    topic = ledger_lookup_topic(&ctx, TOPIC);
+    EXPECT_TRUE(topic != NULL);
+    EXPECT_STREQ(TOPIC, topic->name);
+    EXPECT_EQ(1, topic->npartitions);
+
+    topic = ledger_lookup_topic(&ctx, "NOT_FOUND");
+    EXPECT_EQ(NULL, topic);
+
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, HeapAllocatedTopicNames) {
     ledger_ctx ctx;
     ledger_topic_options options;

@@ -72,7 +72,7 @@ error:
     return rc;
 }
 
-static ledger_topic *lookup_topic(ledger_ctx *ctx, const char *name) {
+ledger_topic *ledger_lookup_topic(ledger_ctx *ctx, const char *name) {
     ledger_topic *topic = NULL;
     dnode_t *dtopic;
 
@@ -90,7 +90,7 @@ ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
     ledger_status rc;
     ledger_topic *topic = NULL;
 
-    topic = lookup_topic(ctx, name);
+    topic = ledger_lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
     return ledger_topic_write_partition(topic, partition_num, data, len, status);
@@ -109,7 +109,7 @@ ledger_status ledger_write(ledger_ctx *ctx, const char *topic_name,
     ledger_topic *topic = NULL;
     static const uint32_t seed = 42;
 
-    topic = lookup_topic(ctx, topic_name);
+    topic = ledger_lookup_topic(ctx, topic_name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
     MurmurHash3_x86_32(partition_key, key_len, seed, &hash);
@@ -127,7 +127,7 @@ ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
     ledger_status rc;
     ledger_topic *topic = NULL;
 
-    topic = lookup_topic(ctx, name);
+    topic = ledger_lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
     return ledger_topic_read_partition(topic, partition_num, start_id,
@@ -142,7 +142,7 @@ ledger_status ledger_wait_messages(ledger_ctx *ctx, const char *name,
     ledger_status rc;
     ledger_topic *topic = NULL;
 
-    topic = lookup_topic(ctx, name);
+    topic = ledger_lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
     return ledger_topic_wait_messages(topic, partition_num);
@@ -156,7 +156,7 @@ ledger_status ledger_signal_readers(ledger_ctx *ctx, const char *name,
     ledger_status rc;
     ledger_topic *topic = NULL;
 
-    topic = lookup_topic(ctx, name);
+    topic = ledger_lookup_topic(ctx, name);
     ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
 
     return ledger_topic_signal_readers(topic, partition_num);

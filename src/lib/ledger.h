@@ -29,6 +29,7 @@ ledger_status ledger_write(ledger_ctx *ctx, const char *topic_name,
                            const char *partition_key, size_t key_len,
                            void *data, size_t len,
                            ledger_write_status *status);
+ledger_topic *ledger_lookup_topic(ledger_ctx *ctx, const char *name);
 ledger_status ledger_write_partition(ledger_ctx *ctx, const char *name,
                                      unsigned int partition_num, void *data,
                                      size_t len, ledger_write_status *status);
