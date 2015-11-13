@@ -50,6 +50,18 @@ TEST(CommandParser, OpenTopic) {
     EXPECT_EQ(1, cmd->partition_count());
 }
 
+TEST(CommandParser, GetTopic) {
+    CommandParser parser;
+    const char *argv[] { "ledgerd_client", "--command", "get_topic", "--topic", "my_topic" };
+    int argc = 5;
+
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
+    EXPECT_EQ("get_topic", command->name());
+    ASSERT_EQ(CommandType::GET_TOPIC, command->type());
+    GetTopicCommand* cmd = static_cast<GetTopicCommand*>(command.get());
+    EXPECT_EQ("my_topic", cmd->topic_name());
+}
+
 TEST(CommandParser, WritePartition) {
     CommandParser parser;
     const char *argv[] { "ledgerd_client", "--command", "write_partition", "--topic", "my_topic", "--partition", "0", "--data", "hello" };

@@ -60,6 +60,23 @@ uint32_t OpenTopicCommand::partition_count() const {
     return partition_count_;
 }
 
+GetTopicCommand::GetTopicCommand(const CommonOptions& common_opts,
+                                 const std::string& topic_name)
+    : Command(common_opts),
+      topic_name_(topic_name) { }
+
+CommandType GetTopicCommand::type() const {
+    return CommandType::GET_TOPIC;
+}
+
+const std::string& GetTopicCommand::topic_name() const {
+    return topic_name_;
+}
+
+const std::string GetTopicCommand::name() const {
+    return "get_topic";
+}
+
 WritePartitionCommand::WritePartitionCommand(const CommonOptions& common_opts,
                                              const std::string& topic_name,
                                              uint32_t partition_num,

@@ -18,6 +18,7 @@ class GrpcCommandExecutor : public CommandExecutor {
     std::unique_ptr<CommandExecutorStatus> execute_unknown(Ledgerd::Stub* stub, const UnknownCommand* cmd);
     std::unique_ptr<CommandExecutorStatus> execute_ping(Ledgerd::Stub* stub, const PingCommand* cmd);
     std::unique_ptr<CommandExecutorStatus> execute_open_topic(Ledgerd::Stub* stub, const OpenTopicCommand* cmd);
+    std::unique_ptr<CommandExecutorStatus> execute_get_topic(Ledgerd::Stub* stub, const GetTopicCommand* cmd);
     std::unique_ptr<CommandExecutorStatus> execute_write_partition(Ledgerd::Stub* stub, const WritePartitionCommand* cmd);
     std::unique_ptr<CommandExecutorStatus> execute_read_partition(Ledgerd::Stub* stub, const ReadPartitionCommand* cmd);
     std::unique_ptr<CommandExecutorStatus> execute_stream_partition(std::unique_ptr<Ledgerd::Stub> stub, const StreamPartitionCommand* cmd);

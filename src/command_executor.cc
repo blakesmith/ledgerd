@@ -45,7 +45,6 @@ void CommandExecutorStatus::Flush() {
 }
 
 void CommandExecutorStatus::flush() {
-    std::lock_guard<std::mutex> lock(_lock);
     _has_next = true;
 }
 

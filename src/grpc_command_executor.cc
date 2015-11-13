@@ -29,6 +29,10 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_
             OpenTopicCommand* command = static_cast<OpenTopicCommand*>(cmd.get());
             return execute_open_topic(stub.get(), command);
         } break;
+        case CommandType::GET_TOPIC: {
+            GetTopicCommand* command = static_cast<GetTopicCommand*>(cmd.get());
+            return execute_get_topic(stub.get(), command);
+        } break;
         case CommandType::WRITE_PARTITION: {
             WritePartitionCommand* command = static_cast<WritePartitionCommand*>(cmd.get());
             return execute_write_partition(stub.get(), command);
@@ -149,6 +153,37 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(L
 
     exec_status->set_code(CommandExecutorCode::ERROR);
     exec_status->AddLine("Error opening topic");
+    exec_status->AddLine(status.error_message());
+    exec_status->Close();
+    return exec_status;
+}
+
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_get_topic(Ledgerd::Stub* stub, const GetTopicCommand* cmd) {
+    TopicRequest request;
+    TopicResponse response;
+    request.set_topic_name(cmd->topic_name());
+    grpc::ClientContext context;
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus());
+
+    grpc::Status status = stub->GetTopic(&context, request, &response);
+    if(status.ok()) {
+        std::stringstream ss;
+        if(response.found()) {
+            ss << "Name: " << response.topic().name() << std::endl;
+            ss << "Partition count: " << response.topic().npartitions();
+            exec_status->AddLine(ss.str());
+        } else {
+            ss << "Topic not found: " << cmd->topic_name();
+            exec_status->AddLine(ss.str());
+        }
+
+        exec_status->Close();
+        return exec_status;
+    }
+
+    exec_status->set_code(CommandExecutorCode::ERROR);
+    exec_status->AddLine("Grpc error when looking up topic");
     exec_status->AddLine(status.error_message());
     exec_status->Close();
     return exec_status;

@@ -9,6 +9,7 @@ enum CommandType {
     UNKNOWN,
     PING,
     OPEN_TOPIC,
+    GET_TOPIC,
     WRITE_PARTITION,
     READ_PARTITION,
     STREAM_PARTITION
@@ -115,6 +116,17 @@ public:
     const std::string& topic_name() const;
     uint32_t partition_num() const;
     uint64_t start_id() const;
+};
+
+class GetTopicCommand : public Command {
+    std::string topic_name_;
+public:
+    GetTopicCommand(const CommonOptions& common_opts,
+                    const std::string& topic_name);
+    CommandType type() const;
+    const std::string name() const;
+
+    const std::string& topic_name() const;
 };
 }
 

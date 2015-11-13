@@ -109,6 +109,10 @@ std::unique_ptr<Command> CommandParser::MakeCommand(int argc, char **argv) {
                                             full_opts.topic,
                                             full_opts.partition_num,
                                             full_opts.start_id));
+    } else if(full_opts.command_name == "get_topic") {
+        return std::unique_ptr<Command>(new GetTopicCommand(
+                                            full_opts.common_opts,
+                                            full_opts.topic));
     }
 
     return std::unique_ptr<Command>(new UnknownCommand(
