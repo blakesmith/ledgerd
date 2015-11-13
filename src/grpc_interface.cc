@@ -79,6 +79,23 @@ grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTo
     return grpc::Status::OK;
 }
 
+grpc::Status GrpcInterface::GetTopic(grpc::ServerContext *context,
+                                     const TopicRequest *request,
+                                     TopicResponse *response) {
+    ledger_topic *topic;
+
+    topic = ledgerd_service_.GetTopic(request->topic_name());
+    if(topic == nullptr) {
+        response->set_found(false);
+    } else {
+        response->set_found(true);
+        ledgerd::Topic *ptopic = response->mutable_topic();
+        ptopic->set_name(topic->name);
+        ptopic->set_npartitions(topic->npartitions);
+    }
+    return grpc::Status::OK;
+}
+
 grpc::Status GrpcInterface::WritePartition(grpc::ServerContext *context, const WritePartitionRequest *req,
                             WriteResponse *resp) {
     ledger_status rc;

@@ -2,6 +2,11 @@ syntax = "proto3";
 
 package ledgerd;
 
+message Topic {
+    string name = 1;
+    uint32 npartitions = 2;
+}
+
 message PingRequest {
     string ping = 1;
 }
@@ -45,6 +50,15 @@ message WritePartitionRequest {
     string topic_name = 1;
     uint32 partition_num = 2;
     bytes data = 3;
+}
+
+message TopicRequest {
+    string topic_name = 1;
+}
+
+message TopicResponse {
+    bool found = 1;
+    Topic topic = 2;
 }
 
 message WriteResponse {
@@ -96,6 +110,7 @@ message ReadResponse {
 service Ledgerd {
     rpc Ping(PingRequest) returns (PingResponse) {}
     rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
+    rpc GetTopic(TopicRequest) returns (TopicResponse) {}
     rpc WritePartition(WritePartitionRequest) returns (WriteResponse) {}
     rpc ReadPartition(ReadPartitionRequest) returns (ReadResponse) {}
     rpc StreamPartition(StreamPartitionRequest) returns (stream LedgerdMessageSet) {}

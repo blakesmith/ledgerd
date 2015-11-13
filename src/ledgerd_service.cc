@@ -23,6 +23,10 @@ ledger_status LedgerdService::OpenTopic(const std::string& name,
     return ledger_open_topic(&ctx, name.c_str(), partition_count, options);
 }
 
+ledger_topic *LedgerdService::GetTopic(const std::string& name) {
+    return ledger_lookup_topic(&ctx, name.c_str());
+}
+
 ledger_status LedgerdService::WritePartition(const std::string& topic_name,
                                              uint32_t partition_number,
                                              const std::string& data,

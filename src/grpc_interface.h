@@ -18,6 +18,9 @@ public:
     grpc::Status OpenTopic(grpc::ServerContext *context, const OpenTopicRequest *req,
                            LedgerdResponse *resp) override;
 
+    grpc::Status GetTopic(grpc::ServerContext *context, const TopicRequest *request,
+                          TopicResponse *response) override;
+
     grpc::Status WritePartition(grpc::ServerContext *context, const WritePartitionRequest *req,
                                 WriteResponse *resp) override;
 

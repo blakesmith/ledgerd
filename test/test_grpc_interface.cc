@@ -102,6 +102,49 @@ TEST(GrpcInterface, SimpleReadWrite) {
     server->Shutdown();
 }
 
+TEST(GrpcInterface, GetTopic) {
+    LedgerdServiceConfig config;
+    config.set_grpc_address("0.0.0.0:50051");
+    config.set_root_directory("/tmp/ledgerd");
+    LedgerdService ledgerd_service(config);
+    GrpcInterface grpc_interface(ledgerd_service);;
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
+    builder.RegisterService(&grpc_interface);
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    auto client = build_client();
+
+    OpenTopicRequest treq;
+    LedgerdResponse tres;
+    treq.set_name("grpc_interface_open_topic");
+    treq.set_partition_count(3);
+
+    grpc::ClientContext ocontext;
+    grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
+    ASSERT_EQ(true, ostatus.ok());
+    ASSERT_EQ(LedgerdStatus::OK, tres.status());
+
+    TopicRequest request;
+    TopicResponse response;
+    request.set_topic_name("grpc_interface_open_topic");
+    grpc::ClientContext context;
+
+    grpc::Status status = client->GetTopic(&context, request, &response);
+    ASSERT_EQ(true, status.ok());
+    EXPECT_EQ(true, response.found());
+    EXPECT_EQ("grpc_interface_open_topic", response.topic().name());
+    EXPECT_EQ(3, response.topic().npartitions());
+
+    grpc::ClientContext c2;
+    response.Clear();
+    request.set_topic_name("not_found");
+    status = client->GetTopic(&c2, request, &response);
+    ASSERT_EQ(true, status.ok());
+    EXPECT_EQ(false, response.found());
+
+    server->Shutdown();
+}
+
 TEST(GrpcInterface, StreamPartition) {
     LedgerdServiceConfig config;
     config.set_grpc_address("0.0.0.0:50051");
