@@ -148,6 +148,22 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, BadTopicOpen) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_open_topic(&ctx, TOPIC, 0, &options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    ASSERT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_open_topic(&ctx, TOPIC, 1, &options));
+
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, LookupTopic) {
     ledger_ctx ctx;
     ledger_topic *topic;

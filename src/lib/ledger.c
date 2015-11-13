@@ -55,6 +55,12 @@ ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
     ledger_status rc;
     int rv;
     ledger_topic *topic = NULL;
+    ledger_topic *lookup = NULL;
+
+    ledger_check_rc(partition_count > 0, LEDGER_ERR_BAD_TOPIC, "You must specify more than one partition");
+
+    lookup = ledger_lookup_topic(ctx, name);
+    ledger_check_rc(lookup == NULL, LEDGER_ERR_BAD_TOPIC, "That topic already exists");
 
     rc = ledger_topic_new(name, &topic);
     ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_MEMORY, "Failed to allocate topic");

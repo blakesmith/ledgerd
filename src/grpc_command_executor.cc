@@ -142,7 +142,7 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(L
             std::stringstream ss;
             ss << "Ledger code: " << response.status();
             exec_status->set_code(CommandExecutorCode::ERROR);
-            exec_status->AddLine("Ledger error when wrting to partition");
+            exec_status->AddLine("Ledger error when opening topic");
             exec_status->AddLine(response.error_message());
             exec_status->AddLine(ss.str());
         }
@@ -211,7 +211,7 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_write_partit
             std::stringstream ss;
             ss << "Ledger code: " << lresponse.status();
             exec_status->set_code(CommandExecutorCode::ERROR);
-            exec_status->AddLine("Ledger error when wrting to partition");
+            exec_status->AddLine("Ledger error when writing to partition");
             exec_status->AddLine(lresponse.error_message());
             exec_status->AddLine(ss.str());
         }
