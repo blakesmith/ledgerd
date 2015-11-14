@@ -207,4 +207,84 @@ TEST(GrpcInterface, StreamPartition) {
     server->Shutdown();
 }
 
+TEST(GrpcInterface, Stream) {
+    const std::string topic_name = "grpc_interface_stream_topic";
+    LedgerdServiceConfig config;
+    config.set_grpc_address("0.0.0.0:50051");
+    config.set_root_directory("/tmp/ledgerd");
+    LedgerdService ledgerd_service(config);
+    GrpcInterface grpc_interface(ledgerd_service);;
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
+    builder.RegisterService(&grpc_interface);
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    auto client = build_client();
+
+    OpenTopicRequest treq;
+    LedgerdResponse tres;
+    treq.set_name(topic_name);
+    treq.set_partition_count(2);
+
+    grpc::ClientContext ocontext;
+    grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
+    ASSERT_EQ(true, ostatus.ok());
+    ASSERT_EQ(LedgerdStatus::OK, tres.status());
+
+    StreamRequest sreq;
+    PositionSettings* position_settings = sreq.mutable_position_settings();
+    position_settings->set_behavior(PositionBehavior::FORGET);
+    sreq.set_topic_name(topic_name);
+    sreq.add_partition_ids(0);
+    sreq.add_partition_ids(1);
+    sreq.set_read_chunk_size(64);
+
+    grpc::ClientContext rcontext;
+    std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(client->Stream(&rcontext, sreq));
+
+    sleep(1);
+
+    LedgerdMessageSet m1;
+    LedgerdMessageSet m2;
+
+    WritePartitionRequest wreq;
+    WriteResponse wres;
+    wreq.set_topic_name(topic_name);
+    wreq.set_partition_num(0);
+    wreq.set_data("hello");
+    grpc::ClientContext wcontext;
+    grpc::Status wstatus = client->WritePartition(&wcontext, wreq, &wres);
+    ASSERT_EQ(LedgerdStatus::OK, wres.ledger_response().status());
+    ASSERT_EQ(true, wstatus.ok());
+
+    ASSERT_EQ(true, reader->Read(&m1));
+
+    WritePartitionRequest wreq2;
+    WriteResponse wres2;
+    wreq2.set_topic_name(topic_name);
+    wreq2.set_partition_num(1);
+    wreq2.set_data("there");
+    grpc::ClientContext wcontext2;
+    grpc::Status wstatus2 = client->WritePartition(&wcontext2, wreq2, &wres2);
+    ASSERT_EQ(LedgerdStatus::OK, wres.ledger_response().status());
+    ASSERT_EQ(true, wstatus2.ok());
+
+    ASSERT_EQ(true, reader->Read(&m2));
+    rcontext.TryCancel();
+    grpc::Status sstatus = reader->Finish();
+
+    ASSERT_EQ(grpc::StatusCode::CANCELLED, sstatus.error_code());
+    ASSERT_EQ(1, m1.messages_size());
+    ASSERT_EQ(1, m2.messages_size());
+    EXPECT_EQ(0, m1.partition_num());
+    EXPECT_EQ(1, m2.partition_num());
+
+    const LedgerdMessage& mp1 = m1.messages(0);
+    EXPECT_EQ("hello", mp1.data());
+
+    const LedgerdMessage& mp2 = m2.messages(0);
+    EXPECT_EQ("there", mp2.data());
+
+    server->Shutdown();
+}
+
 }

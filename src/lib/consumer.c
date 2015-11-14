@@ -248,7 +248,7 @@ ledger_status ledger_consumer_group_start(ledger_consumer_group *group) {
     int i;
 
     for(i = 0; i < group->nconsumers; i++) {
-        rc = ledger_consumer_start(&group->consumers[i], LEDGER_BEGIN);
+        rc = ledger_consumer_start(&group->consumers[i], LEDGER_END);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to start consumer in group");
     }
 
