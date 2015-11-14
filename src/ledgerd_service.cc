@@ -53,4 +53,15 @@ ledger_status LedgerdService::StartConsumer(Consumer* consumer,
     }
     return consumer->Start(start_id);
 }
+
+ledger_status LedgerdService::StartConsumerGroup(ConsumerGroup* group,
+                                                 const std::string& topic_name,
+                                                 std::vector<unsigned int> partition_ids) {
+    ledger_status rc;
+    rc = group->Attach(&ctx, topic_name, partition_ids);
+    if(rc != LEDGER_OK) {
+        return rc;
+    }
+    return group->Start();
+}
 }

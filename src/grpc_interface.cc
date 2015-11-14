@@ -195,6 +195,45 @@ grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const 
 }
 
 grpc::Status GrpcInterface::Stream(grpc::ServerContext *context, const StreamRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) {
+    ledger_status rc;
+    ledger_consumer_options consumer_options;
+    const std::string position_key = request->position_settings().position_key();
+    std::vector<unsigned int> partition_ids;
+
+    for(int i = 0; i < request->partition_ids_size(); i++) {
+        partition_ids.push_back(request->partition_ids(i));
+    }
+
+    ledger_init_consumer_options(&consumer_options);
+    consumer_options.read_chunk_size = request->read_chunk_size();
+    if(request->position_settings().behavior() == PositionBehavior::STORE) {
+        consumer_options.position_behavior = ::LEDGER_STORE;
+        consumer_options.position_key = position_key.c_str();
+    } else {
+        consumer_options.position_behavior = ::LEDGER_FORGET;
+    }
+
+    try {
+        ConsumerGroup consumer_group(partition_ids.size(),
+                                     stream_f,
+                                     &consumer_options,
+                                     writer);
+        rc = ledgerd_service_.StartConsumerGroup(&consumer_group,
+                                                 request->topic_name(),
+                                                 partition_ids);
+        if(rc != ::LEDGER_OK) {
+            return grpc::Status(grpc::StatusCode::INTERNAL, "Something went wrong");
+        }
+
+        while(!context->IsCancelled()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        consumer_group.Stop();
+        consumer_group.Wait();
+    } catch (std::invalid_argument& e) {
+        return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
+    }
+
     return grpc::Status::OK;
 }
 

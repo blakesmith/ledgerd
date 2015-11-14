@@ -1,6 +1,8 @@
 #ifndef LEDGERD_SERVICE_H_
 #define LEDGERD_SERVICE_H_
 
+#include <vector>
+
 #include "ledger.h"
 
 #include "ledgerd_consumer.h"
@@ -23,6 +25,8 @@ public:
     ledger_status ReadPartition(const std::string& topic_name, uint32_t partition_number, uint64_t start_id, uint32_t nmessages, ledger_message_set *messages);
 
     ledger_status StartConsumer(Consumer* consumer, const std::string& topic_name, uint32_t partition_number, uint64_t start_id);
+
+    ledger_status StartConsumerGroup(ConsumerGroup* group, const std::string& topic_name, std::vector<unsigned int> partition_ids);
 };
 }
 

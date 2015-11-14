@@ -96,6 +96,7 @@ message StreamRequest {
     string topic_name = 1;
     uint32 read_chunk_size = 2;
     PositionSettings position_settings = 3;
+    repeated uint32 partition_ids = 4;
 }
 
 message LedgerdMessage {
