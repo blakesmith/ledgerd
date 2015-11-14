@@ -30,6 +30,8 @@ public:
                                ReadResponse *resp) override;
 
     grpc::Status StreamPartition(grpc::ServerContext *context, const StreamPartitionRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) override;
+
+    grpc::Status Stream(grpc::ServerContext *context, const StreamRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) override;
 };
 }
 

@@ -92,6 +92,12 @@ message StreamPartitionRequest {
     PositionSettings position_settings = 5;
 }
 
+message StreamRequest {
+    string topic_name = 1;
+    uint32 read_chunk_size = 2;
+    PositionSettings position_settings = 3;
+}
+
 message LedgerdMessage {
     uint64 id = 1;
     bytes data = 2;
@@ -115,5 +121,6 @@ service Ledgerd {
     rpc WritePartition(WritePartitionRequest) returns (WriteResponse) {}
     rpc ReadPartition(ReadPartitionRequest) returns (ReadResponse) {}
     rpc StreamPartition(StreamPartitionRequest) returns (stream LedgerdMessageSet) {}
+    rpc Stream(StreamRequest) returns (stream LedgerdMessageSet) {}
 }
 
