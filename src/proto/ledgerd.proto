@@ -99,7 +99,8 @@ message LedgerdMessage {
 
 message LedgerdMessageSet {
     uint64 next_id = 1;
-    repeated LedgerdMessage messages = 2;
+    uint32 partition_num = 2;
+    repeated LedgerdMessage messages = 3;
 }
 
 message ReadResponse {

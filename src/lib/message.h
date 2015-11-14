@@ -23,6 +23,7 @@ typedef struct {
 
 typedef struct {
     uint64_t next_id;
+    unsigned int partition_num;
     size_t nmessages;
     bool initialized;
     ledger_message *messages;

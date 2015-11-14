@@ -14,6 +14,33 @@
 
 
 namespace ledgerd {
+
+static void map_messages(ledger_message_set* messages, LedgerdMessageSet* message_set) {
+    message_set->set_next_id(messages->next_id);
+    message_set->set_partition_num(messages->partition_num);
+
+    for(int i = 0; i < messages->nmessages; ++i) {
+        LedgerdMessage* message = message_set->add_messages();
+        message->set_id(messages->messages[i].id);
+        message->set_data(messages->messages[i].data,
+                          messages->messages[i].len);
+    }
+}
+
+static ledger_consume_status stream_f(ledger_consumer_ctx* ctx,
+                                      ledger_message_set* messages,
+                                      void* data) {
+    auto writer = static_cast<grpc::ServerWriter<LedgerdMessageSet>*>(data);
+    LedgerdMessageSet message_set;
+    map_messages(messages, &message_set);
+    bool written = writer->Write(message_set);
+    if(written) {
+        return LEDGER_CONSUMER_OK;
+    } else {
+        return LEDGER_CONSUMER_STOP;
+    }
+}
+
 GrpcInterface::GrpcInterface(LedgerdService& ledgerd_service)
     : ledgerd_service_(ledgerd_service) { }
 
@@ -125,37 +152,10 @@ grpc::Status GrpcInterface::ReadPartition(grpc::ServerContext *context, const Re
         return grpc::Status::OK;
     }
     LedgerdMessageSet* message_set = resp->mutable_messages();
-    message_set->set_next_id(messages.next_id);
-
-    for(int i = 0; i < messages.nmessages; ++i) {
-        LedgerdMessage* message = message_set->add_messages();
-        message->set_id(messages.messages[i].id);
-        message->set_data(messages.messages[i].data, messages.messages[i].len);
-    }
-
+    map_messages(&messages, message_set);
     ledger_message_set_free(&messages);
 
     return grpc::Status::OK;
-}
-
-static ledger_consume_status stream_f(ledger_consumer_ctx* ctx,
-                                      ledger_message_set* messages,
-                                      void* data) {
-    auto writer = static_cast<grpc::ServerWriter<LedgerdMessageSet>*>(data);
-    LedgerdMessageSet message_set;
-    message_set.set_next_id(messages->next_id);
-    for(int i = 0; i < messages->nmessages; i++) {
-        LedgerdMessage* message = message_set.add_messages();
-        message->set_id(messages->messages[i].id);
-        message->set_data(messages->messages[i].data,
-                          messages->messages[i].len);
-    }
-    bool written = writer->Write(message_set);
-    if(written) {
-        return LEDGER_CONSUMER_OK;
-    } else {
-        return LEDGER_CONSUMER_STOP;
-    }
 }
 
 grpc::Status GrpcInterface::StreamPartition(grpc::ServerContext *context, const StreamPartitionRequest* request, grpc::ServerWriter<LedgerdMessageSet>* writer) {

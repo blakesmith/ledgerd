@@ -461,6 +461,8 @@ ledger_status ledger_partition_read(ledger_partition *partition, uint64_t start_
     journal_options.max_size_bytes = partition->options.journal_max_size_bytes;
 
     memset(messages, 0, sizeof(ledger_message_set));
+
+    messages->partition_num = partition->number;
     message_id = start_id;
     messages_left = nmessages;
     do {

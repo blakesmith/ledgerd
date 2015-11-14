@@ -378,6 +378,40 @@ TEST(Ledger, MultipleMessagesAtOffset) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, ReadMultiplePartitions) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message1[] = "hello";
+    const char message2[] = "there";
+    ledger_message_set messages;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 1, (void *)message2, sizeof(message2), NULL));
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, 0, 1, &messages));
+    EXPECT_EQ(1, messages.nmessages);
+    EXPECT_EQ(1, messages.next_id);
+    EXPECT_EQ(0, messages.partition_num);
+
+    ledger_message_set_free(&messages);
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 1, 0, 1, &messages));
+    EXPECT_EQ(1, messages.nmessages);
+    EXPECT_EQ(1, messages.next_id);
+    EXPECT_EQ(1, messages.partition_num);
+
+    ledger_message_set_free(&messages);
+
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, SmallerRead) {
     ledger_ctx ctx;
     ledger_topic_options options;

@@ -62,7 +62,7 @@ TEST(GrpcInterface, SimpleReadWrite) {
     OpenTopicRequest treq;
     LedgerdResponse tres;
     treq.set_name("grpc_interface_topic");
-    treq.set_partition_count(1);
+    treq.set_partition_count(2);
 
     grpc::ClientContext ocontext;
     grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
@@ -72,7 +72,7 @@ TEST(GrpcInterface, SimpleReadWrite) {
     WritePartitionRequest wreq;
     WriteResponse wres;
     wreq.set_topic_name("grpc_interface_topic");
-    wreq.set_partition_num(0);
+    wreq.set_partition_num(1);
     wreq.set_data("hello");
     grpc::ClientContext wcontext;
     grpc::Status wstatus = client->WritePartition(&wcontext, wreq, &wres);
@@ -84,7 +84,7 @@ TEST(GrpcInterface, SimpleReadWrite) {
     ReadPartitionRequest rreq;
     ReadResponse rres;
     rreq.set_topic_name("grpc_interface_topic");
-    rreq.set_partition_num(0);
+    rreq.set_partition_num(1);
     rreq.set_nmessages(1);
     rreq.set_start_id(message_id);
     grpc::ClientContext rcontext;
@@ -95,6 +95,7 @@ TEST(GrpcInterface, SimpleReadWrite) {
 
     const LedgerdMessageSet& messages = rres.messages();
     ASSERT_EQ(1, messages.messages_size());
+    EXPECT_EQ(1, messages.partition_num());
     const LedgerdMessage& message = messages.messages(0);
     EXPECT_EQ(message_id, message.id());
     EXPECT_EQ("hello", message.data());
@@ -160,7 +161,7 @@ TEST(GrpcInterface, StreamPartition) {
     OpenTopicRequest treq;
     LedgerdResponse tres;
     treq.set_name("grpc_interface_topic");
-    treq.set_partition_count(1);
+    treq.set_partition_count(2);
 
     grpc::ClientContext ocontext;
     grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
@@ -170,7 +171,7 @@ TEST(GrpcInterface, StreamPartition) {
     WritePartitionRequest wreq;
     WriteResponse wres;
     wreq.set_topic_name("grpc_interface_topic");
-    wreq.set_partition_num(0);
+    wreq.set_partition_num(1);
     wreq.set_data("hello");
     grpc::ClientContext wcontext;
     grpc::Status wstatus = client->WritePartition(&wcontext, wreq, &wres);
@@ -184,7 +185,7 @@ TEST(GrpcInterface, StreamPartition) {
     PositionSettings* position_settings = sreq.mutable_position_settings();
     position_settings->set_behavior(PositionBehavior::FORGET);
     sreq.set_topic_name("grpc_interface_topic");
-    sreq.set_partition_num(0);
+    sreq.set_partition_num(1);
     sreq.set_start_id(message_id);
     sreq.set_read_chunk_size(64);
 
@@ -197,6 +198,7 @@ TEST(GrpcInterface, StreamPartition) {
 
     ASSERT_EQ(grpc::StatusCode::CANCELLED, sstatus.error_code());
     ASSERT_EQ(1, messages.messages_size());
+    EXPECT_EQ(1, messages.partition_num());
 
     const LedgerdMessage& message = messages.messages(0);
     EXPECT_EQ(message_id, message.id());
