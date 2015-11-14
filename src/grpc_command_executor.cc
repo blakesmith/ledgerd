@@ -45,6 +45,10 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::Execute(std::unique_
             StreamPartitionCommand* command = static_cast<StreamPartitionCommand*>(cmd.get());
             return execute_stream_partition(std::move(stub), command);
         } break;
+        case CommandType::STREAM: {
+            StreamCommand* command = static_cast<StreamCommand*>(cmd.get());
+            return execute_stream(std::move(stub), command);
+        } break;
         default: {
             UnknownCommand unknown(cmd->common_opts(), "");
             return execute_unknown(stub.get(), &unknown);
@@ -274,16 +278,50 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_read_partiti
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_stream_partition(std::unique_ptr<Ledgerd::Stub> stub, const StreamPartitionCommand* cmd) {
     std::unique_ptr<CommandExecutorStatus> exec_status(
         new CommandExecutorStatus(CommandExecutorCode::OK));
-    stream_thread = std::thread(GrpcCommandExecutor::stream_read,
+    stream_thread = std::thread(GrpcCommandExecutor::stream_partition_read,
                                 std::move(stub),
                                 cmd,
                                 exec_status.get());
     return exec_status;
 }
 
-void GrpcCommandExecutor::stream_read(std::unique_ptr<Ledgerd::Stub> stub,
-                                      const StreamPartitionCommand* cmd,
-                                      CommandExecutorStatus* exec_status) {
+std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_stream(std::unique_ptr<Ledgerd::Stub> stub, const StreamCommand* cmd) {
+    std::unique_ptr<CommandExecutorStatus> exec_status(
+        new CommandExecutorStatus(CommandExecutorCode::OK));
+
+    TopicRequest request;
+    TopicResponse response;
+    request.set_topic_name(cmd->topic_name());
+    grpc::ClientContext context;
+    grpc::Status status = stub->GetTopic(&context, request, &response);
+    if(status.ok()) {
+        if(response.found()) {
+            const uint32_t npartitions = response.topic().npartitions();
+            stream_thread = std::thread(GrpcCommandExecutor::stream_read,
+                                        std::move(stub),
+                                        cmd,
+                                        npartitions,
+                                        exec_status.get());
+        } else {
+            std::stringstream ss;
+            ss << "Topic not found: " << cmd->topic_name();
+            exec_status->AddLine(ss.str());
+            exec_status->Close();
+        }
+
+        return exec_status;
+    }
+
+    exec_status->set_code(CommandExecutorCode::ERROR);
+    exec_status->AddLine("Grpc error when streaming read");
+    exec_status->AddLine(status.error_message());
+    exec_status->Close();
+    return exec_status;
+}
+
+void GrpcCommandExecutor::stream_partition_read(std::unique_ptr<Ledgerd::Stub> stub,
+                                                const StreamPartitionCommand* cmd,
+                                                CommandExecutorStatus* exec_status) {
 
     StreamPartitionRequest sreq;
     LedgerdMessageSet messages;
@@ -296,6 +334,35 @@ void GrpcCommandExecutor::stream_read(std::unique_ptr<Ledgerd::Stub> stub,
 
     grpc::ClientContext rcontext;
     std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(stub->StreamPartition(&rcontext, sreq));
+
+    while(reader->Read(&messages)) {
+        for(int i = 0; i < messages.messages_size(); i++) {
+            const LedgerdMessage& message = messages.messages(i);
+            exec_status->AddLine(message.data());
+        }
+        exec_status->Flush();
+    }
+    reader->Finish();
+    exec_status->Close();
+}
+
+void GrpcCommandExecutor::stream_read(std::unique_ptr<Ledgerd::Stub> stub,
+                                      const StreamCommand* cmd,
+                                      uint32_t npartitions,
+                                      CommandExecutorStatus* exec_status) {
+
+    StreamRequest sreq;
+    LedgerdMessageSet messages;
+    PositionSettings* position_settings = sreq.mutable_position_settings();
+    // TODO: Should we support remembering positions?
+    position_settings->set_behavior(PositionBehavior::FORGET);
+    // Request all the partitions
+    for(int i = 0; i < npartitions; i++) sreq.add_partition_ids(i);
+    sreq.set_topic_name(cmd->topic_name());
+    sreq.set_read_chunk_size(64);
+
+    grpc::ClientContext rcontext;
+    std::unique_ptr<grpc::ClientReader<LedgerdMessageSet>> reader(stub->Stream(&rcontext, sreq));
 
     while(reader->Read(&messages)) {
         for(int i = 0; i < messages.messages_size(); i++) {
