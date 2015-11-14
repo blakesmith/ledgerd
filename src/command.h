@@ -12,7 +12,8 @@ enum CommandType {
     GET_TOPIC,
     WRITE_PARTITION,
     READ_PARTITION,
-    STREAM_PARTITION
+    STREAM_PARTITION,
+    STREAM
 };
 
 struct CommonOptions {
@@ -116,6 +117,17 @@ public:
     const std::string& topic_name() const;
     uint32_t partition_num() const;
     uint64_t start_id() const;
+};
+
+class StreamCommand : public Command {
+    std::string topic_name_;
+public:
+    StreamCommand(const CommonOptions& common_opts,
+                  const std::string& topic_name);
+    CommandType type() const;
+    const std::string name() const;
+
+    const std::string& topic_name() const;
 };
 
 class GetTopicCommand : public Command {

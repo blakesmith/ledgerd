@@ -169,4 +169,22 @@ uint32_t StreamPartitionCommand::partition_num() const {
 uint64_t StreamPartitionCommand::start_id() const {
     return start_id_;
 }
+
+StreamCommand::StreamCommand(const CommonOptions& common_opts,
+                                 const std::string& topic_name)
+    : Command(common_opts),
+      topic_name_(topic_name) { }
+
+CommandType StreamCommand::type() const {
+    return CommandType::STREAM;
+}
+
+const std::string& StreamCommand::topic_name() const {
+    return topic_name_;
+}
+
+const std::string StreamCommand::name() const {
+    return "stream";
+}
+
 }

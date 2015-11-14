@@ -105,6 +105,18 @@ TEST(CommandParser, StreamPartition) {
     EXPECT_EQ(42, cmd->start_id());
 }
 
+TEST(CommandParser, Stream) {
+    CommandParser parser;
+    const char *argv[] { "ledgerd_client", "--command", "stream", "--topic", "my_topic" };
+    int argc = 5;
+
+    auto command = parser.MakeCommand(argc, const_cast<char**>(argv));
+    EXPECT_EQ("stream", command->name());
+    ASSERT_EQ(CommandType::STREAM, command->type());
+    StreamCommand* cmd = static_cast<StreamCommand*>(command.get());
+    EXPECT_EQ("my_topic", cmd->topic_name());
+}
+
 TEST(CommandParser, ReadPartitionNoStartOrNmessages) {
     CommandParser parser;
     const char *argv[] { "ledgerd_client", "--command", "read_partition", "--topic", "my_topic", "--partition", "0" };
