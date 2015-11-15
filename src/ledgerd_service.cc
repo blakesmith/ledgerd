@@ -18,9 +18,13 @@ LedgerdService::~LedgerdService() {
 }
 
 ledger_status LedgerdService::OpenTopic(const std::string& name,
-                                        uint32_t partition_count,
+                                        const std::vector<unsigned int>& partition_ids,
                                         ledger_topic_options *options) {
-    return ledger_open_topic(&ctx, name.c_str(), partition_count, options);
+    return ledger_open_topic(&ctx,
+                             name.c_str(),
+                             const_cast<unsigned int*>(partition_ids.data()),
+                             partition_ids.size(),
+                             options);
 }
 
 ledger_topic *LedgerdService::GetTopic(const std::string& name) {

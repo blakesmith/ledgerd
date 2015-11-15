@@ -45,7 +45,8 @@ TEST(Ledger, CreatesCorrectDirectories) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
+    unsigned int partition_ids[] = {0, 1};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 2, &options));
 
     dir = opendir(WORKING_DIR);
     ASSERT_TRUE(dir != NULL);
@@ -85,7 +86,8 @@ TEST(Ledger, BadWrites) {
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     EXPECT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_write_partition(&ctx, "bad-topic", 0, (void *)message, mlen, NULL));
 
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
+    unsigned int partition_ids[] = {0, 1};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 2, &options));
     EXPECT_EQ(LEDGER_ERR_BAD_PARTITION, ledger_write_partition(&ctx, TOPIC, 5, (void *)message, mlen, NULL));
 
     ledger_close_context(&ctx);
@@ -104,7 +106,8 @@ TEST(Ledger, WriteWithHashing) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 5, &options));
+    unsigned int partition_ids[] = {0, 1, 2, 3, 4};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 5, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_write(&ctx, TOPIC, "hello_msg", 9, (void *)message, mlen, &status));
     ASSERT_EQ(2, status.partition_num);
@@ -132,7 +135,8 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
     EXPECT_EQ(0, status.message_id);
@@ -156,9 +160,11 @@ TEST(Ledger, BadTopicOpen) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_open_topic(&ctx, TOPIC, 0, &options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
-    ASSERT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int pid1[] = {};
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_open_topic(&ctx, TOPIC, pid1, 0, &options));
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
+    ASSERT_EQ(LEDGER_ERR_BAD_TOPIC, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
@@ -173,7 +179,8 @@ TEST(Ledger, LookupTopic) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     topic = ledger_lookup_topic(&ctx, TOPIC);
     EXPECT_TRUE(topic != NULL);
@@ -205,7 +212,8 @@ TEST(Ledger, HeapAllocatedTopicNames) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, topic_open, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, topic_open, partition_ids, 1, &options));
     // Now destroy the heap allocation to enforce the correct topic name ownershipe
     free(topic_open);
 
@@ -235,7 +243,8 @@ TEST(Ledger, ReadEndOfJournal) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, NULL));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, NULL));
@@ -267,7 +276,8 @@ TEST(Ledger, CorruptMessage) {
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, CORRUPT_WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     options.drop_corrupt = true;
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
@@ -311,7 +321,8 @@ TEST(Ledger, DoubleCorruptMessage) {
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, CORRUPT_WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     options.drop_corrupt = true;
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
@@ -350,7 +361,8 @@ TEST(Ledger, MultipleMessagesAtOffset) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
@@ -389,7 +401,8 @@ TEST(Ledger, ReadMultiplePartitions) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
+    unsigned int partition_ids[] = {0, 1};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 2, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 1, (void *)message2, sizeof(message2), NULL));
@@ -423,7 +436,8 @@ TEST(Ledger, SmallerRead) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, sizeof(message1), NULL));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message2, sizeof(message2), NULL));
@@ -457,7 +471,8 @@ TEST(Ledger, JournalRotation) {
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
     options.journal_max_size_bytes = 100;
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     // Write enough messages to force a journal rotation
     messages_count = 10;

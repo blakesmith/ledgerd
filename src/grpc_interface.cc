@@ -87,6 +87,11 @@ grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTo
                                       LedgerdResponse *resp) {
     ledger_topic_options topic_options;
     ledger_status rc;
+    std::vector<unsigned int> partition_ids;
+
+    for(int i = 0; i < req->partition_ids_size(); i++) {
+        partition_ids.push_back(req->partition_ids(i));
+    }
 
     ledger_topic_options_init(&topic_options);
 
@@ -96,7 +101,7 @@ grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTo
         topic_options.journal_max_size_bytes = opts.journal_max_size_bytes();
     }
 
-    rc = ledgerd_service_.OpenTopic(req->name(), req->partition_count(), &topic_options);
+    rc = ledgerd_service_.OpenTopic(req->name(), partition_ids, &topic_options);
     resp->set_status(translate_status(rc));
     if(rc != ::LEDGER_OK) {
         // TODO: I REALLY need a reliable way to get error messages out

@@ -18,7 +18,7 @@ TEST(LedgerService, SimpleWriteRead) {
     LedgerdService ledger_service(config);
 
     ledger_topic_options_init(&topic_options);
-    rc = ledger_service.OpenTopic("my_topic", 1, &topic_options);
+    rc = ledger_service.OpenTopic("my_topic", std::vector<unsigned int>{0}, &topic_options);
     ASSERT_EQ(LEDGER_OK, rc);
     rc = ledger_service.WritePartition("my_topic", 0, "hello", &write_status);
     ASSERT_EQ(LEDGER_OK, rc);

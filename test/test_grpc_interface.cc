@@ -62,7 +62,8 @@ TEST(GrpcInterface, SimpleReadWrite) {
     OpenTopicRequest treq;
     LedgerdResponse tres;
     treq.set_name("grpc_interface_topic");
-    treq.set_partition_count(2);
+    treq.add_partition_ids(0);
+    treq.add_partition_ids(1);
 
     grpc::ClientContext ocontext;
     grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
@@ -118,7 +119,9 @@ TEST(GrpcInterface, GetTopic) {
     OpenTopicRequest treq;
     LedgerdResponse tres;
     treq.set_name("grpc_interface_open_topic");
-    treq.set_partition_count(3);
+    treq.add_partition_ids(0);
+    treq.add_partition_ids(1);
+    treq.add_partition_ids(2);
 
     grpc::ClientContext ocontext;
     grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
@@ -161,7 +164,8 @@ TEST(GrpcInterface, StreamPartition) {
     OpenTopicRequest treq;
     LedgerdResponse tres;
     treq.set_name("grpc_interface_topic");
-    treq.set_partition_count(2);
+    treq.add_partition_ids(0);
+    treq.add_partition_ids(1);
 
     grpc::ClientContext ocontext;
     grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);
@@ -223,7 +227,8 @@ TEST(GrpcInterface, Stream) {
     OpenTopicRequest treq;
     LedgerdResponse tres;
     treq.set_name(topic_name);
-    treq.set_partition_count(2);
+    treq.add_partition_ids(0);
+    treq.add_partition_ids(1);
 
     grpc::ClientContext ocontext;
     grpc::Status ostatus = client->OpenTopic(&ocontext, treq, &tres);

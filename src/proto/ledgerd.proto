@@ -42,8 +42,8 @@ message LedgerdResponse {
 
 message OpenTopicRequest {
     string name = 1;
-    uint32 partition_count = 2;
-    TopicOptions options = 3;
+    TopicOptions options = 2;
+    repeated uint32 partition_ids = 3;
 }
 
 message WritePartitionRequest {

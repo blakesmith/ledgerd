@@ -41,6 +41,7 @@ ledger_status ledger_topic_options_init(ledger_topic_options *options) {
 }
 
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
+                                unsigned int *partition_ids,
                                 unsigned int partition_count,
                                 ledger_topic_options *options) {
     int i;
@@ -74,7 +75,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
         partition_options.drop_corrupt = options->drop_corrupt;
         partition_options.journal_max_size_bytes = options->journal_max_size_bytes;
 
-        rc = ledger_partition_open(partition, topic_path, i, &partition_options);
+        rc = ledger_partition_open(partition, topic_path, partition_ids[i], &partition_options);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open partition");
     }
 

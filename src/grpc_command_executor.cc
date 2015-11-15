@@ -129,7 +129,9 @@ std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_open_topic(L
     OpenTopicRequest request;
     LedgerdResponse response;
     request.set_name(cmd->topic_name());
-    request.set_partition_count(cmd->partition_count());
+    for(int i = 0; i < cmd->partition_count(); i++) {
+        request.add_partition_ids(i);
+    }
     grpc::ClientContext context;
     std::unique_ptr<CommandExecutorStatus> exec_status(
         new CommandExecutorStatus());

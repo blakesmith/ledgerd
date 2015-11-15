@@ -5,6 +5,14 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.define "freebsd" do |bsd|
+    bsd.vm.hostname = "ledgerd-bsd.blakesmith.me"
+    bsd.vm.box = "freebsd10.2"
+    bsd.vm.network "private_network", ip: "192.168.55.11"
+    bsd.vm.provider "virtualbox" do |vb|
+      vb.gui = false
+    end
+  end
   config.vm.define "ledgerd" do |ledgerd|
     ledgerd.vm.hostname = "ledgerd.blakesmith.me"
     ledgerd.vm.box = "ubuntu/trusty64"

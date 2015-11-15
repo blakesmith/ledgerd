@@ -23,8 +23,11 @@ typedef struct {
 
 const char *ledger_err(ledger_ctx *ctx);
 ledger_status ledger_open_context(ledger_ctx *ctx, const char *root_directory);
-ledger_status ledger_open_topic(ledger_ctx *ctx, const char *name,
-                                unsigned int partition_count, ledger_topic_options *options);
+ledger_status ledger_open_topic(ledger_ctx *ctx,
+                                const char *name,
+                                unsigned int *partition_ids,
+                                unsigned int partition_count,
+                                ledger_topic_options *options);
 ledger_status ledger_write(ledger_ctx *ctx, const char *topic_name,
                            const char *partition_key, size_t key_len,
                            void *data, size_t len,

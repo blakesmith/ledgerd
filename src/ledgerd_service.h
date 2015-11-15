@@ -16,7 +16,7 @@ public:
     LedgerdService(const LedgerdServiceConfig& config);
     ~LedgerdService();
 
-    ledger_status OpenTopic(const std::string& name, uint32_t partition_count, ledger_topic_options *options);
+    ledger_status OpenTopic(const std::string& name, const std::vector<unsigned int>& partition_ids, ledger_topic_options *options);
 
     ledger_topic *GetTopic(const std::string& name);
 

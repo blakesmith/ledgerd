@@ -90,7 +90,8 @@ TEST(LedgerConsumer, ConsumingSinglePartitionNoThreading) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, NULL));
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5, &status));
@@ -150,7 +151,8 @@ TEST(LedgerConsumer, ConsumingMessagesWithDelay) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     std::string concated_str;
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
@@ -185,7 +187,8 @@ TEST(LedgerConsumer, ConsumingMessagesAtTheBeginningAndEnd) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     std::string concated_str;
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
@@ -221,7 +224,8 @@ TEST(LedgerConsumer, ConsumingMessagesAtTheEnd) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, &status));
 
@@ -258,7 +262,8 @@ TEST(LedgerConsumer, StorePosition) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, &status));
 
@@ -302,7 +307,8 @@ TEST(LedgerConsumer, StoreTwoPositionsDifferentPartitions) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 2, &options));
+    unsigned int partition_ids[] = {0, 1};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 2, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, &status));
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 1, (void *)"hello", 5, &status));
@@ -371,7 +377,8 @@ TEST(LedgerConsumer, PositionWithNoKey) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
     consumer_opts.position_behavior = LEDGER_STORE;
@@ -396,7 +403,8 @@ TEST(LedgerConsumer, ConsumerTriggersStopAndWait) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 1, &options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"hello", 5, NULL));
     ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)"there", 5, &status));
@@ -427,14 +435,14 @@ TEST(LedgerConsumerGroup, ConsumerGroupMultiplePartitions) {
     ASSERT_EQ(0, setup(WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
     ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
-    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, 3, &options));
+    unsigned int partition_ids[] = {0, 1, 2};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 3, &options));
 
     size_t consumed_size = 0;
     pthread_mutex_init(&group_lock, NULL);
     ASSERT_EQ(LEDGER_OK, ledger_init_consumer_options(&consumer_opts));
     consumer_opts.read_chunk_size = 2;
     ASSERT_EQ(LEDGER_OK, ledger_consumer_group_init(&group, 3, group_consume_function, &consumer_opts, &consumed_size));
-    unsigned int partition_ids[] = {0, 1, 2};
     ASSERT_EQ(LEDGER_OK, ledger_consumer_group_attach(&group, &ctx, TOPIC, partition_ids));
     EXPECT_EQ(LEDGER_OK, ledger_consumer_group_start(&group));
 
