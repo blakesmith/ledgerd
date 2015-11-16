@@ -1,4 +1,4 @@
-SUBDIRS = lib
+SUBDIRS = lib paxos
 
 AM_CPPFLAGS = -isystem $(top_srcdir)/lib/gtest/include -I$(top_srcdir)/src $(GTEST_CPPFLAGS) -I$(top_srcdir)/src/lib
 AM_CXXFLAGS = $(GTEST_CXXFLAGS) -std=c++11

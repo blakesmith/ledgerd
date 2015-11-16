@@ -1,4 +1,4 @@
-SUBDIRS = lib
+SUBDIRS = lib paxos
 
 # TODO: Don't hardcode these
 AM_CPPFLAGS = -I/usr/local/include -I$(top_srcdir)/src/lib -pthread

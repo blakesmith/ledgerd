@@ -56,8 +56,10 @@ AC_CONFIG_FILES([Makefile
                  lib/gtest/Makefile
                  src/Makefile
                  src/lib/Makefile
+                 src/paxos/Makefile
                  test/Makefile
-                 test/lib/Makefile])
+                 test/lib/Makefile
+                 test/paxos/Makefile])
 AC_OUTPUT
 
 AC_MSG_RESULT([
