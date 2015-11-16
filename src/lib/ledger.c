@@ -53,7 +53,7 @@ void ledger_close_context(ledger_ctx *ctx) {
 ledger_status ledger_open_topic(ledger_ctx *ctx,
                                 const char *name,
                                 const unsigned int *partition_ids,
-                                unsigned int partition_count,
+                                size_t partition_count,
                                 ledger_topic_options *options) {
     ledger_status rc;
     int rv;

@@ -32,7 +32,7 @@ ledger_status ledger_topic_new(const char *name, ledger_topic **topic_out);
 ledger_status ledger_topic_options_init(ledger_topic_options *options);
 ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
                                 const unsigned int *partition_ids,
-                                unsigned int partition_count,
+                                size_t partition_count,
                                 ledger_topic_options *options);
 void ledger_topic_close(ledger_topic *topic);
 ledger_status ledger_topic_write_partition(ledger_topic *topic, unsigned int partition_num,
