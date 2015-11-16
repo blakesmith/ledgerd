@@ -5,6 +5,7 @@ lib_LTLIBRARIES = libpaxos.la
 
 libpaxos_la_SOURCES = \
 	group.h \
-	node.h
+	node.h \
+	instance.h
 
 libpaxos_ladir = $(includedir)/ledger/paxos
