@@ -22,7 +22,7 @@ ledger_status LedgerdService::OpenTopic(const std::string& name,
                                         ledger_topic_options *options) {
     return ledger_open_topic(&ctx,
                              name.c_str(),
-                             const_cast<unsigned int*>(partition_ids.data()),
+                             partition_ids.data(),
                              partition_ids.size(),
                              options);
 }
