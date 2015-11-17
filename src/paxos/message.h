@@ -15,6 +15,11 @@ enum MessageType {
     ACCEPTED
 };
 
+enum AdminMessageType {
+    JOIN,
+    LEAVE
+};
+
 class ProposalId {
     uint32_t node_id_;
     uint32_t prop_n_;
@@ -29,6 +34,16 @@ public:
     bool operator>=(const ProposalId& rhs) const;
     uint32_t node_id() const;
     uint32_t prop_n() const;
+};
+
+class AdminMessage {
+    uint32_t node_id_;
+    AdminMessageType message_type_;
+public:
+    AdminMessage(uint32_t node_id, AdminMessageType message_type);
+    
+    uint32_t node_id() const;
+    AdminMessageType message_type() const;
 };
 
 template <typename T>

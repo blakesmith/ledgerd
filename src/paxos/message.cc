@@ -54,5 +54,16 @@ uint32_t ProposalId::prop_n() const {
     return prop_n_;
 }
 
+AdminMessage::AdminMessage(uint32_t node_id, AdminMessageType message_type)
+    : node_id_(node_id), message_type_(message_type) { }
+
+uint32_t AdminMessage::node_id() const {
+    return node_id_;
+}
+
+AdminMessageType AdminMessage::message_type() const {
+    return message_type_;
+}
+
 }
 }
