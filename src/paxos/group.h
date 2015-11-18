@@ -10,6 +10,7 @@
 
 namespace ledgerd {
 namespace paxos {
+
 template <typename T>
 class Group {
     std::map<uint32_t, Node<T>> nodes;
@@ -20,6 +21,14 @@ public:
           std::unique_ptr<LogDispatcher<T>> log_dispatcher)
         : message_dispatcher_(std::move(message_dispatcher)),
           log_dispatcher_(std::move(log_dispatcher)) { }
+
+    LogDispatcher<T>* log_dispatcher() {
+        return log_dispatcher_.get();
+    }
+
+    MessageDispatcher<T>* message_dispatcher() {
+        return message_dispatcher_.get();
+    }
 };
 }
 }
