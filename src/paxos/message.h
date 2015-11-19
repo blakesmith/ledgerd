@@ -40,7 +40,8 @@ class AdminMessage {
     uint32_t node_id_;
     AdminMessageType message_type_;
 public:
-    AdminMessage(uint32_t node_id, AdminMessageType message_type);
+    AdminMessage(uint32_t node_id,
+                 AdminMessageType message_type);
     
     uint32_t node_id() const;
     AdminMessageType message_type() const;

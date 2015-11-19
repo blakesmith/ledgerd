@@ -9,7 +9,15 @@ namespace ledgerd {
 namespace paxos {
 template <typename T>
 class Node {
+    uint32_t id_;
     std::map<uint32_t, Instance<T>> active_instances;
+public:
+    Node(uint32_t id)
+        : id_(id) { }
+
+    uint32_t id() const {
+        return id_;
+    }
 };
 }
 }
