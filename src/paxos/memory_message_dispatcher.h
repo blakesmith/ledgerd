@@ -6,21 +6,28 @@
 namespace ledgerd {
 namespace paxos {
 
-template <typename T>
-class MemoryMessageDispatcher : public MessageDispatcher<T> {
+template <typename T, typename C>
+class MemoryMessageDispatcher : public MessageDispatcher<T, C> {
 public:
-    int SendMessage(uint32_t node_id_dst, const Message<T>& message) override {
+    int Connect(Node<T, C>* node) override {
         return 0;
     }
 
-    void ReceiveMessage(uint32_t node_id_src, std::unique_ptr<Message<T>> message) override {
+    void Disconnect(Node<T, C>* node) override {
     }
 
-    int SendAdminMessage(uint32_t node_id_dst, const AdminMessage& message) override {
+    int SendMessage(Node<T, C>* dst_node, const Message<T>& message) override {
         return 0;
     }
 
-    void ReceiveAdminMessage(uint32_t node_id_src, std::unique_ptr<AdminMessage> message) override {
+    void ReceiveMessage(Node<T, C>* src_node, std::unique_ptr<Message<T>> message) override {
+    }
+
+    int SendAdminMessage(Node<T, C>* dst_node, const AdminMessage& message) override {
+        return 0;
+    }
+
+    void ReceiveAdminMessage(Node<T, C>* src_node, std::unique_ptr<AdminMessage> message) override {
     }
 };
 
