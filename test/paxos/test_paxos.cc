@@ -19,14 +19,21 @@ TEST(Paxos, GroupMembership) {
             {0, "node1"}, {1, "node2"}
         });
 
+    group2.ConnectPeers(std::map<uint32_t, std::string> {
+            {0, "node1"}, {1, "node2"}
+        });
+
     Instance<AdminMessage>* instance = group1.JoinGroup();
     EXPECT_EQ(0, instance->sequence());
     EXPECT_EQ(0, instance->value()->node_id());
     EXPECT_EQ(InstanceRole::PROPOSER, instance->role());
     EXPECT_EQ(AdminMessageType::JOIN, instance->value()->message_type());
-    EXPECT_EQ(nullptr, group1.node(0));
-    time_t current_time = 0;
+    ASSERT_TRUE(group1.node(0) != nullptr);
+    ASSERT_TRUE(group1.node(1) != nullptr);
+    ASSERT_TRUE(group2.node(0) != nullptr);
+    ASSERT_TRUE(group2.node(1) != nullptr);
 
+    time_t current_time = 0;
     group1.Tick(current_time);
 }
 }
