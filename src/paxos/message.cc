@@ -54,6 +54,12 @@ uint32_t ProposalId::prop_n() const {
     return prop_n_;
 }
 
+ProposalId& ProposalId::operator=(const ProposalId& rhs) {
+    node_id_ = rhs.node_id_;
+    prop_n_ = rhs.prop_n_;
+    return *this;
+}
+
 AdminMessage::AdminMessage(uint32_t node_id, AdminMessageType message_type)
     : node_id_(node_id), message_type_(message_type) { }
 
