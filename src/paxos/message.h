@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace ledgerd {
 namespace paxos {
@@ -54,42 +55,54 @@ public:
 
 template <typename T>
 class Message {
-    const ProposalId proposal_id_;
     const MessageType message_type_;
+    const ProposalId proposal_id_;
+    const std::vector<uint32_t> target_node_ids_;
     bool value_message_;
     std::unique_ptr<T> value_;
+
+    std::unique_ptr<T> copy_unique(const std::unique_ptr<T>& source) {
+        return source ? std::unique_ptr<T>(new T(*source)) : nullptr;
+    }
 public:
     Message(const MessageType& message_type,
             const ProposalId& proposal_id,
+            const std::vector<uint32_t> target_node_ids,
             std::unique_ptr<T> value)
         : message_type_(message_type),
           proposal_id_(proposal_id),
+          target_node_ids_(target_node_ids),
           value_(std::move(value)) {
         switch (message_type) {
             case PREPARE:
             case REJECT:
-                value_message_(false);
+                value_message_ = false;
                 break;
             case PROMISE:
             case ACCEPT:
             case ACCEPTED:
-                value_message_(true);
+                value_message_ = true;
                 break;
             default:
-                value_message_(false);
+                value_message_ = false;
                 break;
         }
     }
 
     Message(const MessageType& message_type,
-            const ProposalId& proposal_id)
-        : Message(message_type, proposal_id, std::unique_ptr<T>(nullptr)) { }
+            const ProposalId& proposal_id,
+            const std::vector<uint32_t> target_node_ids)
+        : Message(message_type,
+                  proposal_id,
+                  target_node_ids,
+                  nullptr) { }
 
     Message(const Message& rhs)
-        : proposal_id_(rhs.proposal_id_),
-          message_type_(rhs.message_type_),
+        : message_type_(rhs.message_type_),
+          proposal_id_(rhs.proposal_id_),
+          target_node_ids_(rhs.target_node_ids_),
           value_message_(rhs.value_message_),
-          value_(new T(*rhs.value_)) { }
+          value_(copy_unique(rhs.value_)) { }
 
     Message(Message&& rhs) = default;
     ~Message() = default;
@@ -110,17 +123,23 @@ public:
         return proposal_id_;
     }
 
+    const std::vector<uint32_t>& target_node_ids() const {
+        return target_node_ids_;
+    }
+
     Message& operator=(const Message& rhs) {
-        proposal_id_ = rhs.proposal_id_;
         message_type_ = rhs.message_type_;
+        proposal_id_ = rhs.proposal_id_;
+        target_node_ids_ = rhs.target_node_ids_;
         value_message_ = rhs.value_message_;
-        value_ = std::unique_ptr<T>(new T(*rhs.value_));
+        value_ = copy_unique(rhs.value_);
         return *this;
     }
 
     Message& operator=(Message&& rhs) {
-        std::swap(proposal_id_, rhs.proposal_id_);
         std::swap(message_type_, rhs.message_type_);
+        std::swap(proposal_id_, rhs.proposal_id_);
+        std::swap(target_node_ids_, rhs.target_node_ids_);
         std::swap(value_message_, rhs.value_message_);
         std::swap(value_, rhs.value_);
         return *this;

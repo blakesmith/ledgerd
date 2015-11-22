@@ -36,4 +36,25 @@ TEST(Paxos, GroupMembership) {
     time_t current_time = 0;
     group1.Tick(current_time);
 }
+
+TEST(Paxos, InstancePromise) {
+    std::vector<uint32_t> current_node_ids = {0, 1};
+    Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
+    Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
+    EXPECT_EQ(InstanceState::IDLE, i1.state());
+    EXPECT_EQ(InstanceState::IDLE, i2.state());
+
+    std::vector<Message<std::string>> messages = i1.Prepare();
+    EXPECT_EQ(InstanceRole::PROPOSER, i1.role());
+    EXPECT_EQ(InstanceState::PREPARING, i1.state());
+    ASSERT_EQ(1, messages.size());
+
+    const Message<std::string>& message = messages[0];
+    EXPECT_EQ(MessageType::PREPARE, message.message_type());
+    const ProposalId expected_proposal(0, 0);
+    EXPECT_EQ(expected_proposal, message.proposal_id());
+    const std::vector<uint32_t> expected_node_ids {0, 1};
+    EXPECT_EQ(expected_node_ids, message.target_node_ids());
+    EXPECT_EQ(nullptr, message.value());
+}
 }
