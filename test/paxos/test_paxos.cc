@@ -51,7 +51,7 @@ TEST(Paxos, InstancePromise) {
 
     const Message<std::string>& message = messages[0];
     EXPECT_EQ(MessageType::PREPARE, message.message_type());
-    const ProposalId expected_proposal(0, 0);
+    const ProposalId expected_proposal(0, 2);
     EXPECT_EQ(expected_proposal, message.proposal_id());
     const std::vector<uint32_t> expected_node_ids {0, 1};
     EXPECT_EQ(expected_node_ids, message.target_node_ids());

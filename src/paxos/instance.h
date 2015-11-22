@@ -33,8 +33,9 @@ class Instance {
     std::unique_ptr<T> value_;
 
     ProposalId next_proposal() {
-        // TODO: Unique proposal ids
-        return ProposalId(this_node_id_, 0);
+        round_++;
+        uint32_t prop_n = round_ * node_ids_.size() + this_node_id_;
+        return ProposalId(this_node_id_, prop_n);
     }
 
 public:
