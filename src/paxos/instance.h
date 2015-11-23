@@ -27,8 +27,8 @@ class Instance {
     InstanceRole role_;
     InstanceState state_;
     uint64_t sequence_;
-    uint32_t round_;
     uint32_t this_node_id_;
+    uint32_t round_;
     std::vector<uint32_t> node_ids_;
     std::unique_ptr<T> value_;
 
@@ -47,6 +47,7 @@ class Instance {
                         case MessageType::PREPARE:
                             std::vector<uint32_t> target_nodes { message.source_node_id() };
                             Message<T> response(MessageType::PROMISE,
+                                                sequence_,
                                                 message.proposal_id(),
                                                 this_node_id_,
                                                 target_nodes,
@@ -123,6 +124,7 @@ public:
         Transition(InstanceState::PREPARING);
         std::vector<Message<T>> messages = {
             Message<T>(MessageType::PREPARE,
+                       sequence_,
                        next_proposal(),
                        this_node_id_,
                        node_ids_)

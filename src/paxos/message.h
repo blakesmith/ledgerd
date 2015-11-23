@@ -57,6 +57,7 @@ template <typename T>
 class Message {
     const MessageType message_type_;
     const ProposalId proposal_id_;
+    uint32_t sequence_;
     uint32_t source_node_id_;
     const std::vector<uint32_t> target_node_ids_;
     const T* value_;
@@ -64,11 +65,13 @@ class Message {
 
 public:
     Message(const MessageType& message_type,
+            uint32_t sequence,
             const ProposalId& proposal_id,
             uint32_t source_node_id,
             const std::vector<uint32_t> target_node_ids,
             const T* value)
         : message_type_(message_type),
+          sequence_(sequence),
           proposal_id_(proposal_id),
           source_node_id_(source_node_id),
           target_node_ids_(target_node_ids),
@@ -90,10 +93,12 @@ public:
     }
 
     Message(const MessageType& message_type,
+            uint32_t sequence,
             const ProposalId& proposal_id,
             uint32_t source_node_id,
             const std::vector<uint32_t> target_node_ids)
         : Message(message_type,
+                  sequence,
                   proposal_id,
                   source_node_id,
                   target_node_ids,
@@ -101,6 +106,7 @@ public:
 
     Message(const Message& rhs)
         : message_type_(rhs.message_type_),
+          sequence_(rhs.sequence_),
           proposal_id_(rhs.proposal_id_),
           source_node_id_(rhs.source_node_id_),
           target_node_ids_(rhs.target_node_ids_),
@@ -122,6 +128,10 @@ public:
         return value_;
     }
 
+    uint32_t sequence() const {
+        return sequence_;
+    }
+
     const ProposalId& proposal_id() const {
         return proposal_id_;
     }
@@ -136,6 +146,7 @@ public:
 
     Message& operator=(const Message& rhs) {
         message_type_ = rhs.message_type_;
+        sequence_ = rhs.sequence_;
         proposal_id_ = rhs.proposal_id_;
         source_node_id_ = rhs.source_node_id_;
         target_node_ids_ = rhs.target_node_ids_;
@@ -146,6 +157,7 @@ public:
 
     Message& operator=(Message&& rhs) {
         std::swap(message_type_, rhs.message_type_);
+        std::swap(sequence_, rhs.sequence);
         std::swap(proposal_id_, rhs.proposal_id_);
         std::swap(source_node_id_, rhs.source_node_id_);
         std::swap(target_node_ids_, rhs.target_node_ids_);
