@@ -31,19 +31,19 @@ bool ProposalId::operator!=(const ProposalId& rhs) const {
 }
 
 bool ProposalId::operator<(const ProposalId& rhs) const {
-    return compare(rhs) == -1;
-}
-
-bool ProposalId::operator<=(const ProposalId& rhs) const {
-    return compare(rhs) == -1 || compare(rhs) == 0;
-}
-
-bool ProposalId::operator>(const ProposalId& rhs) const {
     return compare(rhs) == 1;
 }
 
-bool ProposalId::operator>=(const ProposalId& rhs) const {
+bool ProposalId::operator<=(const ProposalId& rhs) const {
     return compare(rhs) == 1 || compare(rhs) == 0;
+}
+
+bool ProposalId::operator>(const ProposalId& rhs) const {
+    return compare(rhs) == -1;
+}
+
+bool ProposalId::operator>=(const ProposalId& rhs) const {
+    return compare(rhs) == -1 || compare(rhs) == 0;
 }
 
 uint32_t ProposalId::node_id() const {

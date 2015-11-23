@@ -26,6 +26,7 @@ template <typename T>
 class Instance {
     InstanceRole role_;
     InstanceState state_;
+    ProposalId highest_promise_;
     uint64_t sequence_;
     uint32_t this_node_id_;
     uint32_t round_;
@@ -45,15 +46,18 @@ class Instance {
                 case InstanceState::IDLE:
                     switch(message.message_type()) {
                         case MessageType::PREPARE:
-                            std::vector<uint32_t> target_nodes { message.source_node_id() };
-                            Message<T> response(MessageType::PROMISE,
-                                                sequence_,
-                                                message.proposal_id(),
-                                                this_node_id_,
-                                                target_nodes,
-                                                value_.get());
-                            responses.push_back(response);
-                            Transition(InstanceState::PROMISED);
+                            if(message.proposal_id() > highest_promise_) {
+                                set_highest_promise(message.proposal_id());
+                                std::vector<uint32_t> target_nodes { message.source_node_id() };
+                                Message<T> response(MessageType::PROMISE,
+                                                    sequence_,
+                                                    message.proposal_id(),
+                                                    this_node_id_,
+                                                    target_nodes,
+                                                    value_.get());
+                                responses.push_back(response);
+                                Transition(InstanceState::PROMISED);
+                            }
                             break;
                     }
                     break;
@@ -75,6 +79,7 @@ public:
              std::unique_ptr<T> value)
         : role_(role),
           state_(InstanceState::IDLE),
+          highest_promise_(ProposalId(0, 0)),
           sequence_(sequence),
           this_node_id_(this_node_id),
           round_(0),
@@ -105,6 +110,14 @@ public:
 
     uint32_t round() const {
         return round_;
+    }
+
+    ProposalId highest_promise() const {
+        return highest_promise_;
+    }
+
+    void set_highest_promise(const ProposalId& id) {
+        this->highest_promise_ = id;
     }
 
     const std::vector<uint32_t>& node_ids() const {
