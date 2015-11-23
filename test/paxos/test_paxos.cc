@@ -56,5 +56,10 @@ TEST(Paxos, InstancePromise) {
     const std::vector<uint32_t> expected_node_ids {0, 1};
     EXPECT_EQ(expected_node_ids, message.target_node_ids());
     EXPECT_EQ(nullptr, message.value());
+
+    std::vector<Message<std::string>> responses = i2.ReceiveMessages(messages);
+    ASSERT_EQ(1, responses.size());
+    const Message<std::string>& response = responses[0];
+    EXPECT_EQ(MessageType::PROMISE, response.message_type());
 }
 }

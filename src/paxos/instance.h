@@ -38,6 +38,35 @@ class Instance {
         return ProposalId(this_node_id_, prop_n);
     }
 
+    std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
+        std::vector<Message<T>> responses;
+        for(auto& message : inbound) {
+            switch(state_) {
+                case InstanceState::IDLE:
+                    switch(message.message_type()) {
+                        case MessageType::PREPARE:
+                            // TODO, send back optional value.
+                            // TODO, how to trace correctly?
+                            std::vector<uint32_t> target_nodes { 0 };
+                            Message<T> response(MessageType::PROMISE,
+                                                message.proposal_id(),
+                                                target_nodes,
+                                                nullptr);
+                            responses.push_back(response);
+                            Transition(InstanceState::PROMISED);
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        return responses;
+    }
+
+    std::vector<Message<T>> receive_proposer(const std::vector<Message<T>>& inbound) {
+        return std::vector<Message<T>>();
+    }
+
 public:
     Instance(InstanceRole role,
              uint64_t sequence,
@@ -98,7 +127,19 @@ public:
                        next_proposal(),
                        node_ids_)
         };
+        Transition(InstanceState::PREPARING);
         return messages;
+    }
+
+    std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound) {
+        switch(role_) {
+            case InstanceRole::ACCEPTOR:
+                return receive_acceptor(inbound);
+                break;
+            case InstanceRole::PROPOSER:
+                return receive_proposer(inbound);
+                break;
+        }
     }
 
     InstanceState state() const {
