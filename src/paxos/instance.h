@@ -45,13 +45,12 @@ class Instance {
                 case InstanceState::IDLE:
                     switch(message.message_type()) {
                         case MessageType::PREPARE:
-                            // TODO, send back optional value.
-                            // TODO, how to trace correctly?
-                            std::vector<uint32_t> target_nodes { 0 };
+                            std::vector<uint32_t> target_nodes { message.source_node_id() };
                             Message<T> response(MessageType::PROMISE,
                                                 message.proposal_id(),
+                                                this_node_id_,
                                                 target_nodes,
-                                                nullptr);
+                                                value_.get());
                             responses.push_back(response);
                             Transition(InstanceState::PROMISED);
                             break;
@@ -125,6 +124,7 @@ public:
         std::vector<Message<T>> messages = {
             Message<T>(MessageType::PREPARE,
                        next_proposal(),
+                       this_node_id_,
                        node_ids_)
         };
         Transition(InstanceState::PREPARING);

@@ -57,22 +57,22 @@ template <typename T>
 class Message {
     const MessageType message_type_;
     const ProposalId proposal_id_;
+    uint32_t source_node_id_;
     const std::vector<uint32_t> target_node_ids_;
+    const T* value_;
     bool value_message_;
-    std::unique_ptr<T> value_;
 
-    std::unique_ptr<T> copy_unique(const std::unique_ptr<T>& source) {
-        return source ? std::unique_ptr<T>(new T(*source)) : nullptr;
-    }
 public:
     Message(const MessageType& message_type,
             const ProposalId& proposal_id,
+            uint32_t source_node_id,
             const std::vector<uint32_t> target_node_ids,
-            std::unique_ptr<T> value)
+            const T* value)
         : message_type_(message_type),
           proposal_id_(proposal_id),
+          source_node_id_(source_node_id),
           target_node_ids_(target_node_ids),
-          value_(std::move(value)) {
+          value_(value) {
         switch (message_type) {
             case PREPARE:
             case REJECT:
@@ -91,18 +91,21 @@ public:
 
     Message(const MessageType& message_type,
             const ProposalId& proposal_id,
+            uint32_t source_node_id,
             const std::vector<uint32_t> target_node_ids)
         : Message(message_type,
                   proposal_id,
+                  source_node_id,
                   target_node_ids,
                   nullptr) { }
 
     Message(const Message& rhs)
         : message_type_(rhs.message_type_),
           proposal_id_(rhs.proposal_id_),
+          source_node_id_(rhs.source_node_id_),
           target_node_ids_(rhs.target_node_ids_),
           value_message_(rhs.value_message_),
-          value_(copy_unique(rhs.value_)) { }
+          value_(rhs.value_) { }
 
     Message(Message&& rhs) = default;
     ~Message() = default;
@@ -115,12 +118,16 @@ public:
         return value_message_;
     }
 
-    T* value() const {
-        return value_.get();
+    const T* value() const {
+        return value_;
     }
 
     const ProposalId& proposal_id() const {
         return proposal_id_;
+    }
+
+    uint32_t source_node_id() const {
+        return source_node_id_;
     }
 
     const std::vector<uint32_t>& target_node_ids() const {
@@ -130,15 +137,17 @@ public:
     Message& operator=(const Message& rhs) {
         message_type_ = rhs.message_type_;
         proposal_id_ = rhs.proposal_id_;
+        source_node_id_ = rhs.source_node_id_;
         target_node_ids_ = rhs.target_node_ids_;
         value_message_ = rhs.value_message_;
-        value_ = copy_unique(rhs.value_);
+        value_ = rhs.value_;
         return *this;
     }
 
     Message& operator=(Message&& rhs) {
         std::swap(message_type_, rhs.message_type_);
         std::swap(proposal_id_, rhs.proposal_id_);
+        std::swap(source_node_id_, rhs.source_node_id_);
         std::swap(target_node_ids_, rhs.target_node_ids_);
         std::swap(value_message_, rhs.value_message_);
         std::swap(value_, rhs.value_);
