@@ -44,6 +44,7 @@ class Instance {
         for(auto& message : inbound) {
             switch(state_) {
                 case InstanceState::IDLE:
+                case InstanceState::PROMISED:
                     switch(message.message_type()) {
                         case MessageType::PREPARE:
                             if(message.proposal_id() > highest_promise_) {
@@ -57,6 +58,14 @@ class Instance {
                                                     value_.get());
                                 responses.push_back(response);
                                 Transition(InstanceState::PROMISED);
+                            } else {
+                                std::vector<uint32_t> target_nodes { message.source_node_id() };
+                                Message<T> response(MessageType::REJECT,
+                                                    sequence_,
+                                                    message.proposal_id(),
+                                                    this_node_id_,
+                                                    target_nodes);
+                                responses.push_back(response);
                             }
                             break;
                     }
