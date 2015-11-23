@@ -117,6 +117,26 @@ TEST(Paxos, InstanceRejectingPromise) {
     EXPECT_EQ(expected_response_targets, response.target_node_ids());
     const ProposalId highest_proposal(2, 5);
     EXPECT_EQ(highest_proposal, i2.highest_promise());
+}
 
+TEST(Paxos, QuorumAcceptNullValue) {
+    std::vector<uint32_t> current_node_ids = {0, 1, 2};
+    Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
+    Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
+    Instance<std::string> i3(InstanceRole::ACCEPTOR, 0, 2, current_node_ids);
+
+    auto prepare = i1.Prepare();
+    ASSERT_EQ(1, prepare.size());
+    ASSERT_EQ(InstanceState::PREPARING, i1.state());
+    auto p1 = i2.ReceiveMessages(prepare);
+    auto p2 = i3.ReceiveMessages(prepare);
+    ASSERT_EQ(1, p1.size());
+    ASSERT_EQ(1, p2.size());
+    ASSERT_EQ(InstanceState::PROMISED, i2.state());
+    ASSERT_EQ(InstanceState::PROMISED, i3.state());
+
+    EXPECT_EQ(0, i1.ReceiveMessages(p1).size());
+    auto accept = i1.ReceiveMessages(p2);
+    EXPECT_EQ(1, accept.size());
 }
 }
