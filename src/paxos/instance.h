@@ -39,6 +39,25 @@ class Instance {
         return ProposalId(this_node_id_, prop_n);
     }
 
+    Message<T> make_response(MessageType type, const Message<T>& request, T* value) {
+        std::vector<uint32_t> target_nodes { request.source_node_id() };
+        return Message<T>(type,
+                          sequence_,
+                          request.proposal_id(),
+                          this_node_id_,
+                          target_nodes,
+                          value);
+    }
+
+    Message<T> make_response(MessageType type, const Message<T>& request) {
+        std::vector<uint32_t> target_nodes { request.source_node_id() };
+        return Message<T>(type,
+                          sequence_,
+                          request.proposal_id(),
+                          this_node_id_,
+                          target_nodes);
+    }
+
     std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
         std::vector<Message<T>> responses;
         for(auto& message : inbound) {
@@ -49,26 +68,18 @@ class Instance {
                         case MessageType::PREPARE:
                             if(message.proposal_id() > highest_promise_) {
                                 set_highest_promise(message.proposal_id());
-                                std::vector<uint32_t> target_nodes { message.source_node_id() };
-                                Message<T> response(MessageType::PROMISE,
-                                                    sequence_,
-                                                    message.proposal_id(),
-                                                    this_node_id_,
-                                                    target_nodes,
-                                                    value_.get());
-                                responses.push_back(response);
+                                responses.push_back(
+                                    make_response(MessageType::PROMISE, message));
                                 Transition(InstanceState::PROMISED);
                             } else {
-                                std::vector<uint32_t> target_nodes { message.source_node_id() };
-                                Message<T> response(MessageType::REJECT,
-                                                    sequence_,
-                                                    message.proposal_id(),
-                                                    this_node_id_,
-                                                    target_nodes);
-                                responses.push_back(response);
+                                responses.push_back(
+                                    make_response(MessageType::REJECT, message, value_.get()));
                             }
                             break;
+                        default:
+                            break;
                     }
+ 
                     break;
             }
         }
