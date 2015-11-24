@@ -72,19 +72,24 @@ class Instance {
     }
 
     void handle_promise(const Message<T>& message, std::vector<Message<T>>* responses) {
-        // TODO: Must send the value with the highest proposal id, not just the one we received
-        const T* accept_value = message.value() ?
-            message.value() :
+        round_.AddPromise(message.source_node_id(),
+                          message.proposal_id(),
+                          message.value());
+        const T* accept_value = round_.highest_value() ?
+            round_.highest_value() :
             value_.get();
-        round_.AddPromise(message.source_node_id());
         if(round_.IsQuorum()) {
             responses->push_back(
                 make_response(MessageType::ACCEPT, message, accept_value));
+            if(value_ == nullptr) {
+                value_ = std::unique_ptr<T>(new T(*accept_value));
+            }
             transition(InstanceState::COMPLETE);
         }
     }
 
     void handle_accept(const Message<T>& message, std::vector<Message<T>>* responses) {
+        value_ = std::unique_ptr<T>(new T(*message.value()));
         responses->push_back(
             make_response(MessageType::ACCEPTED, message, message.value()));
         transition(InstanceState::COMPLETE);
@@ -213,6 +218,9 @@ public:
     }
 
     T* final_value() const {
+        if(state_ == InstanceState::COMPLETE) {
+            return value_.get();
+        }
         return nullptr;
     }
 };

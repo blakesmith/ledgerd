@@ -60,6 +60,12 @@ ProposalId& ProposalId::operator=(const ProposalId& rhs) {
     return *this;
 }
 
+ProposalId& ProposalId::operator=(ProposalId&& rhs) {
+    std::swap(node_id_, rhs.node_id_);
+    std::swap(prop_n_, rhs.prop_n_);
+    return *this;
+}
+
 AdminMessage::AdminMessage(uint32_t node_id, AdminMessageType message_type)
     : node_id_(node_id), message_type_(message_type) { }
 

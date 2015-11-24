@@ -39,7 +39,7 @@ public:
     uint32_t node_id() const;
     uint32_t prop_n() const;
     ProposalId& operator=(const ProposalId& rhs);
-    ProposalId& operator=(ProposalId&& rhs) = delete;
+    ProposalId& operator=(ProposalId&& rhs);
 };
 
 class AdminMessage {

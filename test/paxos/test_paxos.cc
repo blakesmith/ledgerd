@@ -153,5 +153,12 @@ TEST(Paxos, QuorumAcceptNullValue) {
     ASSERT_EQ(InstanceState::COMPLETE, i1.state());
     ASSERT_EQ(InstanceState::COMPLETE, i2.state());
     ASSERT_EQ(InstanceState::COMPLETE, i3.state());
+
+    ASSERT_TRUE(i1.final_value() != nullptr);
+    ASSERT_TRUE(i2.final_value() != nullptr);
+    ASSERT_TRUE(i3.final_value() != nullptr);
+    EXPECT_EQ("hello", *i1.final_value());
+    EXPECT_EQ("hello", *i2.final_value());
+    EXPECT_EQ("hello", *i3.final_value());
 }
 }

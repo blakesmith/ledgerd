@@ -23,6 +23,7 @@ public:
 
     unsigned int NextRound() {
         promised_nodes_.clear();
+        highest_promise_ = std::make_pair(ProposalId(0, 0), nullptr);
         return round_n_++;
     }
 
@@ -30,9 +31,24 @@ public:
         return (double)promised_nodes_.size() / (double)n_nodes_ > 0.5F;
     }
 
-    void AddPromise(uint32_t node_id)  {
+    void AddPromise(uint32_t node_id,
+                    const ProposalId prop,
+                    const T* value)  {
         assert(promised_nodes_.size() < n_nodes_);
+        const ProposalId& current_highest = highest_promise_.first;
+        if(prop > current_highest) {
+            highest_promise_.first = prop;
+            if(value) {
+                highest_promise_.second = std::unique_ptr<T>(new T(*value));
+            } else {
+                highest_promise_.second = nullptr;
+            }
+        }
         promised_nodes_.push_back(node_id);
+    }
+
+    const T* highest_value() const {
+        return highest_promise_.second.get();
     }
 
     const std::vector<uint32_t>& promised_nodes() const {
