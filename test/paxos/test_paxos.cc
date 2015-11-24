@@ -38,6 +38,7 @@ TEST(Paxos, GroupMembership) {
 }
 
 TEST(Paxos, InstanceSupercedingPromise) {
+    std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
     Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
@@ -46,7 +47,7 @@ TEST(Paxos, InstanceSupercedingPromise) {
     EXPECT_EQ(InstanceState::IDLE, i2.state());
     EXPECT_EQ(InstanceState::IDLE, i3.state());
 
-    std::vector<Message<std::string>> messages = i1.Prepare();
+    std::vector<Message<std::string>> messages = i1.Prepare(std::move(value));
     EXPECT_EQ(InstanceRole::PROPOSER, i1.role());
     EXPECT_EQ(InstanceState::PREPARING, i1.state());
     ASSERT_EQ(1, messages.size());
@@ -69,7 +70,8 @@ TEST(Paxos, InstanceSupercedingPromise) {
     EXPECT_EQ(expected_response_targets, response.target_node_ids());
     EXPECT_EQ(expected_proposal, i2.highest_promise());
 
-    std::vector<Message<std::string>> late_prepare = i3.Prepare();
+    std::unique_ptr<std::string> value2(new std::string("there"));
+    std::vector<Message<std::string>> late_prepare = i3.Prepare(std::move(value2));
     ASSERT_EQ(1, late_prepare.size());
     std::vector<Message<std::string>> rejects = i2.ReceiveMessages(late_prepare);
     ASSERT_EQ(1, rejects.size());
@@ -80,6 +82,7 @@ TEST(Paxos, InstanceSupercedingPromise) {
 }
 
 TEST(Paxos, InstanceRejectingPromise) {
+    std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
     Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
@@ -88,7 +91,7 @@ TEST(Paxos, InstanceRejectingPromise) {
     EXPECT_EQ(InstanceState::IDLE, i2.state());
     EXPECT_EQ(InstanceState::IDLE, i3.state());
 
-    std::vector<Message<std::string>> messages = i3.Prepare();
+    std::vector<Message<std::string>> messages = i3.Prepare(std::move(value));
     ASSERT_EQ(1, messages.size());
     std::vector<Message<std::string>> promises = i2.ReceiveMessages(messages);
     ASSERT_EQ(1, promises.size());
@@ -97,7 +100,8 @@ TEST(Paxos, InstanceRejectingPromise) {
     const std::vector<uint32_t> expected_message_targets { 2 };
     EXPECT_EQ(expected_message_targets, promise.target_node_ids());
 
-    std::vector<Message<std::string>> late_proposals = i1.Prepare();
+    std::unique_ptr<std::string> value2(new std::string("there"));
+    std::vector<Message<std::string>> late_proposals = i1.Prepare(std::move(value2));
     EXPECT_EQ(InstanceRole::PROPOSER, i1.role());
     EXPECT_EQ(InstanceState::PREPARING, i1.state());
     ASSERT_EQ(1, late_proposals.size());
@@ -120,12 +124,13 @@ TEST(Paxos, InstanceRejectingPromise) {
 }
 
 TEST(Paxos, QuorumAcceptNullValue) {
+    std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
     Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
     Instance<std::string> i3(InstanceRole::ACCEPTOR, 0, 2, current_node_ids);
 
-    auto prepare = i1.Prepare();
+    auto prepare = i1.Prepare(std::move(value));
     ASSERT_EQ(1, prepare.size());
     ASSERT_EQ(InstanceState::PREPARING, i1.state());
     auto p1 = i2.ReceiveMessages(prepare);
@@ -135,8 +140,18 @@ TEST(Paxos, QuorumAcceptNullValue) {
     ASSERT_EQ(InstanceState::PROMISED, i2.state());
     ASSERT_EQ(InstanceState::PROMISED, i3.state());
 
-    EXPECT_EQ(0, i1.ReceiveMessages(p1).size());
+    ASSERT_EQ(0, i1.ReceiveMessages(p1).size());
     auto accept = i1.ReceiveMessages(p2);
-    EXPECT_EQ(1, accept.size());
+    ASSERT_EQ(1, accept.size());
+
+    auto a1 = i1.ReceiveMessages(accept);
+    auto a2 = i2.ReceiveMessages(accept);
+    auto a3 = i3.ReceiveMessages(accept);
+    ASSERT_EQ(1, a2.size());
+    ASSERT_EQ(1, a3.size());
+
+    ASSERT_EQ(InstanceState::COMPLETE, i1.state());
+    ASSERT_EQ(InstanceState::COMPLETE, i2.state());
+    ASSERT_EQ(InstanceState::COMPLETE, i3.state());
 }
 }

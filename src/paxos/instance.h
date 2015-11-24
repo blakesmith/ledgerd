@@ -72,6 +72,7 @@ class Instance {
     }
 
     void handle_promise(const Message<T>& message, std::vector<Message<T>>* responses) {
+        // TODO: Must send the value with the highest proposal id, not just the one we received
         const T* accept_value = message.value() ?
             message.value() :
             value_.get();
@@ -79,8 +80,14 @@ class Instance {
         if(round_.IsQuorum()) {
             responses->push_back(
                 make_response(MessageType::ACCEPT, message, accept_value));
-            Transition(InstanceState::ACCEPTING);
+            Transition(InstanceState::COMPLETE);
         }
+    }
+
+    void handle_accept(const Message<T>& message, std::vector<Message<T>>* responses) {
+        responses->push_back(
+            make_response(MessageType::ACCEPTED, message, message.value()));
+        Transition(InstanceState::COMPLETE);
     }
 
     std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
@@ -92,6 +99,9 @@ class Instance {
                     switch(message.message_type()) {
                         case MessageType::PREPARE:
                             handle_prepare(message, &responses);
+                            break;
+                        case MessageType::ACCEPT:
+                            handle_accept(message, &responses);
                             break;
                         default:
                             break;
@@ -115,6 +125,7 @@ class Instance {
                         default:
                             break;
                     }
+
                     break;
             }
         }
@@ -126,8 +137,7 @@ public:
     Instance(InstanceRole role,
              uint64_t sequence,
              uint32_t this_node_id,
-             std::vector<uint32_t> node_ids,
-             std::unique_ptr<T> value)
+             std::vector<uint32_t> node_ids)
         : role_(role),
           state_(InstanceState::IDLE),
           highest_promise_(ProposalId(0, 0)),
@@ -135,17 +145,7 @@ public:
           this_node_id_(this_node_id),
           round_(node_ids.size()),
           node_ids_(node_ids),
-          value_(std::move(value)) { }
-
-    Instance(InstanceRole role,
-             uint64_t sequence,
-             uint32_t this_node_id,
-             std::vector<uint32_t> node_ids)
-        : Instance(role,
-                   sequence,
-                   this_node_id,
-                   node_ids,
-                   std::unique_ptr<T>(nullptr)) { }
+          value_(nullptr) { }
 
     InstanceRole role() const {
         return role_;
@@ -183,7 +183,8 @@ public:
         this->state_ = state;
     }
 
-    std::vector<Message<T>> Prepare() {
+    std::vector<Message<T>> Prepare(std::unique_ptr<T> value) {
+        value_ = std::move(value);
         set_role(InstanceRole::PROPOSER);
         Transition(InstanceState::PREPARING);
         std::vector<Message<T>> messages = {
