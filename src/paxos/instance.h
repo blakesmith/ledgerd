@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "message.h"
+#include "round.h"
 
 namespace ledgerd {
 namespace paxos {
@@ -26,16 +27,16 @@ template <typename T>
 class Instance {
     InstanceRole role_;
     InstanceState state_;
+    Round round_;
     ProposalId highest_promise_;
     uint64_t sequence_;
     uint32_t this_node_id_;
-    uint32_t round_;
     std::vector<uint32_t> node_ids_;
     std::unique_ptr<T> value_;
 
     ProposalId next_proposal() {
-        round_++;
-        uint32_t prop_n = round_ * node_ids_.size() + this_node_id_;
+        round_.NextRound();
+        uint32_t prop_n = round_.round_n() * node_ids_.size() + this_node_id_;
         return ProposalId(this_node_id_, prop_n);
     }
 
@@ -102,7 +103,7 @@ public:
           highest_promise_(ProposalId(0, 0)),
           sequence_(sequence),
           this_node_id_(this_node_id),
-          round_(0),
+          round_(node_ids.size()),
           node_ids_(node_ids),
           value_(std::move(value)) { }
 
@@ -128,7 +129,7 @@ public:
         return sequence_;
     }
 
-    uint32_t round() const {
+    const Round& round() const {
         return round_;
     }
 
