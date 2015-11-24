@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "round.h"
 
 namespace ledgerd {
@@ -13,6 +15,11 @@ unsigned int Round::NextRound() {
 
 bool Round::IsQuorum() const {
     (double)promised_nodes_.size() / (double)n_nodes_ > 0.5F;
+}
+
+void Round::AddPromise(uint32_t node_id) {
+    assert(promised_nodes_.size() < n_nodes_);
+    promised_nodes_.push_back(node_id);
 }
 
 const std::vector<uint32_t>& Round::promised_nodes() const {

@@ -15,6 +15,7 @@ public:
     Round(unsigned int n_nodes);
     unsigned int NextRound();
     bool IsQuorum() const;
+    void AddPromise(uint32_t node_id);
     const std::vector<uint32_t>& promised_nodes() const;
     unsigned int n_nodes() const;
     unsigned int round_n() const;
