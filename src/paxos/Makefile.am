@@ -8,6 +8,6 @@ libpaxos_la_SOURCES = \
 	node.h \
 	instance.h \
 	message.h message.cc \
-	round.h round.cc
+	round.h
 
 libpaxos_ladir = $(includedir)/ledger/paxos

@@ -27,7 +27,7 @@ template <typename T>
 class Instance {
     InstanceRole role_;
     InstanceState state_;
-    Round round_;
+    Round<T> round_;
     ProposalId highest_promise_;
     uint64_t sequence_;
     uint32_t this_node_id_;
@@ -159,7 +159,7 @@ public:
         return sequence_;
     }
 
-    const Round& round() const {
+    const Round<T>& round() const {
         return round_;
     }
 
@@ -186,7 +186,6 @@ public:
     std::vector<Message<T>> Prepare(std::unique_ptr<T> value) {
         value_ = std::move(value);
         set_role(InstanceRole::PROPOSER);
-        Transition(InstanceState::PREPARING);
         std::vector<Message<T>> messages = {
             Message<T>(MessageType::PREPARE,
                        sequence_,
@@ -211,6 +210,10 @@ public:
 
     InstanceState state() const {
         return state_;
+    }
+
+    T* final_value() const {
+        return nullptr;
     }
 };
 }
