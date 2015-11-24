@@ -64,7 +64,7 @@ class Instance {
             set_highest_promise(message.proposal_id());
             responses->push_back(
                 make_response(MessageType::PROMISE, message));
-            Transition(InstanceState::PROMISED);
+            transition(InstanceState::PROMISED);
         } else {
             responses->push_back(
                 make_response(MessageType::REJECT, message, value_.get()));
@@ -80,14 +80,14 @@ class Instance {
         if(round_.IsQuorum()) {
             responses->push_back(
                 make_response(MessageType::ACCEPT, message, accept_value));
-            Transition(InstanceState::COMPLETE);
+            transition(InstanceState::COMPLETE);
         }
     }
 
     void handle_accept(const Message<T>& message, std::vector<Message<T>>* responses) {
         responses->push_back(
             make_response(MessageType::ACCEPTED, message, message.value()));
-        Transition(InstanceState::COMPLETE);
+        transition(InstanceState::COMPLETE);
     }
 
     std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
@@ -179,7 +179,7 @@ public:
         return value_.get();
     }
 
-    void Transition(InstanceState state) {
+    void transition(InstanceState state) {
         this->state_ = state;
     }
 
@@ -193,7 +193,7 @@ public:
                        this_node_id_,
                        node_ids_)
         };
-        Transition(InstanceState::PREPARING);
+        transition(InstanceState::PREPARING);
         return messages;
     }
 
