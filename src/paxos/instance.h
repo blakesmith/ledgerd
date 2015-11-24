@@ -40,7 +40,7 @@ class Instance {
         return ProposalId(this_node_id_, prop_n);
     }
 
-    Message<T> make_response(MessageType type, const Message<T>& request, T* value) {
+    Message<T> make_response(MessageType type, const Message<T>& request, const T* value) {
         std::vector<uint32_t> target_nodes { request.source_node_id() };
         return Message<T>(type,
                           sequence_,
@@ -59,6 +59,30 @@ class Instance {
                           target_nodes);
     }
 
+    void handle_prepare(const Message<T>& message, std::vector<Message<T>>* responses) {
+        if(message.proposal_id() > highest_promise_) {
+            set_highest_promise(message.proposal_id());
+            responses->push_back(
+                make_response(MessageType::PROMISE, message));
+            Transition(InstanceState::PROMISED);
+        } else {
+            responses->push_back(
+                make_response(MessageType::REJECT, message, value_.get()));
+        }
+    }
+
+    void handle_promise(const Message<T>& message, std::vector<Message<T>>* responses) {
+        const T* accept_value = message.value() ?
+            message.value() :
+            value_.get();
+        round_.AddPromise(message.source_node_id());
+        if(round_.IsQuorum()) {
+            responses->push_back(
+                make_response(MessageType::ACCEPT, message, accept_value));
+            Transition(InstanceState::ACCEPTING);
+        }
+    }
+
     std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
         std::vector<Message<T>> responses;
         for(auto& message : inbound) {
@@ -67,20 +91,11 @@ class Instance {
                 case InstanceState::PROMISED:
                     switch(message.message_type()) {
                         case MessageType::PREPARE:
-                            if(message.proposal_id() > highest_promise_) {
-                                set_highest_promise(message.proposal_id());
-                                responses.push_back(
-                                    make_response(MessageType::PROMISE, message));
-                                Transition(InstanceState::PROMISED);
-                            } else {
-                                responses.push_back(
-                                    make_response(MessageType::REJECT, message, value_.get()));
-                            }
+                            handle_prepare(message, &responses);
                             break;
                         default:
                             break;
                     }
- 
                     break;
             }
         }
@@ -89,7 +104,22 @@ class Instance {
     }
 
     std::vector<Message<T>> receive_proposer(const std::vector<Message<T>>& inbound) {
-        return std::vector<Message<T>>();
+        std::vector<Message<T>> responses;
+        for(auto& message : inbound) {
+            switch(state_) {
+                case InstanceState::PREPARING:
+                    switch(message.message_type()) {
+                        case MessageType::PROMISE:
+                            handle_promise(message, &responses);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        return responses;
     }
 
 public:
