@@ -54,7 +54,7 @@ TEST(Paxos, InstanceSupercedingPromise) {
 
     const Message<std::string>& message = messages[0];
     EXPECT_EQ(MessageType::PREPARE, message.message_type());
-    const ProposalId expected_proposal(0, 3);
+    const ProposalId expected_proposal(0, 1);
     EXPECT_EQ(expected_proposal, message.proposal_id());
     const std::vector<uint32_t> expected_node_ids {0, 1, 2};
     EXPECT_EQ(expected_node_ids, message.target_node_ids());
@@ -107,7 +107,7 @@ TEST(Paxos, InstanceRejectingPromise) {
     ASSERT_EQ(1, late_proposals.size());
     const Message<std::string>& late_proposal = late_proposals[0];
     EXPECT_EQ(MessageType::PREPARE, late_proposal.message_type());
-    const ProposalId expected_proposal(0, 3);
+    const ProposalId expected_proposal(0, 1);
     EXPECT_EQ(expected_proposal, late_proposal.proposal_id());
     const std::vector<uint32_t> expected_node_ids {0, 1, 2};
     EXPECT_EQ(expected_node_ids, late_proposal.target_node_ids());
@@ -119,7 +119,7 @@ TEST(Paxos, InstanceRejectingPromise) {
     EXPECT_EQ(MessageType::REJECT, response.message_type());
     const std::vector<uint32_t> expected_response_targets { 0 };
     EXPECT_EQ(expected_response_targets, response.target_node_ids());
-    const ProposalId highest_proposal(2, 5);
+    const ProposalId highest_proposal(2, 1);
     EXPECT_EQ(highest_proposal, i2.highest_promise());
 }
 

@@ -36,8 +36,7 @@ class Instance {
 
     ProposalId next_proposal() {
         round_.NextRound();
-        uint32_t prop_n = round_.round_n() * node_ids_.size() + this_node_id_;
-        return ProposalId(this_node_id_, prop_n);
+        return ProposalId(this_node_id_, round_.round_n());
     }
 
     Message<T> make_response(MessageType type, const Message<T>& request, const T* value) {
