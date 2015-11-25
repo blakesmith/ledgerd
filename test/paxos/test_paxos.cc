@@ -171,4 +171,110 @@ TEST(Paxos, QuorumAcceptNullValue) {
     EXPECT_EQ("hello", *i2.final_value());
     EXPECT_EQ("hello", *i3.final_value());
 }
+
+TEST(Paxos, QuorumExistingAcceptedValue) {
+    std::unique_ptr<std::string> value(new std::string("hello"));
+    std::vector<uint32_t> current_node_ids = {0, 1, 2, 3, 4};
+    Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
+    Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
+    Instance<std::string> i3(InstanceRole::ACCEPTOR, 0, 2, current_node_ids);
+    Instance<std::string> i4(InstanceRole::ACCEPTOR, 0, 3, current_node_ids);
+    Instance<std::string> i5(InstanceRole::ACCEPTOR, 0, 4, current_node_ids);
+
+    auto prepare = i1.Prepare(std::move(value));
+    ASSERT_EQ(1, prepare.size());
+    ASSERT_EQ(InstanceState::PREPARING, i1.state());
+    auto p1 = i2.ReceiveMessages(prepare);
+    auto p2 = i3.ReceiveMessages(prepare);
+    auto p3 = i4.ReceiveMessages(prepare);
+    ASSERT_EQ(1, p1.size());
+    ASSERT_EQ(1, p2.size());
+    ASSERT_EQ(1, p3.size());
+    ASSERT_EQ(InstanceState::PROMISED, i2.state());
+    ASSERT_EQ(InstanceState::PROMISED, i3.state());
+    ASSERT_EQ(InstanceState::PROMISED, i4.state());
+
+    ASSERT_EQ(0, i1.ReceiveMessages(p1).size());
+    ASSERT_EQ(0, i1.ReceiveMessages(p2).size());
+    auto accept = i1.ReceiveMessages(p3);
+    ASSERT_EQ(1, accept.size());
+
+    auto a2 = i2.ReceiveMessages(accept);
+    auto a3 = i3.ReceiveMessages(accept);
+    auto a4 = i4.ReceiveMessages(accept);
+    ASSERT_EQ(1, a2.size());
+    ASSERT_EQ(1, a3.size());
+    ASSERT_EQ(1, a4.size());
+
+    ASSERT_EQ(InstanceState::ACCEPTING, i1.state());
+    ASSERT_EQ(InstanceState::ACCEPTING, i2.state());
+    ASSERT_EQ(InstanceState::ACCEPTING, i3.state());
+
+    ASSERT_EQ(0, i1.ReceiveMessages(a2).size());
+    ASSERT_EQ(0, i1.ReceiveMessages(a3).size());
+    auto complete = i1.ReceiveMessages(a4);
+    ASSERT_EQ(1, complete.size());
+
+    ASSERT_EQ(0, i2.ReceiveMessages(complete).size());
+    ASSERT_EQ(0, i3.ReceiveMessages(complete).size());
+    ASSERT_EQ(0, i4.ReceiveMessages(complete).size());
+
+    ASSERT_EQ(InstanceState::COMPLETE, i1.state());
+    ASSERT_EQ(InstanceState::COMPLETE, i2.state());
+    ASSERT_EQ(InstanceState::COMPLETE, i3.state());
+    ASSERT_EQ(InstanceState::COMPLETE, i4.state());
+
+    ASSERT_TRUE(i1.final_value() != nullptr);
+    ASSERT_TRUE(i2.final_value() != nullptr);
+    ASSERT_TRUE(i3.final_value() != nullptr);
+    EXPECT_EQ("hello", *i1.final_value());
+    EXPECT_EQ("hello", *i2.final_value());
+    EXPECT_EQ("hello", *i3.final_value());
+
+    std::unique_ptr<std::string> second_value(new std::string("there"));
+    auto second_prepare = i5.Prepare(std::move(second_value));
+
+    auto tp1 = i1.ReceiveMessages(second_prepare);
+    auto tp2 = i2.ReceiveMessages(second_prepare);
+    auto tp3 = i3.ReceiveMessages(second_prepare);
+    auto tp4 = i4.ReceiveMessages(second_prepare);
+
+    ASSERT_EQ(1, tp1.size());
+    ASSERT_EQ(1, tp2.size());
+    ASSERT_EQ(1, tp3.size());
+    ASSERT_EQ(1, tp4.size());
+
+    EXPECT_EQ("hello", *tp1[0].value());
+    EXPECT_EQ("hello", *tp2[0].value());
+    EXPECT_EQ("hello", *tp3[0].value());
+    EXPECT_EQ("hello", *tp4[0].value());
+
+    ASSERT_EQ(0, i5.ReceiveMessages(tp1).size());
+    ASSERT_EQ(0, i5.ReceiveMessages(tp2).size());
+    auto second_accept_1 = i5.ReceiveMessages(tp3);
+    ASSERT_EQ(1, second_accept_1.size());
+    auto second_accept_2 = i5.ReceiveMessages(tp4);
+    ASSERT_EQ(1, second_accept_2.size());
+
+    i5.ReceiveMessages(i1.ReceiveMessages(second_accept_1));
+    i5.ReceiveMessages(i1.ReceiveMessages(second_accept_2));
+    i5.ReceiveMessages(i2.ReceiveMessages(second_accept_1));
+    i5.ReceiveMessages(i2.ReceiveMessages(second_accept_2));
+    i5.ReceiveMessages(i3.ReceiveMessages(second_accept_1));
+    i5.ReceiveMessages(i3.ReceiveMessages(second_accept_2));
+    i5.ReceiveMessages(i4.ReceiveMessages(second_accept_1));
+    i5.ReceiveMessages(i4.ReceiveMessages(second_accept_2));
+
+    ASSERT_TRUE(i1.final_value() != nullptr);
+    ASSERT_TRUE(i2.final_value() != nullptr);
+    ASSERT_TRUE(i3.final_value() != nullptr);
+    ASSERT_TRUE(i4.final_value() != nullptr);
+    ASSERT_TRUE(i5.final_value() != nullptr);
+    EXPECT_EQ("hello", *i1.final_value());
+    EXPECT_EQ("hello", *i2.final_value());
+    EXPECT_EQ("hello", *i3.final_value());
+    EXPECT_EQ("hello", *i4.final_value());
+    EXPECT_EQ("hello", *i5.final_value());
+
+}
 }

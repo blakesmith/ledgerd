@@ -32,17 +32,11 @@ class Group {
         return last_sequence_ + 1;
     }
 
-    void broadcast(AdminMessage* message) {
-        for(auto& node : nodes_) {
-            message_dispatcher_->SendAdminMessage(node.second.get(), *message);
-        }
-    }
-
     void dispatch_messages() {
         for(auto& instance : admin_instances_) {
             switch(instance.second->state()) {
                 case InstanceState::PREPARING:
-                    broadcast(instance.second->value());
+//                    broadcast(instance.second->value());
                     break;
                 default:
                     break;

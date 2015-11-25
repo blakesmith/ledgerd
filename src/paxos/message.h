@@ -13,7 +13,8 @@ enum MessageType {
     PROMISE,
     REJECT,
     ACCEPT,
-    ACCEPTED
+    ACCEPTED,
+    DECIDED
 };
 
 enum AdminMessageType {

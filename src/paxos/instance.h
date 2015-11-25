@@ -32,7 +32,8 @@ class Instance {
     uint64_t sequence_;
     uint32_t this_node_id_;
     std::vector<uint32_t> node_ids_;
-    std::unique_ptr<T> value_;
+    std::unique_ptr<T> proposed_value_;
+    std::unique_ptr<T> final_value_;
 
     ProposalId next_proposal() {
         round_.NextRound();
@@ -62,11 +63,11 @@ class Instance {
         if(message.proposal_id() > highest_promise_) {
             set_highest_promise(message.proposal_id());
             responses->push_back(
-                make_response(MessageType::PROMISE, message));
+                make_response(MessageType::PROMISE, message, final_value_.get()));
             transition(InstanceState::PROMISED);
         } else {
             responses->push_back(
-                make_response(MessageType::REJECT, message, value_.get()));
+                make_response(MessageType::REJECT, message));
         }
     }
 
@@ -76,7 +77,7 @@ class Instance {
                           message.value());
         const T* accept_value = round_.highest_value() ?
             round_.highest_value() :
-            value_.get();
+            proposed_value_.get();
         if(round_.IsPromiseQuorum()) {
             responses->push_back(
                 make_response(MessageType::ACCEPT, message, accept_value));
@@ -97,77 +98,17 @@ class Instance {
                            message.proposal_id(),
                            message.value());
         if(round_.IsAcceptQuorum()) {
-            value_ = std::unique_ptr<T>(new T(*message.value()));
+            final_value_ = std::unique_ptr<T>(new T(*message.value()));
             responses->push_back(
-                make_response(MessageType::ACCEPTED, message, value_.get()));
+                make_response(MessageType::DECIDED, message, final_value_.get()));
             transition(InstanceState::COMPLETE);
         }
     }
 
-    void handle_complete(const Message<T>& message, std::vector<Message<T>>* responses) {
+    void handle_decided(const Message<T>& message, std::vector<Message<T>>* responses) {
         // TODO: Broadcast value to all 'learners'
-        value_ = std::unique_ptr<T>(new T(*message.value()));
+        final_value_ = std::unique_ptr<T>(new T(*message.value()));
         transition(InstanceState::COMPLETE);
-    }
-
-    std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
-        std::vector<Message<T>> responses;
-        for(auto& message : inbound) {
-            switch(state_) {
-                case InstanceState::IDLE:
-                case InstanceState::PROMISED:
-                    switch(message.message_type()) {
-                        case MessageType::PREPARE:
-                            handle_prepare(message, &responses);
-                            break;
-                        case MessageType::ACCEPT:
-                            handle_accept(message, &responses);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case InstanceState::ACCEPTING:
-                    switch(message.message_type()) {
-                        case MessageType::ACCEPTED:
-                            handle_complete(message, &responses);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-            }
-        }
-
-        return responses;
-    }
-
-    std::vector<Message<T>> receive_proposer(const std::vector<Message<T>>& inbound) {
-        std::vector<Message<T>> responses;
-        for(auto& message : inbound) {
-            switch(state_) {
-                case InstanceState::PREPARING:
-                    switch(message.message_type()) {
-                        case MessageType::PROMISE:
-                            handle_promise(message, &responses);
-                            break;
-                        default:
-                            break;
-                    }
-
-                    break;
-                case InstanceState::ACCEPTING:
-                    switch(message.message_type()) {
-                        case MessageType::ACCEPTED:
-                            handle_accepted(message, &responses);
-                            break;
-                        default:
-                            break;
-                    }
-            }
-        }
-
-        return responses;
     }
 
 public:
@@ -182,7 +123,8 @@ public:
           this_node_id_(this_node_id),
           round_(node_ids.size()),
           node_ids_(node_ids),
-          value_(nullptr) { }
+          proposed_value_(nullptr),
+          final_value_(nullptr) { }
 
     InstanceRole role() const {
         return role_;
@@ -212,16 +154,12 @@ public:
         return node_ids_;
     }
 
-    T* value() const {
-        return value_.get();
-    }
-
     void transition(InstanceState state) {
         this->state_ = state;
     }
 
     std::vector<Message<T>> Prepare(std::unique_ptr<T> value) {
-        value_ = std::move(value);
+        proposed_value_ = std::move(value);
         set_role(InstanceRole::PROPOSER);
         std::vector<Message<T>> messages = {
             Message<T>(MessageType::PREPARE,
@@ -235,14 +173,30 @@ public:
     }
 
     std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound) {
-        switch(role_) {
-            case InstanceRole::ACCEPTOR:
-                return receive_acceptor(inbound);
-                break;
-            case InstanceRole::PROPOSER:
-                return receive_proposer(inbound);
-                break;
+        std::vector<Message<T>> responses;
+        for(auto& message : inbound) {
+            switch(message.message_type()) {
+                case MessageType::PREPARE:
+                    handle_prepare(message, &responses);
+                    break;
+                case MessageType::PROMISE:
+                    handle_promise(message, &responses);
+                    break;
+                case MessageType::ACCEPT:
+                    handle_accept(message, &responses);
+                    break;
+                case MessageType::ACCEPTED:
+                    handle_accepted(message, &responses);
+                    break;
+                case MessageType::DECIDED:
+                    handle_decided(message, &responses);
+                    break;
+                default:
+                    break;
+            }
         }
+
+        return responses;
     }
 
     InstanceState state() const {
@@ -250,10 +204,7 @@ public:
     }
 
     T* final_value() const {
-        if(state_ == InstanceState::COMPLETE) {
-            return value_.get();
-        }
-        return nullptr;
+        return final_value_.get();
     }
 };
 }
