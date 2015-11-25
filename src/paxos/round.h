@@ -14,6 +14,7 @@ class Round {
     unsigned int round_n_;
     unsigned int n_nodes_;
     std::vector<uint32_t> promised_nodes_;
+    std::vector<uint32_t> accepted_nodes_;
     std::pair<ProposalId, std::unique_ptr<T>> highest_promise_;
 public:
     Round(unsigned int n_nodes)
@@ -23,12 +24,17 @@ public:
 
     unsigned int NextRound() {
         promised_nodes_.clear();
+        accepted_nodes_.clear();
         highest_promise_ = std::make_pair(ProposalId(0, 0), nullptr);
         return round_n_++;
     }
 
-    bool IsQuorum() const {
+    bool IsPromiseQuorum() const {
         return (double)promised_nodes_.size() / (double)n_nodes_ > 0.5F;
+    }
+
+    bool IsAcceptQuorum() const {
+        return (double)accepted_nodes_.size() / (double)n_nodes_ > 0.5F;
     }
 
     void AddPromise(uint32_t node_id,
@@ -45,6 +51,13 @@ public:
             }
         }
         promised_nodes_.push_back(node_id);
+    }
+
+    void AddAccepted(uint32_t node_id,
+                     const ProposalId prop,
+                     const T* value) {
+        assert(accepted_nodes_.size() < n_nodes_);
+        accepted_nodes_.push_back(node_id);
     }
 
     const T* highest_value() const {

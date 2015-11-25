@@ -77,23 +77,37 @@ class Instance {
         const T* accept_value = round_.highest_value() ?
             round_.highest_value() :
             value_.get();
-        if(round_.IsQuorum()) {
+        if(round_.IsPromiseQuorum()) {
             responses->push_back(
                 make_response(MessageType::ACCEPT, message, accept_value));
-            if(value_ == nullptr) {
-                value_ = std::unique_ptr<T>(new T(*accept_value));
-            }
-            transition(InstanceState::COMPLETE);
+            transition(InstanceState::ACCEPTING);
         }
     }
 
     void handle_accept(const Message<T>& message, std::vector<Message<T>>* responses) {
         if(message.proposal_id() >= highest_promise_) {
-            value_ = std::unique_ptr<T>(new T(*message.value()));
             responses->push_back(
                 make_response(MessageType::ACCEPTED, message, message.value()));
+            transition(InstanceState::ACCEPTING);
+        }
+    }
+
+    void handle_accepted(const Message<T>& message, std::vector<Message<T>>* responses) {
+        round_.AddAccepted(message.source_node_id(),
+                           message.proposal_id(),
+                           message.value());
+        if(round_.IsAcceptQuorum()) {
+            value_ = std::unique_ptr<T>(new T(*message.value()));
+            responses->push_back(
+                make_response(MessageType::ACCEPTED, message, value_.get()));
             transition(InstanceState::COMPLETE);
         }
+    }
+
+    void handle_complete(const Message<T>& message, std::vector<Message<T>>* responses) {
+        // TODO: Broadcast value to all 'learners'
+        value_ = std::unique_ptr<T>(new T(*message.value()));
+        transition(InstanceState::COMPLETE);
     }
 
     std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
@@ -108,6 +122,15 @@ class Instance {
                             break;
                         case MessageType::ACCEPT:
                             handle_accept(message, &responses);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case InstanceState::ACCEPTING:
+                    switch(message.message_type()) {
+                        case MessageType::ACCEPTED:
+                            handle_complete(message, &responses);
                             break;
                         default:
                             break;
@@ -133,6 +156,14 @@ class Instance {
                     }
 
                     break;
+                case InstanceState::ACCEPTING:
+                    switch(message.message_type()) {
+                        case MessageType::ACCEPTED:
+                            handle_accepted(message, &responses);
+                            break;
+                        default:
+                            break;
+                    }
             }
         }
 

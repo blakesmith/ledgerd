@@ -144,11 +144,21 @@ TEST(Paxos, QuorumAcceptNullValue) {
     auto accept = i1.ReceiveMessages(p2);
     ASSERT_EQ(1, accept.size());
 
-    auto a1 = i1.ReceiveMessages(accept);
     auto a2 = i2.ReceiveMessages(accept);
     auto a3 = i3.ReceiveMessages(accept);
     ASSERT_EQ(1, a2.size());
     ASSERT_EQ(1, a3.size());
+
+    ASSERT_EQ(InstanceState::ACCEPTING, i1.state());
+    ASSERT_EQ(InstanceState::ACCEPTING, i2.state());
+    ASSERT_EQ(InstanceState::ACCEPTING, i3.state());
+
+    ASSERT_EQ(0, i1.ReceiveMessages(a2).size());
+    auto complete = i1.ReceiveMessages(a3);
+    ASSERT_EQ(1, complete.size());
+
+    ASSERT_EQ(0, i2.ReceiveMessages(complete).size());
+    ASSERT_EQ(0, i3.ReceiveMessages(complete).size());
 
     ASSERT_EQ(InstanceState::COMPLETE, i1.state());
     ASSERT_EQ(InstanceState::COMPLETE, i2.state());
