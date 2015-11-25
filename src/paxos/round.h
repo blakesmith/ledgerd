@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cassert>
 #include <cstdint>
-#include <vector>
+#include <set>
 
 namespace ledgerd {
 namespace paxos {
@@ -13,8 +13,8 @@ template <typename T>
 class Round {
     unsigned int round_n_;
     unsigned int n_nodes_;
-    std::vector<uint32_t> promised_nodes_;
-    std::vector<uint32_t> accepted_nodes_;
+    std::set<uint32_t> promised_nodes_;
+    std::set<uint32_t> accepted_nodes_;
     std::pair<ProposalId, std::unique_ptr<T>> highest_promise_;
 public:
     Round(unsigned int n_nodes)
@@ -50,22 +50,18 @@ public:
                 highest_promise_.second = nullptr;
             }
         }
-        promised_nodes_.push_back(node_id);
+        promised_nodes_.insert(node_id);
     }
 
     void AddAccepted(uint32_t node_id,
                      const ProposalId prop,
                      const T* value) {
         assert(accepted_nodes_.size() < n_nodes_);
-        accepted_nodes_.push_back(node_id);
+        accepted_nodes_.insert(node_id);
     }
 
     const T* highest_value() const {
         return highest_promise_.second.get();
-    }
-
-    const std::vector<uint32_t>& promised_nodes() const {
-        return promised_nodes_;
     }
 
     unsigned int n_nodes() const {
