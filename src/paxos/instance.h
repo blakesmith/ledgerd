@@ -88,10 +88,12 @@ class Instance {
     }
 
     void handle_accept(const Message<T>& message, std::vector<Message<T>>* responses) {
-        value_ = std::unique_ptr<T>(new T(*message.value()));
-        responses->push_back(
-            make_response(MessageType::ACCEPTED, message, message.value()));
-        transition(InstanceState::COMPLETE);
+        if(message.proposal_id() >= highest_promise_) {
+            value_ = std::unique_ptr<T>(new T(*message.value()));
+            responses->push_back(
+                make_response(MessageType::ACCEPTED, message, message.value()));
+            transition(InstanceState::COMPLETE);
+        }
     }
 
     std::vector<Message<T>> receive_acceptor(const std::vector<Message<T>>& inbound) {
