@@ -47,7 +47,8 @@ TEST(Paxos, InstanceSupercedingPromise) {
     EXPECT_EQ(InstanceState::IDLE, i2.state());
     EXPECT_EQ(InstanceState::IDLE, i3.state());
 
-    std::vector<Message<std::string>> messages = i1.Prepare(std::move(value));
+    i1.set_proposed_value(std::move(value));
+    std::vector<Message<std::string>> messages = i1.Prepare();
     EXPECT_EQ(InstanceRole::PROPOSER, i1.role());
     EXPECT_EQ(InstanceState::PREPARING, i1.state());
     ASSERT_EQ(1, messages.size());
@@ -71,7 +72,8 @@ TEST(Paxos, InstanceSupercedingPromise) {
     EXPECT_EQ(expected_proposal, i2.highest_promise());
 
     std::unique_ptr<std::string> value2(new std::string("there"));
-    std::vector<Message<std::string>> late_prepare = i3.Prepare(std::move(value2));
+    i3.set_proposed_value(std::move(value2));
+    std::vector<Message<std::string>> late_prepare = i3.Prepare();
     ASSERT_EQ(1, late_prepare.size());
     std::vector<Message<std::string>> rejects = i2.ReceiveMessages(late_prepare);
     ASSERT_EQ(1, rejects.size());
@@ -91,7 +93,8 @@ TEST(Paxos, InstanceRejectingPromise) {
     EXPECT_EQ(InstanceState::IDLE, i2.state());
     EXPECT_EQ(InstanceState::IDLE, i3.state());
 
-    std::vector<Message<std::string>> messages = i3.Prepare(std::move(value));
+    i3.set_proposed_value(std::move(value));
+    std::vector<Message<std::string>> messages = i3.Prepare();
     ASSERT_EQ(1, messages.size());
     std::vector<Message<std::string>> promises = i2.ReceiveMessages(messages);
     ASSERT_EQ(1, promises.size());
@@ -101,7 +104,8 @@ TEST(Paxos, InstanceRejectingPromise) {
     EXPECT_EQ(expected_message_targets, promise.target_node_ids());
 
     std::unique_ptr<std::string> value2(new std::string("there"));
-    std::vector<Message<std::string>> late_proposals = i1.Prepare(std::move(value2));
+    i1.set_proposed_value(std::move(value2));
+    std::vector<Message<std::string>> late_proposals = i1.Prepare();
     EXPECT_EQ(InstanceRole::PROPOSER, i1.role());
     EXPECT_EQ(InstanceState::PREPARING, i1.state());
     ASSERT_EQ(1, late_proposals.size());
@@ -130,7 +134,8 @@ TEST(Paxos, QuorumAcceptNullValue) {
     Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
     Instance<std::string> i3(InstanceRole::ACCEPTOR, 0, 2, current_node_ids);
 
-    auto prepare = i1.Prepare(std::move(value));
+    i1.set_proposed_value(std::move(value));
+    auto prepare = i1.Prepare();
     ASSERT_EQ(1, prepare.size());
     ASSERT_EQ(InstanceState::PREPARING, i1.state());
     auto p1 = i2.ReceiveMessages(prepare);
@@ -181,7 +186,8 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     Instance<std::string> i4(InstanceRole::ACCEPTOR, 0, 3, current_node_ids);
     Instance<std::string> i5(InstanceRole::ACCEPTOR, 0, 4, current_node_ids);
 
-    auto prepare = i1.Prepare(std::move(value));
+    i1.set_proposed_value(std::move(value));
+    auto prepare = i1.Prepare();
     ASSERT_EQ(1, prepare.size());
     ASSERT_EQ(InstanceState::PREPARING, i1.state());
     auto p1 = i2.ReceiveMessages(prepare);
@@ -232,7 +238,8 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     EXPECT_EQ("hello", *i3.final_value());
 
     std::unique_ptr<std::string> second_value(new std::string("there"));
-    auto second_prepare = i5.Prepare(std::move(second_value));
+    i5.set_proposed_value(std::move(second_value));
+    auto second_prepare = i5.Prepare();
 
     auto tp1 = i1.ReceiveMessages(second_prepare);
     auto tp2 = i2.ReceiveMessages(second_prepare);
@@ -286,7 +293,8 @@ TEST(Paxos, ExistingValueRejectMultiRound) {
     Instance<std::string> i4(InstanceRole::ACCEPTOR, 0, 3, current_node_ids);
     Instance<std::string> i5(InstanceRole::ACCEPTOR, 0, 4, current_node_ids);
 
-    auto prepare = i5.Prepare(std::move(value));
+    i5.set_proposed_value(std::move(value));
+    auto prepare = i5.Prepare();
     i5.ReceiveMessages(i2.ReceiveMessages(prepare));
     i5.ReceiveMessages(i3.ReceiveMessages(prepare));
     auto accept = i5.ReceiveMessages(i4.ReceiveMessages(prepare));
@@ -309,7 +317,8 @@ TEST(Paxos, ExistingValueRejectMultiRound) {
     EXPECT_EQ("hello", *i5.final_value());
 
     std::unique_ptr<std::string> value_2(new std::string("there"));
-    auto p2 = i1.Prepare(std::move(value_2));
+    i1.set_proposed_value(std::move(value_2));
+    auto p2 = i1.Prepare();
     auto rejects = i2.ReceiveMessages(p2);
     ASSERT_EQ(1, rejects.size());
     const Message<std::string>& reject = rejects[0];

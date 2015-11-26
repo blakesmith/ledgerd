@@ -173,11 +173,6 @@ public:
         return messages;
     }
 
-    std::vector<Message<T>> Prepare(std::unique_ptr<T> value) {
-        proposed_value_ = std::move(value);
-        return Prepare();
-    }
-
     std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound) {
         std::vector<Message<T>> responses;
         for(auto& message : inbound) {
@@ -211,6 +206,14 @@ public:
 
     T* final_value() const {
         return final_value_.get();
+    }
+
+    T* proposed_value() const {
+        return proposed_value_.get();
+    }
+
+    void set_proposed_value(std::unique_ptr<T> proposed) {
+        proposed_value_ = std::move(proposed);        
     }
 };
 }
