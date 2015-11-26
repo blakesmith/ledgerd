@@ -79,6 +79,7 @@ class Instance {
             round_.highest_value() :
             proposed_value_.get();
         if(round_.IsPromiseQuorum()) {
+            // TODO: Send to quorum, not just the message originator?
             responses->push_back(
                 make_response(MessageType::ACCEPT, message, accept_value));
             transition(InstanceState::ACCEPTING);
@@ -98,6 +99,7 @@ class Instance {
                            message.proposal_id(),
                            message.value());
         if(round_.IsAcceptQuorum()) {
+            // TODO: Send to quorum, not just the message originator?
             final_value_ = std::unique_ptr<T>(new T(*message.value()));
             responses->push_back(
                 make_response(MessageType::DECIDED, message, final_value_.get()));
@@ -158,8 +160,7 @@ public:
         this->state_ = state;
     }
 
-    std::vector<Message<T>> Prepare(std::unique_ptr<T> value) {
-        proposed_value_ = std::move(value);
+    std::vector<Message<T>> Prepare() {
         set_role(InstanceRole::PROPOSER);
         std::vector<Message<T>> messages = {
             Message<T>(MessageType::PREPARE,
@@ -170,6 +171,11 @@ public:
         };
         transition(InstanceState::PREPARING);
         return messages;
+    }
+
+    std::vector<Message<T>> Prepare(std::unique_ptr<T> value) {
+        proposed_value_ = std::move(value);
+        return Prepare();
     }
 
     std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound) {

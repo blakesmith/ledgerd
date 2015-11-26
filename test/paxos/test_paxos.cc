@@ -275,6 +275,74 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     EXPECT_EQ("hello", *i3.final_value());
     EXPECT_EQ("hello", *i4.final_value());
     EXPECT_EQ("hello", *i5.final_value());
+}
 
+TEST(Paxos, ExistingValueRejectMultiRound) {
+    std::unique_ptr<std::string> value(new std::string("hello"));
+    std::vector<uint32_t> current_node_ids = {0, 1, 2, 3, 4};
+    Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
+    Instance<std::string> i2(InstanceRole::ACCEPTOR, 0, 1, current_node_ids);
+    Instance<std::string> i3(InstanceRole::ACCEPTOR, 0, 2, current_node_ids);
+    Instance<std::string> i4(InstanceRole::ACCEPTOR, 0, 3, current_node_ids);
+    Instance<std::string> i5(InstanceRole::ACCEPTOR, 0, 4, current_node_ids);
+
+    auto prepare = i5.Prepare(std::move(value));
+    i5.ReceiveMessages(i2.ReceiveMessages(prepare));
+    i5.ReceiveMessages(i3.ReceiveMessages(prepare));
+    auto accept = i5.ReceiveMessages(i4.ReceiveMessages(prepare));
+
+    i5.ReceiveMessages(i2.ReceiveMessages(accept));
+    i5.ReceiveMessages(i3.ReceiveMessages(accept));
+    auto decided = i5.ReceiveMessages(i4.ReceiveMessages(accept));
+
+    i2.ReceiveMessages(decided);
+    i3.ReceiveMessages(decided);
+    i4.ReceiveMessages(decided);
+
+    ASSERT_TRUE(i2.final_value() != nullptr);
+    ASSERT_TRUE(i3.final_value() != nullptr);
+    ASSERT_TRUE(i4.final_value() != nullptr);
+    ASSERT_TRUE(i5.final_value() != nullptr);
+    EXPECT_EQ("hello", *i2.final_value());
+    EXPECT_EQ("hello", *i3.final_value());
+    EXPECT_EQ("hello", *i4.final_value());
+    EXPECT_EQ("hello", *i5.final_value());
+
+    std::unique_ptr<std::string> value_2(new std::string("there"));
+    auto p2 = i1.Prepare(std::move(value_2));
+    auto rejects = i2.ReceiveMessages(p2);
+    ASSERT_EQ(1, rejects.size());
+    const Message<std::string>& reject = rejects[0];
+    EXPECT_EQ(MessageType::REJECT, reject.message_type());
+
+    auto p3 = i1.Prepare();
+    i1.ReceiveMessages(i2.ReceiveMessages(p3));
+    i1.ReceiveMessages(i3.ReceiveMessages(p3));
+    i1.ReceiveMessages(i4.ReceiveMessages(p3));
+    auto accept2 = i1.ReceiveMessages(i5.ReceiveMessages(p3));
+
+    i1.ReceiveMessages(i2.ReceiveMessages(accept2));
+    i1.ReceiveMessages(i3.ReceiveMessages(accept2));
+    i1.ReceiveMessages(i4.ReceiveMessages(accept2));
+    auto decided2 = i1.ReceiveMessages(i5.ReceiveMessages(accept2));
+
+    i2.ReceiveMessages(decided2);
+    i3.ReceiveMessages(decided2);
+    i4.ReceiveMessages(decided2);
+    i5.ReceiveMessages(decided2);
+
+    ASSERT_TRUE(i1.final_value() != nullptr);
+    ASSERT_TRUE(i2.final_value() != nullptr);
+    ASSERT_TRUE(i3.final_value() != nullptr);
+    ASSERT_TRUE(i4.final_value() != nullptr);
+    ASSERT_TRUE(i5.final_value() != nullptr);
+    EXPECT_EQ("hello", *i1.final_value());
+    EXPECT_EQ("hello", *i2.final_value());
+    EXPECT_EQ("hello", *i3.final_value());
+    EXPECT_EQ("hello", *i4.final_value());
+    EXPECT_EQ("hello", *i5.final_value());
+}
+
+TEST(Paxos, LeapFroggingProposers) {
 }
 }
