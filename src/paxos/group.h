@@ -24,24 +24,11 @@ class Group {
     MessageDispatcher<T, C>* message_dispatcher_;
     LogDispatcher<T>* log_dispatcher_;
 
-    uint64_t next_sequence() const {
-        if(last_sequence_ == 0) {
-            return 0;
-        }
-
-        return last_sequence_ + 1;
+    uint64_t next_sequence() {
+        return last_sequence_++;
     }
 
     void dispatch_messages() {
-        for(auto& instance : admin_instances_) {
-            switch(instance.second->state()) {
-                case InstanceState::PREPARING:
-//                    broadcast(instance.second->value());
-                    break;
-                default:
-                    break;
-            }
-        }
     }
 
     void receive_messages() {

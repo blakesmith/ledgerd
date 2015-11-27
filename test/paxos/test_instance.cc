@@ -1,43 +1,12 @@
 #include <gtest/gtest.h>
-#include <ctime>
 
-#include "paxos/group.h"
-#include "paxos/memory_log_dispatcher.h"
-#include "paxos/memory_message_dispatcher.h"
+#include "paxos/instance.h"
 
 using namespace ledgerd::paxos;
 
 namespace paxos_test {
 
-TEST(Paxos, GroupMembership) {
-    // MemoryMessageDispatcher<std::string, std::string> message_dispatch;
-    // MemoryLogDispatcher<std::string> log_dispatch;
-    // Group<std::string, std::string> group1(&message_dispatch, &log_dispatch, 0);
-    // Group<std::string, std::string> group2(&message_dispatch, &log_dispatch, 1);
-
-    // group1.ConnectPeers(std::map<uint32_t, std::string> {
-    //         {0, "node1"}, {1, "node2"}
-    //     });
-
-    // group2.ConnectPeers(std::map<uint32_t, std::string> {
-    //         {0, "node1"}, {1, "node2"}
-    //     });
-
-    // Instance<AdminMessage>* instance = group1.JoinGroup();
-    // EXPECT_EQ(0, instance->sequence());
-    // EXPECT_EQ(0, instance->value()->node_id());
-    // EXPECT_EQ(InstanceRole::PROPOSER, instance->role());
-    // EXPECT_EQ(AdminMessageType::JOIN, instance->value()->message_type());
-    // ASSERT_TRUE(group1.node(0) != nullptr);
-    // ASSERT_TRUE(group1.node(1) != nullptr);
-    // ASSERT_TRUE(group2.node(0) != nullptr);
-    // ASSERT_TRUE(group2.node(1) != nullptr);
-
-    // time_t current_time = 0;
-    // group1.Tick(current_time);
-}
-
-TEST(Paxos, InstanceSupercedingPromise) {
+TEST(Instance, SupercedingPromise) {
     std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
@@ -83,7 +52,7 @@ TEST(Paxos, InstanceSupercedingPromise) {
     EXPECT_EQ(expected_reject_targets, reject.target_node_ids());
 }
 
-TEST(Paxos, InstanceRejectingPromise) {
+TEST(Instance, InstanceRejectingPromise) {
     std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
@@ -127,7 +96,7 @@ TEST(Paxos, InstanceRejectingPromise) {
     EXPECT_EQ(highest_proposal, i2.highest_promise());
 }
 
-TEST(Paxos, QuorumAcceptNullValue) {
+TEST(Instance, QuorumAcceptNullValue) {
     std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
@@ -177,7 +146,7 @@ TEST(Paxos, QuorumAcceptNullValue) {
     EXPECT_EQ("hello", *i3.final_value());
 }
 
-TEST(Paxos, QuorumExistingAcceptedValue) {
+TEST(Instance, QuorumExistingAcceptedValue) {
     std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2, 3, 4};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
@@ -295,7 +264,7 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     EXPECT_EQ("hello", *i5.final_value());
 }
 
-TEST(Paxos, ExistingValueRejectMultiRound) {
+TEST(Instance, ExistingValueRejectMultiRound) {
     std::unique_ptr<std::string> value(new std::string("hello"));
     std::vector<uint32_t> current_node_ids = {0, 1, 2, 3, 4};
     Instance<std::string> i1(InstanceRole::ACCEPTOR, 0, 0, current_node_ids);
@@ -361,8 +330,5 @@ TEST(Paxos, ExistingValueRejectMultiRound) {
     EXPECT_EQ("hello", *i3.final_value());
     EXPECT_EQ("hello", *i4.final_value());
     EXPECT_EQ("hello", *i5.final_value());
-}
-
-TEST(Paxos, LeapFroggingProposers) {
 }
 }
