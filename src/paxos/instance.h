@@ -61,7 +61,6 @@ class Instance {
 
     Message<T> make_accept_broadcast(MessageType type, const Message<T>& request, const T* value) {
         std::vector<uint32_t> target_nodes = round_.TargetAcceptNodes();
-        round_.SentAccept(target_nodes);
         return Message<T>(type,
                           sequence_,
                           request.proposal_id(),
@@ -72,7 +71,6 @@ class Instance {
 
     Message<T> make_decided_broadcast(MessageType type, const Message<T>& request, const T* value) {
         std::vector<uint32_t> target_nodes = round_.TargetDecidedNodes();
-        round_.SentDecided(target_nodes);
         return Message<T>(type,
                           sequence_,
                           request.proposal_id(),
