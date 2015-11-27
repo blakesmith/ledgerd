@@ -118,7 +118,6 @@ class Instance {
                            message.proposal_id(),
                            message.value());
         if(round_.IsAcceptQuorum()) {
-            // TODO: Send to quorum, not just the message originator?
             final_value_ = std::unique_ptr<T>(new T(*message.value()));
             responses->push_back(
                 make_decided_broadcast(MessageType::DECIDED, message, final_value_.get()));
