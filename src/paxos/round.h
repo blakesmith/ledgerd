@@ -1,6 +1,7 @@
 #ifndef LEDGERD_PAXOS_ROUND_H_
 #define LEDGERD_PAXOS_ROUND_H_
 
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 #include <cstdint>
@@ -14,7 +15,9 @@ class Round {
     unsigned int round_n_;
     unsigned int n_nodes_;
     std::set<uint32_t> promised_nodes_;
+    std::set<uint32_t> sent_accept_nodes_;
     std::set<uint32_t> accepted_nodes_;
+    std::set<uint32_t> sent_decided_nodes_;
     std::pair<ProposalId, std::unique_ptr<T>> highest_promise_;
 public:
     Round(unsigned int n_nodes)
@@ -58,6 +61,34 @@ public:
                      const T* value) {
         assert(accepted_nodes_.size() < n_nodes_);
         accepted_nodes_.insert(node_id);
+    }
+
+    std::vector<uint32_t> TargetAcceptNodes() const {
+        std::vector<uint32_t> targets;
+        std::set_difference(promised_nodes_.begin(), promised_nodes_.end(),
+                            sent_accept_nodes_.begin(), sent_accept_nodes_.end(),
+                            std::inserter(targets, targets.end()));
+        return targets;
+    }
+
+    void SentAccept(const std::vector<uint32_t>& sent) {
+        for(auto& id : sent) {
+            sent_accept_nodes_.insert(id);
+        }
+    }
+
+    std::vector<uint32_t> TargetDecidedNodes() const {
+        std::vector<uint32_t> targets;
+        std::set_difference(accepted_nodes_.begin(), accepted_nodes_.end(),
+                            sent_decided_nodes_.begin(), sent_decided_nodes_.end(),
+                            std::inserter(targets, targets.end()));
+        return targets;
+    }
+
+    void SentDecided(const std::vector<uint32_t>& sent) {
+        for(auto& id : sent) {
+            sent_decided_nodes_.insert(id);
+        }
     }
 
     const T* highest_value() const {

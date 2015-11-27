@@ -59,6 +59,28 @@ class Instance {
                           target_nodes);
     }
 
+    Message<T> make_accept_broadcast(MessageType type, const Message<T>& request, const T* value) {
+        std::vector<uint32_t> target_nodes = round_.TargetAcceptNodes();
+        round_.SentAccept(target_nodes);
+        return Message<T>(type,
+                          sequence_,
+                          request.proposal_id(),
+                          this_node_id_,
+                          target_nodes,
+                          value);
+    }
+
+    Message<T> make_decided_broadcast(MessageType type, const Message<T>& request, const T* value) {
+        std::vector<uint32_t> target_nodes = round_.TargetDecidedNodes();
+        round_.SentDecided(target_nodes);
+        return Message<T>(type,
+                          sequence_,
+                          request.proposal_id(),
+                          this_node_id_,
+                          target_nodes,
+                          value);
+    }
+
     void handle_prepare(const Message<T>& message, std::vector<Message<T>>* responses) {
         if(message.proposal_id() > highest_promise_) {
             set_highest_promise(message.proposal_id());
@@ -79,9 +101,8 @@ class Instance {
             round_.highest_value() :
             proposed_value_.get();
         if(round_.IsPromiseQuorum()) {
-            // TODO: Send to quorum, not just the message originator?
             responses->push_back(
-                make_response(MessageType::ACCEPT, message, accept_value));
+                make_accept_broadcast(MessageType::ACCEPT, message, accept_value));
             transition(InstanceState::ACCEPTING);
         }
     }
@@ -102,7 +123,7 @@ class Instance {
             // TODO: Send to quorum, not just the message originator?
             final_value_ = std::unique_ptr<T>(new T(*message.value()));
             responses->push_back(
-                make_response(MessageType::DECIDED, message, final_value_.get()));
+                make_decided_broadcast(MessageType::DECIDED, message, final_value_.get()));
             transition(InstanceState::COMPLETE);
         }
     }

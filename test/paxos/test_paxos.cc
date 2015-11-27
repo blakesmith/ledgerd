@@ -193,6 +193,7 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     auto p1 = i2.ReceiveMessages(prepare);
     auto p2 = i3.ReceiveMessages(prepare);
     auto p3 = i4.ReceiveMessages(prepare);
+    auto p4 = i5.ReceiveMessages(prepare);
     ASSERT_EQ(1, p1.size());
     ASSERT_EQ(1, p2.size());
     ASSERT_EQ(1, p3.size());
@@ -204,6 +205,14 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     ASSERT_EQ(0, i1.ReceiveMessages(p2).size());
     auto accept = i1.ReceiveMessages(p3);
     ASSERT_EQ(1, accept.size());
+    const Message<std::string>& accept_message = accept[0];
+    const std::vector<uint32_t> expected_node_ids { 1, 2, 3 };
+    EXPECT_EQ(expected_node_ids, accept_message.target_node_ids());
+    auto accept2 = i1.ReceiveMessages(p4);
+    ASSERT_EQ(1, accept2.size());
+    const Message<std::string>& accept_message2 = accept2[0];
+    const std::vector<uint32_t> expected_node_ids2 { 4 };
+    EXPECT_EQ(expected_node_ids2, accept_message2.target_node_ids());
 
     auto a2 = i2.ReceiveMessages(accept);
     auto a3 = i3.ReceiveMessages(accept);
@@ -220,6 +229,8 @@ TEST(Paxos, QuorumExistingAcceptedValue) {
     ASSERT_EQ(0, i1.ReceiveMessages(a3).size());
     auto complete = i1.ReceiveMessages(a4);
     ASSERT_EQ(1, complete.size());
+    const Message<std::string>& complete_message = complete[0];
+    EXPECT_EQ(expected_node_ids, complete_message.target_node_ids());    
 
     ASSERT_EQ(0, i2.ReceiveMessages(complete).size());
     ASSERT_EQ(0, i3.ReceiveMessages(complete).size());
