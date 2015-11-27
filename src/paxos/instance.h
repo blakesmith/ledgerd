@@ -1,6 +1,7 @@
 #ifndef LEDGERD_PAXOS_INSTANCE_H_
 #define LEDGERD_PAXOS_INSTANCE_H_
 
+#include <mutex>
 #include <vector>
 
 #include "message.h"
@@ -34,6 +35,19 @@ class Instance {
     std::vector<uint32_t> node_ids_;
     std::unique_ptr<T> proposed_value_;
     std::unique_ptr<T> final_value_;
+    std::mutex lock_;
+
+    void set_role(InstanceRole new_role) {
+        this->role_ = new_role;
+    }
+
+    void set_highest_promise(const ProposalId& id) {
+        this->highest_promise_ = id;
+    }
+
+    void transition(InstanceState state) {
+        this->state_ = state;
+    }
 
     ProposalId next_proposal() {
         round_.NextRound();
@@ -146,39 +160,31 @@ public:
           proposed_value_(nullptr),
           final_value_(nullptr) { }
 
-    InstanceRole role() const {
+    InstanceRole role() {
+        std::lock_guard<std::mutex> lock(lock_);
         return role_;
-    }
-
-    void set_role(InstanceRole new_role) {
-        this->role_ = new_role;
     }
 
     uint64_t sequence() const {
         return sequence_;
     }
 
-    const Round<T>& round() const {
+    const Round<T>& round() {
+        std::lock_guard<std::mutex> lock(lock_);
         return round_;
     }
 
-    ProposalId highest_promise() const {
+    ProposalId highest_promise() {
+        std::lock_guard<std::mutex> lock(lock_);
         return highest_promise_;
-    }
-
-    void set_highest_promise(const ProposalId& id) {
-        this->highest_promise_ = id;
     }
 
     const std::vector<uint32_t>& node_ids() const {
         return node_ids_;
     }
 
-    void transition(InstanceState state) {
-        this->state_ = state;
-    }
-
     std::vector<Message<T>> Prepare() {
+        std::lock_guard<std::mutex> lock(lock_);
         set_role(InstanceRole::PROPOSER);
         std::vector<Message<T>> messages = {
             Message<T>(MessageType::PREPARE,
@@ -192,6 +198,7 @@ public:
     }
 
     std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound) {
+        std::lock_guard<std::mutex> lock(lock_);
         std::vector<Message<T>> responses;
         for(auto& message : inbound) {
             switch(message.message_type()) {
@@ -218,19 +225,23 @@ public:
         return responses;
     }
 
-    InstanceState state() const {
+    InstanceState state() {
+        std::lock_guard<std::mutex> lock(lock_);
         return state_;
     }
 
-    T* final_value() const {
+    T* final_value() {
+        std::lock_guard<std::mutex> lock(lock_);
         return final_value_.get();
     }
 
-    T* proposed_value() const {
+    T* proposed_value() {
+        std::lock_guard<std::mutex> lock(lock_);
         return proposed_value_.get();
     }
 
     void set_proposed_value(std::unique_ptr<T> proposed) {
+        std::lock_guard<std::mutex> lock(lock_);
         proposed_value_ = std::move(proposed);        
     }
 };
