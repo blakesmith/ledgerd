@@ -6,53 +6,31 @@
 #include <memory>
 
 #include "instance.h"
-#include "message_dispatcher.h"
-#include "log_dispatcher.h"
 #include "node.h"
 
 namespace ledgerd {
 namespace paxos {
 
-template <typename T, typename C>
+template <typename T>
 class Group {
+    uint32_t this_node_id_;
     uint64_t last_sequence_;
-    uint32_t node_id_;
     std::time_t last_tick_time_;
-    std::map<uint32_t, C> peer_data_;
-    std::map<uint32_t, std::unique_ptr<Node<T, C>>> nodes_;
-    std::map<uint64_t, std::unique_ptr<Instance<AdminMessage>>> admin_instances_;
-    MessageDispatcher<T, C>* message_dispatcher_;
-    LogDispatcher<T>* log_dispatcher_;
+    std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
+    std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
 
     uint64_t next_sequence() {
         return last_sequence_++;
     }
 
-    void dispatch_messages() {
-    }
-
-    void receive_messages() {
-    }
-
 public:
-    Group(MessageDispatcher<T, C>* message_dispatcher,
-          LogDispatcher<T>* log_dispatcher,
-          uint32_t node_id)
-        : last_tick_time_(0),
+    Group(uint32_t this_node_id)
+        : this_node_id_(this_node_id),
           last_sequence_(0),
-          message_dispatcher_(message_dispatcher),
-          log_dispatcher_(log_dispatcher),
-          node_id_(node_id) { }
-
-    LogDispatcher<T>* log_dispatcher() const {
-        return log_dispatcher_;
+          last_tick_time_(0) {
     }
 
-    MessageDispatcher<T, C>* message_dispatcher() const {
-        return message_dispatcher_;
-    }
-
-    Node<T, C>* node(uint32_t node_id) const {
+    Node<T>* node(uint32_t node_id) const {
         auto search = nodes_.find(node_id);
         if(search != nodes_.end()) {
             return search->second.get();
@@ -61,23 +39,34 @@ public:
         return nullptr;
     }
 
-    void ConnectPeers(const std::map<uint32_t, C>& peer_data) {
-        this->peer_data_ = peer_data;
-        for(auto& peer : peer_data) {
-            uint32_t node_id = peer.first;
-            const C& connect_data = peer.second;
-            std::unique_ptr<Node<T, C>> new_node(
-                new Node<T, C>(node_id, connect_data));
-            Node<T, C>* node_ref = new_node.get();
-            nodes_[node_id] = std::move(new_node);
-            message_dispatcher_->Connect(node_ref);
-        }
+    Node<T>* AddNode(uint32_t node_id) {
+        std::unique_ptr<Node<T>> new_node(
+            new Node<T>(node_id));
+        Node<T>* node_ref = new_node.get();
+        nodes_[node_id] = std::move(new_node);
+        return node_ref;
+    }
+
+    void RemoveNode(uint32_t node_id) {
+        nodes_.erase(node_id);
+    }
+
+    const Instance<T>& CreateInstance() {
+        uint64_t sequence = next_sequence();
+        std::vector<uint32_t> instance_nodes;
+        for(auto& kv : nodes_) { instance_nodes.push_back(kv.first); }
+        std::unique_ptr<Instance<T>> new_instance(
+            new Instance<T>(InstanceRole::ACCEPTOR,
+                            sequence,
+                            this_node_id_,
+                            instance_nodes));
+        const Instance<T>& instance = *new_instance;
+        instances_[sequence] = std::move(new_instance);
+        return instance;
     }
 
     void Tick(std::time_t current_time) {
         this->last_tick_time_ = current_time;
-        dispatch_messages();
-        receive_messages();
     }
 };
 }
