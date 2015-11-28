@@ -61,25 +61,6 @@ public:
         return nullptr;
     }
 
-    // Instance<AdminMessage>* JoinGroup() {
-    //     std::unique_ptr<AdminMessage> message(
-    //         new AdminMessage(node_id_, AdminMessageType::JOIN));
-    //     std::vector<uint32_t> current_node_ids;
-    //     for(auto& node_pair : nodes_) {
-    //         current_node_ids.push_back(node_pair.first);
-    //     };
-    //     std::unique_ptr<Instance<AdminMessage>> instance(
-    //         new Instance<AdminMessage>(InstanceRole::PROPOSER,
-    //                                    next_sequence(),
-    //                                    node_id_,
-    //                                    current_node_ids,
-    //                                    std::move(message)));
-    //     instance->Transition(InstanceState::PREPARING);
-    //     Instance<AdminMessage>* instance_ref = instance.get();
-    //     admin_instances_[instance->sequence()] = std::move(instance);
-    //     return instance_ref;
-    // }
-
     void ConnectPeers(const std::map<uint32_t, C>& peer_data) {
         this->peer_data_ = peer_data;
         for(auto& peer : peer_data) {
