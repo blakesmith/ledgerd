@@ -52,8 +52,7 @@ public:
         nodes_.erase(node_id);
     }
 
-    const Instance<T>& CreateInstance() {
-        uint64_t sequence = next_sequence();
+    Instance<T>* CreateInstance(uint64_t sequence) {
         std::vector<uint32_t> instance_nodes;
         for(auto& kv : nodes_) { instance_nodes.push_back(kv.first); }
         std::unique_ptr<Instance<T>> new_instance(
@@ -61,9 +60,13 @@ public:
                             sequence,
                             this_node_id_,
                             instance_nodes));
-        const Instance<T>& instance = *new_instance;
+        Instance<T>* instance = new_instance.get();
         instances_[sequence] = std::move(new_instance);
         return instance;
+    }
+
+    Instance<T>* CreateInstance() {
+        return CreateInstance(next_sequence());
     }
 
     Event<T> Propose(uint64_t sequence, std::unique_ptr<T> value) {
@@ -74,6 +77,21 @@ public:
         const std::unique_ptr<Instance<T>>& instance = search->second;
         instance->set_proposed_value(std::move(value));
         return Event<T>(instance->Prepare());
+    }
+
+    Event<T> Receive(uint64_t sequence, const std::vector<Message<T>>& messages) {
+        auto search = instances_.find(sequence);
+        Instance<T>* instance;
+        if(search == instances_.end()) {
+            instance = CreateInstance(sequence);
+        }
+        instance = search->second.get();
+        std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages);
+        if(instance->state() == InstanceState::COMPLETE) {
+            return Event<T>(instance->final_value());
+        }
+
+        return Event<T>(std::move(received_messages));
     }
 
     void Tick(std::time_t current_time) {
