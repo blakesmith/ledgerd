@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 
+#include "event.h"
 #include "instance.h"
 #include "node.h"
 
@@ -63,6 +64,16 @@ public:
         const Instance<T>& instance = *new_instance;
         instances_[sequence] = std::move(new_instance);
         return instance;
+    }
+
+    Event<T> Propose(uint64_t sequence, std::unique_ptr<T> value) {
+        auto search = instances_.find(sequence);
+        if(search == instances_.end()) {
+            return Event<T>();
+        }
+        const std::unique_ptr<Instance<T>>& instance = search->second;
+        instance->set_proposed_value(std::move(value));
+        return Event<T>(instance->Prepare());
     }
 
     void Tick(std::time_t current_time) {

@@ -28,6 +28,22 @@ TEST(Group, CreateInstance) {
     EXPECT_EQ(instance_nodes, instance.node_ids());
 }
 
+TEST(Group, PeerProposals) {
+    Group<std::string> group1(0);
+    Group<std::string> group2(1);
+
+    group1.AddNode(0);
+    group1.AddNode(1);
+    group2.AddNode(0);
+    group2.AddNode(1);
+
+    std::unique_ptr<std::string> value(new std::string("hello"));
+    const Instance<std::string>& instance = group1.CreateInstance();
+    Event<std::string> event = group1.Propose(instance.sequence(), std::move(value));
+    ASSERT_TRUE(event.HasMessages());
+    EXPECT_FALSE(event.HasValue());
+}
+
 TEST(Group, LeapFroggingProposers) {
 }
 }
