@@ -28,7 +28,7 @@ TEST(Group, CreateInstance) {
     EXPECT_EQ(instance_nodes, instance->node_ids());
 }
 
-TEST(Group, PeerProposals) {
+TEST(Group, MultiplePeerProposals) {
     Group<std::string> group1(0);
     Group<std::string> group2(1);
 
@@ -39,11 +39,27 @@ TEST(Group, PeerProposals) {
 
     std::unique_ptr<std::string> value(new std::string("hello"));
     Instance<std::string>* instance = group1.CreateInstance();
+// TODO: Correct sequence number generation with gap handling
+//    EXPECT_EQ(0, instance->sequence());
     Event<std::string> event = group1.Propose(instance->sequence(), std::move(value));
     ASSERT_TRUE(event.HasMessages());
     EXPECT_FALSE(event.HasFinalValue());
 
     Event<std::string> event2 = group2.Receive(instance->sequence(), event.messages());
+    EXPECT_TRUE(event2.HasMessages());
+    EXPECT_FALSE(event2.HasFinalValue());
+
+    std::unique_ptr<std::string> value2(new std::string("there"));
+    Instance<std::string>* instance2 = group2.CreateInstance();
+// TODO: Correct sequence number generation with gap handling
+//    EXPECT_EQ(1, instance2->sequence());
+    Event<std::string> event3 = group2.Propose(instance2->sequence(), std::move(value2));
+    EXPECT_TRUE(event3.HasMessages());
+    EXPECT_FALSE(event3.HasFinalValue());
+
+    Event<std::string> event4 = group1.Receive(instance2->sequence(), event3.messages());
+    EXPECT_TRUE(event4.HasMessages());
+    EXPECT_FALSE(event4.HasFinalValue());
 }
 
 TEST(Group, LeapFroggingProposers) {
