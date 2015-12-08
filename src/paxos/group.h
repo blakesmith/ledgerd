@@ -84,8 +84,9 @@ public:
         Instance<T>* instance;
         if(search == instances_.end()) {
             instance = CreateInstance(sequence);
+        } else {
+            instance = search->second.get();
         }
-        instance = search->second.get();
         std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages);
         if(instance->state() == InstanceState::COMPLETE) {
             return Event<T>(instance->final_value());
