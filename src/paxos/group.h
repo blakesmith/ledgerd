@@ -16,6 +16,7 @@ namespace paxos {
 template <typename T>
 class Group {
     uint32_t this_node_id_;
+    uint64_t highest_sequence_;
     LinearSequence<uint64_t> active_or_completed_instances_;
     std::time_t last_tick_time_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
@@ -24,6 +25,7 @@ class Group {
 public:
     Group(uint32_t this_node_id)
         : this_node_id_(this_node_id),
+          highest_sequence_(0),
           active_or_completed_instances_(0),
           last_tick_time_(0) { }
 
