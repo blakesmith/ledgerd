@@ -34,6 +34,10 @@ public:
         }
     }
 
+    T next() const{
+        return upper_bound_ + 1;
+    }
+
     T upper_bound() const {
         return upper_bound_;
     }

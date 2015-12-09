@@ -7,6 +7,7 @@
 
 #include "event.h"
 #include "instance.h"
+#include "linear_sequence.h"
 #include "node.h"
 
 namespace ledgerd {
@@ -15,21 +16,16 @@ namespace paxos {
 template <typename T>
 class Group {
     uint32_t this_node_id_;
-    uint64_t last_sequence_;
+    LinearSequence<uint64_t> active_or_completed_instances_;
     std::time_t last_tick_time_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
 
-    uint64_t next_sequence() {
-        return last_sequence_++;
-    }
-
 public:
     Group(uint32_t this_node_id)
         : this_node_id_(this_node_id),
-          last_sequence_(0),
-          last_tick_time_(0) {
-    }
+          active_or_completed_instances_(0),
+          last_tick_time_(0) { }
 
     Node<T>* node(uint32_t node_id) const {
         auto search = nodes_.find(node_id);
@@ -62,11 +58,12 @@ public:
                             instance_nodes));
         Instance<T>* instance = new_instance.get();
         instances_[sequence] = std::move(new_instance);
+        active_or_completed_instances_.Add(sequence);
         return instance;
     }
 
     Instance<T>* CreateInstance() {
-        return CreateInstance(next_sequence());
+        return CreateInstance(active_or_completed_instances_.next());
     }
 
     Event<T> Propose(uint64_t sequence, std::unique_ptr<T> value) {

@@ -23,7 +23,7 @@ TEST(Group, CreateInstance) {
     group.AddNode(1);
     
     Instance<std::string>* instance = group.CreateInstance();
-    EXPECT_EQ(0, instance->sequence());
+    EXPECT_EQ(1, instance->sequence());
     const std::vector<uint32_t> instance_nodes { 0, 1 };
     EXPECT_EQ(instance_nodes, instance->node_ids());
 }
@@ -39,8 +39,7 @@ TEST(Group, MultiplePeerProposals) {
 
     std::unique_ptr<std::string> value(new std::string("hello"));
     Instance<std::string>* instance = group1.CreateInstance();
-// TODO: Correct sequence number generation with gap handling
-//    EXPECT_EQ(0, instance->sequence());
+    EXPECT_EQ(1, instance->sequence());
     Event<std::string> event = group1.Propose(instance->sequence(), std::move(value));
     ASSERT_TRUE(event.HasMessages());
     EXPECT_FALSE(event.HasFinalValue());
@@ -51,8 +50,7 @@ TEST(Group, MultiplePeerProposals) {
 
     std::unique_ptr<std::string> value2(new std::string("there"));
     Instance<std::string>* instance2 = group2.CreateInstance();
-// TODO: Correct sequence number generation with gap handling
-//    EXPECT_EQ(1, instance2->sequence());
+    EXPECT_EQ(2, instance2->sequence());
     Event<std::string> event3 = group2.Propose(instance2->sequence(), std::move(value2));
     EXPECT_TRUE(event3.HasMessages());
     EXPECT_FALSE(event3.HasFinalValue());
