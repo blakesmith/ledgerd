@@ -21,7 +21,7 @@ using namespace ledgerd;
 static std::unique_ptr<Ledgerd::Stub> build_client() {
     return Ledgerd::NewStub(
         grpc::CreateChannel("localhost:50051",
-                            grpc::InsecureCredentials()));
+                            grpc::InsecureChannelCredentials()));
 }
 
 TEST(GrpcInterface, PingPong) {

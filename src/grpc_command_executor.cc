@@ -73,7 +73,7 @@ std::unique_ptr<Ledgerd::Stub> GrpcCommandExecutor::connect(const CommonOptions&
     host_and_port << opts.host << ":" << opts.port;
     return Ledgerd::NewStub(
         grpc::CreateChannel(host_and_port.str(),
-                            grpc::InsecureCredentials()));
+                            grpc::InsecureChannelCredentials()));
 }
 
 std::unique_ptr<CommandExecutorStatus> GrpcCommandExecutor::execute_unknown(Ledgerd::Stub* stub, const UnknownCommand* cmd) {
