@@ -11,6 +11,7 @@ check_PROGRAMS = libpaxos_tests
 
 libpaxos_tests_SOURCES = \
 	test_group.cc \
-	test_instance.cc
+	test_instance.cc \
+	test_linear_sequence.cc
 
 libpaxos_tests_LDADD = $(top_srcdir)/src/paxos/libpaxos.la
