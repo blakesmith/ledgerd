@@ -5,10 +5,10 @@
 #include <map>
 #include <memory>
 
-#include "event.h"
 #include "instance.h"
 #include "linear_sequence.h"
 #include "node.h"
+#include "persistent_log.h"
 
 namespace ledgerd {
 namespace paxos {
@@ -17,14 +17,17 @@ template <typename T>
 class Group {
     uint32_t this_node_id_;
     uint64_t highest_sequence_;
+    PersistentLog<T>& persistent_log_;
     LinearSequence<uint64_t> active_or_completed_instances_;
     std::time_t last_tick_time_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
 
 public:
-    Group(uint32_t this_node_id)
+    Group(uint32_t this_node_id,
+          PersistentLog<T>& persistent_log)
         : this_node_id_(this_node_id),
+          persistent_log_(persistent_log),
           highest_sequence_(0),
           active_or_completed_instances_(0),
           last_tick_time_(0) { }
@@ -68,17 +71,17 @@ public:
         return CreateInstance(active_or_completed_instances_.next());
     }
 
-    Event<T> Propose(uint64_t sequence, std::unique_ptr<T> value) {
+    std::vector<Message<T>> Propose(uint64_t sequence, std::unique_ptr<T> value) {
         auto search = instances_.find(sequence);
         if(search == instances_.end()) {
-            return Event<T>();
+            return std::vector<Message<T>>{};
         }
         const std::unique_ptr<Instance<T>>& instance = search->second;
         instance->set_proposed_value(std::move(value));
-        return Event<T>(instance->Prepare());
+        return instance->Prepare();
     }
 
-    Event<T> Receive(uint64_t sequence, const std::vector<Message<T>>& messages) {
+    std::vector<Message<T>> Receive(uint64_t sequence, const std::vector<Message<T>>& messages) {
         auto search = instances_.find(sequence);
         Instance<T>* instance;
         if(search == instances_.end()) {
@@ -88,10 +91,12 @@ public:
         }
         std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages);
         if(instance->state() == InstanceState::COMPLETE) {
-            return Event<T>(instance->final_value());
+            // TODO: Stop ignoring write value
+            persistent_log_.Write(instance);
+            return std::vector<Message<T>>{};
         }
 
-        return Event<T>(std::move(received_messages));
+        return received_messages;
     }
 
     void Tick(std::time_t current_time) {

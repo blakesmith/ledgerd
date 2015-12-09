@@ -7,8 +7,15 @@ using namespace ledgerd::paxos;
 
 namespace paxos_test {
 
+template <typename T>
+class NullLog : public PersistentLog<T> {
+public:
+    LogStatus Write(const Instance<T>* instance) { }
+};
+
 TEST(Group, AddRemoveNode) {
-    Group<std::string> group(0);
+    NullLog<std::string> log;
+    Group<std::string> group(0, log);
     Node<std::string>* added_node = group.AddNode(1);
     ASSERT_TRUE(added_node != nullptr);
     EXPECT_EQ(1, added_node->id());
@@ -18,7 +25,8 @@ TEST(Group, AddRemoveNode) {
 }
 
 TEST(Group, CreateInstance) {
-    Group<std::string> group(0);
+    NullLog<std::string> log;
+    Group<std::string> group(0, log);
     group.AddNode(0);
     group.AddNode(1);
     
@@ -29,8 +37,9 @@ TEST(Group, CreateInstance) {
 }
 
 TEST(Group, MultiplePeerProposals) {
-    Group<std::string> group1(0);
-    Group<std::string> group2(1);
+    NullLog<std::string> log;
+    Group<std::string> group1(0, log);
+    Group<std::string> group2(1, log);
 
     group1.AddNode(0);
     group1.AddNode(1);
@@ -40,24 +49,20 @@ TEST(Group, MultiplePeerProposals) {
     std::unique_ptr<std::string> value(new std::string("hello"));
     Instance<std::string>* instance = group1.CreateInstance();
     EXPECT_EQ(1, instance->sequence());
-    Event<std::string> event = group1.Propose(instance->sequence(), std::move(value));
-    ASSERT_TRUE(event.HasMessages());
-    EXPECT_FALSE(event.HasFinalValue());
+    std::vector<Message<std::string>> messages = group1.Propose(instance->sequence(), std::move(value));
+    ASSERT_EQ(1, messages.size());
 
-    Event<std::string> event2 = group2.Receive(instance->sequence(), event.messages());
-    EXPECT_TRUE(event2.HasMessages());
-    EXPECT_FALSE(event2.HasFinalValue());
+    std::vector<Message<std::string>> messages2 = group2.Receive(instance->sequence(), messages);
+    EXPECT_EQ(1, messages2.size());
 
     std::unique_ptr<std::string> value2(new std::string("there"));
     Instance<std::string>* instance2 = group2.CreateInstance();
     EXPECT_EQ(2, instance2->sequence());
-    Event<std::string> event3 = group2.Propose(instance2->sequence(), std::move(value2));
-    EXPECT_TRUE(event3.HasMessages());
-    EXPECT_FALSE(event3.HasFinalValue());
+    std::vector<Message<std::string>> messages3 = group2.Propose(instance2->sequence(), std::move(value2));
+    EXPECT_EQ(1, messages3.size());
 
-    Event<std::string> event4 = group1.Receive(instance2->sequence(), event3.messages());
-    EXPECT_TRUE(event4.HasMessages());
-    EXPECT_FALSE(event4.HasFinalValue());
+    std::vector<Message<std::string>> messages4 = group1.Receive(instance2->sequence(), messages3);
+    EXPECT_EQ(1, messages4.size());
 }
 
 TEST(Group, LeapFroggingProposers) {
