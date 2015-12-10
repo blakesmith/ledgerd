@@ -51,6 +51,18 @@ public:
         return nullptr;
     }
 
+    void persist_instances() {
+        for(auto it = instances_.begin(); it != instances_.end(); ++it) {
+            if(completed_instances_.in_joint_range(it->first)) {
+                LogStatus status = persistent_log_.Write(it->second->sequence(),
+                                                         it->second->final_value());
+                if(status == LogStatus::LOG_OK) {
+                    instances_.erase(it);
+                }
+            }
+        }
+    }
+
     Node<T>* AddNode(uint32_t node_id) {
         std::unique_ptr<Node<T>> new_node(
             new Node<T>(node_id));
@@ -105,12 +117,8 @@ public:
         }
         std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages);
         if(instance->state() == InstanceState::COMPLETE) {
-            LogStatus status = persistent_log_.Write(instance->sequence(),
-                                                     instance->final_value());
             completed_instances_.Add(instance->sequence());
-            if(status == LogStatus::LOG_OK) {
-                instances_.erase(instance->sequence());
-            }
+            persist_instances();
             return std::vector<Message<T>>{};
         }
 
