@@ -13,6 +13,26 @@ public:
     LogStatus Write(const Instance<T>* instance) { }
 };
 
+template <typename T>
+uint64_t complete_sequence(Group<T>& primary_group,
+                           std::vector<Group<T>*> peers,
+                           std::unique_ptr<T> value) {
+    Instance<T>* instance = primary_group.CreateInstance();
+    auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
+
+    while(instance->state() != InstanceState::COMPLETE) {
+        std::vector<Message<T>> replies;
+        for(auto& g : peers) {
+            for(auto& m : g->Receive(instance->sequence(), broadcast_messages)) {
+                replies.push_back(m);
+            }
+        }
+        broadcast_messages = primary_group.Receive(instance->sequence(), replies);
+    }
+    
+    return instance->sequence();
+}
+
 TEST(Group, AddRemoveNode) {
     NullLog<std::string> log;
     Group<std::string> group(0, log);
@@ -63,6 +83,32 @@ TEST(Group, MultiplePeerProposals) {
 
     std::vector<Message<std::string>> messages4 = group1.Receive(instance2->sequence(), messages3);
     EXPECT_EQ(1, messages4.size());
+}
+
+TEST(Group, OldProposal) {
+    NullLog<std::string> log;
+    Group<std::string> group1(0, log);
+    Group<std::string> group2(1, log);
+    Group<std::string> group3(2, log);
+
+    group1.AddNode(0);
+    group1.AddNode(1);
+    group1.AddNode(2);
+
+    group2.AddNode(0);
+    group2.AddNode(1);
+    group2.AddNode(2);
+
+    group3.AddNode(0);
+    group3.AddNode(1);
+    group3.AddNode(2);
+
+    std::vector<Group<std::string>*> groups { &group2, &group3 };
+    std::unique_ptr<std::string> value(new std::string("hello"));
+    uint64_t sequence = complete_sequence(group1,
+                                          groups,
+                                          std::move(value));
+    EXPECT_EQ("hello", *group1.final_value(sequence));
 }
 
 TEST(Group, LeapFroggingProposers) {

@@ -102,6 +102,20 @@ public:
     void Tick(std::time_t current_time) {
         this->last_tick_time_ = current_time;
     }
+
+    // Returns a copy, since this will eventually come from
+    // the persistent log
+    std::unique_ptr<T> final_value(uint64_t sequence) {
+        auto search = instances_.find(sequence);
+        if(search == instances_.end()) {
+            return nullptr;
+        }
+        const std::unique_ptr<Instance<T>>& instance = search->second;
+        T* final_value = instance->final_value();
+        return std::unique_ptr<T>(final_value ?
+                                  new T(*final_value) :
+                                  nullptr);
+    }
 };
 }
 }
