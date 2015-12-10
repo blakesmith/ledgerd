@@ -46,6 +46,10 @@ public:
         return lower_bound_;
     }
 
+    void set_upper_bound(T v) {
+        upper_bound_ = v;
+    }
+
     unsigned int n_disjoint() const {
         return disjoint_values_.size();
     }

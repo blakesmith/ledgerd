@@ -13,6 +13,7 @@ class PersistentLog {
 public:
     virtual LogStatus Write(uint64_t sequence, const T* final_value) = 0;
     virtual std::unique_ptr<T> Get(uint64_t sequence) = 0;
+    virtual uint64_t HighestSequence() = 0;
 };
 
 }

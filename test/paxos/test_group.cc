@@ -19,6 +19,10 @@ public:
     std::unique_ptr<T> Get(uint64_t sequence) {
         return nullptr;
     }
+
+    uint64_t HighestSequence() {
+        return 0;
+    }
 };
 
 template <typename T>
@@ -40,6 +44,10 @@ public:
         return std::unique_ptr<T>(search->second ?
                                   new T(*search->second) :
                                   nullptr);
+    }
+
+    uint64_t HighestSequence() {
+        return final_values_.rbegin()->first;
     }
 };
 
@@ -151,6 +159,48 @@ TEST(Group, OldProposal) {
     ASSERT_EQ(sequence, sequence2);
     ASSERT_TRUE(group4.final_value(sequence) != nullptr);
     EXPECT_EQ("hello", *group4.final_value(sequence2));
+}
+
+TEST(Group, GroupRestarts) {
+    MemoryLog<std::string> log;
+    Group<std::string> group1(0, log);
+    Group<std::string> group2(1, log);
+    Group<std::string> group3(2, log);
+
+    group1.AddNode(0);
+    group1.AddNode(1);
+    group1.AddNode(2);
+
+    group2.AddNode(0);
+    group2.AddNode(1);
+    group2.AddNode(2);
+
+    group3.AddNode(0);
+    group3.AddNode(1);
+    group3.AddNode(2);
+
+    std::vector<Group<std::string>*> groups { &group2, &group3 };
+    std::unique_ptr<std::string> value1(new std::string("hello"));
+    std::unique_ptr<std::string> value2(new std::string("there"));
+    std::unique_ptr<std::string> value3(new std::string("friend"));
+    uint64_t sequence1 = complete_sequence(group1,
+                                           groups,
+                                           std::move(value1));
+    uint64_t sequence2 = complete_sequence(group1,
+                                           groups,
+                                           std::move(value2));
+    uint64_t sequence3 = complete_sequence(group1,
+                                           groups,
+                                           std::move(value3));
+    EXPECT_TRUE(group1.instance_complete(sequence1));
+    EXPECT_TRUE(group1.instance_complete(sequence2));
+    EXPECT_TRUE(group1.instance_complete(sequence3));
+
+    Group<std::string> restarted_group(0, log);
+    restarted_group.Start();
+    EXPECT_TRUE(restarted_group.instance_complete(sequence1));
+    EXPECT_TRUE(restarted_group.instance_complete(sequence2));
+    EXPECT_TRUE(restarted_group.instance_complete(sequence3));
 }
 
 TEST(Group, LeapFroggingProposers) {

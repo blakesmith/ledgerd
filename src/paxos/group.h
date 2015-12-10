@@ -24,6 +24,23 @@ class Group {
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
 
+    void persist_instances() {
+        for(auto it = instances_.begin(); it != instances_.end(); ++it) {
+            if(completed_instances_.in_joint_range(it->first)) {
+                LogStatus status = persistent_log_.Write(it->second->sequence(),
+                                                         it->second->final_value());
+                if(status == LogStatus::LOG_OK) {
+                    instances_.erase(it);
+                }
+            }
+        }
+    }
+
+    void prime_state() {
+        uint64_t highest_sequence = persistent_log_.HighestSequence();
+        completed_instances_.set_upper_bound(highest_sequence);
+    }
+
 public:
     Group(uint32_t this_node_id,
           PersistentLog<T>& persistent_log)
@@ -51,16 +68,8 @@ public:
         return nullptr;
     }
 
-    void persist_instances() {
-        for(auto it = instances_.begin(); it != instances_.end(); ++it) {
-            if(completed_instances_.in_joint_range(it->first)) {
-                LogStatus status = persistent_log_.Write(it->second->sequence(),
-                                                         it->second->final_value());
-                if(status == LogStatus::LOG_OK) {
-                    instances_.erase(it);
-                }
-            }
-        }
+    void Start() {
+        prime_state();
     }
 
     Node<T>* AddNode(uint32_t node_id) {
