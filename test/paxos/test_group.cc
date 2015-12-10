@@ -51,7 +51,7 @@ static uint64_t complete_sequence(Group<T>& primary_group,
     auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
 
     uint64_t sequence = instance->sequence();
-    while(instance->state() != InstanceState::COMPLETE && i < 5) {
+    while(instance->state() != InstanceState::COMPLETE) {
         std::vector<Message<T>> replies;
         for(auto& g : peers) {
             for(auto& m : g->Receive(sequence, broadcast_messages)) {
