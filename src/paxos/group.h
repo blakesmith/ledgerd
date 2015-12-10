@@ -4,6 +4,7 @@
 #include <ctime>
 #include <map>
 #include <memory>
+#include <iostream>
 
 #include "instance.h"
 #include "linear_sequence.h"
@@ -106,10 +107,10 @@ public:
         if(instance->state() == InstanceState::COMPLETE) {
             LogStatus status = persistent_log_.Write(instance->sequence(),
                                                      instance->final_value());
+            completed_instances_.Add(instance->sequence());
             if(status == LogStatus::LOG_OK) {
                 instances_.erase(instance->sequence());
             }
-            completed_instances_.Add(instance->sequence());
             return std::vector<Message<T>>{};
         }
 
@@ -120,20 +121,13 @@ public:
         this->last_tick_time_ = current_time;
     }
 
-    // Returns a copy, since this will eventually come from
-    // the persistent log
     std::unique_ptr<T> final_value(uint64_t sequence) {
-        auto search = instances_.find(sequence);
-        if(search == instances_.end()) {
-            return nullptr;
-        }
-        const std::unique_ptr<Instance<T>>& instance = search->second;
-        T* final_value = instance->final_value();
-        return std::unique_ptr<T>(final_value ?
-                                  new T(*final_value) :
-                                  nullptr);
+        return persistent_log_.Get(sequence);
     }
 
+    bool instance_complete(uint64_t sequence) {
+        return completed_instances_.in_joint_range(sequence);
+    }
 };
 }
 }

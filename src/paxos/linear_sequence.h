@@ -49,6 +49,10 @@ public:
     unsigned int n_disjoint() const {
         return disjoint_values_.size();
     }
+
+    bool in_joint_range(T v) {
+        return lower_bound_ <= v && upper_bound_ >= v;
+    }
 };
 
 }

@@ -51,7 +51,7 @@ static uint64_t complete_sequence(Group<T>& primary_group,
     auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
 
     uint64_t sequence = instance->sequence();
-    while(instance->state() != InstanceState::COMPLETE) {
+    while(!primary_group.instance_complete(sequence)) {
         std::vector<Message<T>> replies;
         for(auto& g : peers) {
             for(auto& m : g->Receive(sequence, broadcast_messages)) {
@@ -139,6 +139,7 @@ TEST(Group, OldProposal) {
     uint64_t sequence = complete_sequence(group1,
                                           groups,
                                           std::move(value));
+    ASSERT_TRUE(group1.final_value(sequence) != nullptr);
     EXPECT_EQ("hello", *group1.final_value(sequence));
 
     Group<std::string> group4(3, log);
@@ -148,6 +149,7 @@ TEST(Group, OldProposal) {
                                            groups2,
                                            std::move(value2));
     ASSERT_EQ(sequence, sequence2);
+    ASSERT_TRUE(group4.final_value(sequence) != nullptr);
     EXPECT_EQ("hello", *group4.final_value(sequence2));
 }
 
