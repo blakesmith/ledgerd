@@ -11,7 +11,8 @@ enum LogStatus {
 template <typename T>
 class PersistentLog {
 public:
-    virtual LogStatus Write(const Instance<T>* instance) = 0;
+    virtual LogStatus Write(uint64_t sequence, const T* final_value) = 0;
+    virtual std::unique_ptr<T> Get(uint64_t sequence) = 0;
 };
 
 }

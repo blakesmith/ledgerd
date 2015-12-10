@@ -109,10 +109,15 @@ class Instance {
         round_.AddPromise(message.source_node_id(),
                           message.proposal_id(),
                           message.value());
-        const T* accept_value = round_.highest_value() ?
-            round_.highest_value() :
-            proposed_value_.get();
-        if(round_.IsPromiseQuorum()) {
+        T* accept_value;
+        if(final_value_) {
+            accept_value = final_value_.get();
+        } else {
+            accept_value = round_.highest_value() ?
+                const_cast<T*>(round_.highest_value()) :
+                const_cast<T*>(proposed_value_.get());
+        }
+        if(round_.IsPromiseQuorum() || final_value_) {
             responses->push_back(
                 make_accept_broadcast(MessageType::ACCEPT, message, accept_value));
             transition(InstanceState::ACCEPTING);
@@ -133,6 +138,8 @@ class Instance {
                            message.value());
         if(round_.IsAcceptQuorum()) {
             final_value_ = std::unique_ptr<T>(new T(*message.value()));
+        }
+        if(round_.IsAcceptQuorum() || final_value_) {
             responses->push_back(
                 make_decided_broadcast(MessageType::DECIDED, message, final_value_.get()));
             transition(InstanceState::COMPLETE);
@@ -233,6 +240,11 @@ public:
     T* final_value() {
         std::lock_guard<std::mutex> lock(lock_);
         return final_value_.get();
+    }
+
+    void set_final_value(std::unique_ptr<T> value) {
+        std::lock_guard<std::mutex> lock(lock_);
+        final_value_ = std::move(value);
     }
 
     T* proposed_value() {

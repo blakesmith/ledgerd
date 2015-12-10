@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include <ctime>
+#include <map>
+#include <iostream>
 
 #include "paxos/group.h"
 
@@ -10,7 +12,35 @@ namespace paxos_test {
 template <typename T>
 class NullLog : public PersistentLog<T> {
 public:
-    LogStatus Write(const Instance<T>* instance) { }
+    LogStatus Write(uint64_t sequence, const T* final_value) {
+        return LogStatus::LOG_OK;
+    }
+
+    std::unique_ptr<T> Get(uint64_t sequence) {
+        return nullptr;
+    }
+};
+
+template <typename T>
+class MemoryLog : public PersistentLog<T> {
+    std::map<uint64_t, std::unique_ptr<T>> final_values_;
+public:
+    LogStatus Write(uint64_t sequence, const T* final_value) {
+        final_values_[sequence] = std::unique_ptr<T>(final_value ?
+                                                     new T(*final_value) :
+                                                     nullptr);
+        return LogStatus::LOG_OK;
+    }
+
+    std::unique_ptr<T> Get(uint64_t sequence) {
+        auto search = final_values_.find(sequence);
+        if(search == final_values_.end()) {
+            return nullptr;
+        }
+        return std::unique_ptr<T>(search->second ?
+                                  new T(*search->second) :
+                                  nullptr);
+    }
 };
 
 template <typename T>
@@ -20,14 +50,15 @@ static uint64_t complete_sequence(Group<T>& primary_group,
     Instance<T>* instance = primary_group.CreateInstance();
     auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
 
-    while(instance->state() != InstanceState::COMPLETE) {
+    uint64_t sequence = instance->sequence();
+    while(instance->state() != InstanceState::COMPLETE && i < 5) {
         std::vector<Message<T>> replies;
         for(auto& g : peers) {
-            for(auto& m : g->Receive(instance->sequence(), broadcast_messages)) {
+            for(auto& m : g->Receive(sequence, broadcast_messages)) {
                 replies.push_back(m);
             }
         }
-        broadcast_messages = primary_group.Receive(instance->sequence(), replies);
+        broadcast_messages = primary_group.Receive(sequence, replies);
     }
     
     return instance->sequence();
@@ -86,7 +117,7 @@ TEST(Group, MultiplePeerProposals) {
 }
 
 TEST(Group, OldProposal) {
-    NullLog<std::string> log;
+    MemoryLog<std::string> log;
     Group<std::string> group1(0, log);
     Group<std::string> group2(1, log);
     Group<std::string> group3(2, log);

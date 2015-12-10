@@ -16,9 +16,9 @@ namespace paxos {
 template <typename T>
 class Group {
     uint32_t this_node_id_;
-    uint64_t highest_sequence_;
     PersistentLog<T>& persistent_log_;
     LinearSequence<uint64_t> active_or_completed_instances_;
+    LinearSequence<uint64_t> completed_instances_;
     std::time_t last_tick_time_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
@@ -28,13 +28,22 @@ public:
           PersistentLog<T>& persistent_log)
         : this_node_id_(this_node_id),
           persistent_log_(persistent_log),
-          highest_sequence_(0),
           active_or_completed_instances_(0),
+          completed_instances_(0),
           last_tick_time_(0) { }
 
     Node<T>* node(uint32_t node_id) const {
         auto search = nodes_.find(node_id);
         if(search != nodes_.end()) {
+            return search->second.get();
+        }
+
+        return nullptr;
+    }
+
+    Instance<T>* instance(uint64_t sequence) const {
+        auto search = instances_.find(sequence);
+        if(search != instances_.end()) {
             return search->second.get();
         }
 
@@ -86,13 +95,21 @@ public:
         Instance<T>* instance;
         if(search == instances_.end()) {
             instance = CreateInstance(sequence);
+            std::unique_ptr<T> log_final_value = persistent_log_.Get(sequence);
+            if(log_final_value) {
+                instance->set_final_value(std::move(log_final_value));
+            }
         } else {
             instance = search->second.get();
         }
         std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages);
         if(instance->state() == InstanceState::COMPLETE) {
-            // TODO: Stop ignoring write value
-            persistent_log_.Write(instance);
+            LogStatus status = persistent_log_.Write(instance->sequence(),
+                                                     instance->final_value());
+            if(status == LogStatus::LOG_OK) {
+                instances_.erase(instance->sequence());
+            }
+            completed_instances_.Add(instance->sequence());
             return std::vector<Message<T>>{};
         }
 
@@ -116,6 +133,7 @@ public:
                                   new T(*final_value) :
                                   nullptr);
     }
+
 };
 }
 }
