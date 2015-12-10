@@ -14,9 +14,9 @@ public:
 };
 
 template <typename T>
-uint64_t complete_sequence(Group<T>& primary_group,
-                           std::vector<Group<T>*> peers,
-                           std::unique_ptr<T> value) {
+static uint64_t complete_sequence(Group<T>& primary_group,
+                                  std::vector<Group<T>*> peers,
+                                  std::unique_ptr<T> value) {
     Instance<T>* instance = primary_group.CreateInstance();
     auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
 
@@ -109,6 +109,15 @@ TEST(Group, OldProposal) {
                                           groups,
                                           std::move(value));
     EXPECT_EQ("hello", *group1.final_value(sequence));
+
+    Group<std::string> group4(3, log);
+    std::unique_ptr<std::string> value2(new std::string("join"));
+    std::vector<Group<std::string>*> groups2 { &group1, &group2, &group3 };
+    uint64_t sequence2 = complete_sequence(group4,
+                                           groups2,
+                                           std::move(value2));
+    ASSERT_EQ(sequence, sequence2);
+    EXPECT_EQ("hello", *group4.final_value(sequence2));
 }
 
 TEST(Group, LeapFroggingProposers) {

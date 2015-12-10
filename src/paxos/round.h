@@ -43,7 +43,6 @@ public:
     void AddPromise(uint32_t node_id,
                     const ProposalId prop,
                     const T* value)  {
-        assert(promised_nodes_.size() < n_nodes_);
         const ProposalId& current_highest = highest_promise_.first;
         if(prop > current_highest) {
             highest_promise_.first = prop;
@@ -59,7 +58,6 @@ public:
     void AddAccepted(uint32_t node_id,
                      const ProposalId prop,
                      const T* value) {
-        assert(accepted_nodes_.size() < n_nodes_);
         accepted_nodes_.insert(node_id);
     }
 
