@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <iostream>
+#include <random>
 
 #include "instance.h"
 #include "linear_sequence.h"
@@ -23,6 +24,8 @@ class Group {
     std::time_t last_tick_time_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
+    std::random_device random_;
+    std::uniform_int_distribution<int> random_dist_;
 
     void persist_instances() {
         for(auto it = instances_.begin(); it != instances_.end(); ++it) {
@@ -43,9 +46,11 @@ class Group {
 
 public:
     Group(uint32_t this_node_id,
-          PersistentLog<T>& persistent_log)
+          PersistentLog<T>& persistent_log,
+          std::uniform_int_distribution<int> random_dist = std::uniform_int_distribution<int>(0, 10))
         : this_node_id_(this_node_id),
           persistent_log_(persistent_log),
+          random_dist_(random_dist),
           active_or_completed_instances_(0),
           completed_instances_(0),
           last_tick_time_(0) { }
@@ -134,8 +139,9 @@ public:
         return received_messages;
     }
 
-    void Tick(std::time_t current_time) {
-        this->last_tick_time_ = current_time;
+    std::vector<Message<T>> Tick(std::time_t current_time = std::time(nullptr)) {
+        int rand = random_dist_(random_);
+        return std::vector<Message<T>>{};
     }
 
     std::unique_ptr<T> final_value(uint64_t sequence) {

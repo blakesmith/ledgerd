@@ -232,31 +232,36 @@ TEST(Group, LeapFroggingProposersTimeouts) {
 
     std::unique_ptr<std::string> v1(new std::string("hello"));
     Instance<std::string>* i1 = group1.CreateInstance();
-    auto m1 = group1.Propose(i1->sequence(), std::move(v1));
-    auto m2 = rpc(group1, group2, i1->sequence(), m1);
-    auto m3 = rpc(group1, group3, i1->sequence(), m1);
-
-    ASSERT_EQ(1, m1.size());
-    ASSERT_EQ(1, m2.size());
-    ASSERT_EQ(1, m3.size());
 
     std::unique_ptr<std::string> v2(new std::string("there"));
     Instance<std::string>* i2 = group2.CreateInstance();
 
-    // Leap over the promise with a higher promise sequence
-    auto m4 = group2.Propose(i2->sequence(), std::move(v2));
-    auto m5 = rpc(group2, group1, i2->sequence(), m4);
-    auto m6 = rpc(group2, group3, i2->sequence(), m4);
+    std::unique_ptr<std::string> v3(new std::string("friend"));
+    Instance<std::string>* i3 = group3.CreateInstance();
 
+    ASSERT_EQ(i1->sequence(), i2->sequence());
+    ASSERT_EQ(i1->sequence(), i3->sequence());
+
+    auto m1 = group3.Propose(i3->sequence(), std::move(v3));
+    rpc(group3, group1, i3->sequence(), m1);
+    rpc(group3, group2, i3->sequence(), m1);
+    auto m2 = rpc(group3, group3, i3->sequence(), m1);
+
+    auto m3 = group2.Propose(i2->sequence(), std::move(v2));
+    rpc(group2, group1, i2->sequence(), m3);
+    rpc(group2, group2, i2->sequence(), m3);
+    auto m4 = group3.Receive(i2->sequence(), m3);
     ASSERT_EQ(1, m4.size());
-    ASSERT_EQ(1, m5.size());
+    EXPECT_EQ(MessageType::REJECT, m4[0].message_type());
+
+    auto m5 = group1.Propose(i1->sequence(), std::move(v1));
+    rpc(group1, group1, i1->sequence(), m5);
+    rpc(group1, group2, i1->sequence(), m5);
+    auto m6 = group3.Receive(i1->sequence(), m5);
     ASSERT_EQ(1, m6.size());
+    EXPECT_EQ(MessageType::REJECT, m6[0].message_type());
 
-    // Reject the the ACCEPT, since the promise was leap-frogged
-    auto m7 = group1.Receive(i1->sequence(), group2.Receive(i1->sequence(), m3));
-    auto m8 = group1.Receive(i1->sequence(), group2.Receive(i1->sequence(), m4));
-
-    ASSERT_EQ(1, m7.size());
-    ASSERT_EQ(1, m8.size());
+    EXPECT_EQ(0, group2.Tick(0).size());
+    EXPECT_EQ(1, group2.Tick(60).size());
 }
 }

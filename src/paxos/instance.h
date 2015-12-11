@@ -18,6 +18,7 @@ enum InstanceRole {
 
 enum InstanceState {
     IDLE,
+    REJECTED,
     PREPARING,
     PROMISED,
     ACCEPTING,
@@ -129,6 +130,9 @@ class Instance {
             responses->push_back(
                 make_response(MessageType::ACCEPTED, message, message.value()));
             transition(InstanceState::ACCEPTING);
+        } else {
+            responses->push_back(
+                make_response(MessageType::REJECT, message));
         }
     }
 
@@ -150,6 +154,10 @@ class Instance {
         // TODO: Broadcast value to all 'learners'
         final_value_ = std::unique_ptr<T>(new T(*message.value()));
         transition(InstanceState::COMPLETE);
+    }
+
+    void handle_rejected(const Message<T>& message, std::vector<Message<T>>* responses) {
+        transition(InstanceState::REJECTED);
     }
 
 public:
@@ -220,6 +228,9 @@ public:
                     break;
                 case MessageType::ACCEPTED:
                     handle_accepted(message, &responses);
+                    break;
+                case MessageType::REJECT:
+                    handle_rejected(message, &responses);
                     break;
                 case MessageType::DECIDED:
                     handle_decided(message, &responses);
