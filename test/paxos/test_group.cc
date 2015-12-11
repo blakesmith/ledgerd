@@ -72,6 +72,15 @@ static uint64_t complete_sequence(Group<T>& primary_group,
     return instance->sequence();
 }
 
+template <typename T>
+static std::vector<Message<T>> rpc(Group<T>& from,
+                                   Group<T>& to,
+                                   uint64_t sequence,
+                                   const std::vector<Message<T>>& messages) {
+    auto response = to.Receive(sequence, messages);
+    return from.Receive(sequence, response);
+}
+
 TEST(Group, AddRemoveNode) {
     NullLog<std::string> log;
     Group<std::string> group(0, log);
@@ -203,6 +212,51 @@ TEST(Group, GroupRestarts) {
     EXPECT_TRUE(restarted_group.instance_complete(sequence3));
 }
 
-TEST(Group, LeapFroggingProposers) {
+TEST(Group, LeapFroggingProposersTimeouts) {
+    NullLog<std::string> log;
+    Group<std::string> group1(0, log);
+    Group<std::string> group2(1, log);
+    Group<std::string> group3(2, log);
+
+    group1.AddNode(0);
+    group1.AddNode(1);
+    group1.AddNode(2);
+
+    group2.AddNode(0);
+    group2.AddNode(1);
+    group2.AddNode(2);
+
+    group3.AddNode(0);
+    group3.AddNode(1);
+    group3.AddNode(2);
+
+    std::unique_ptr<std::string> v1(new std::string("hello"));
+    Instance<std::string>* i1 = group1.CreateInstance();
+    auto m1 = group1.Propose(i1->sequence(), std::move(v1));
+    auto m2 = rpc(group1, group2, i1->sequence(), m1);
+    auto m3 = rpc(group1, group3, i1->sequence(), m1);
+
+    ASSERT_EQ(1, m1.size());
+    ASSERT_EQ(1, m2.size());
+    ASSERT_EQ(1, m3.size());
+
+    std::unique_ptr<std::string> v2(new std::string("there"));
+    Instance<std::string>* i2 = group2.CreateInstance();
+
+    // Leap over the promise with a higher promise sequence
+    auto m4 = group2.Propose(i2->sequence(), std::move(v2));
+    auto m5 = rpc(group2, group1, i2->sequence(), m4);
+    auto m6 = rpc(group2, group3, i2->sequence(), m4);
+
+    ASSERT_EQ(1, m4.size());
+    ASSERT_EQ(1, m5.size());
+    ASSERT_EQ(1, m6.size());
+
+    // Reject the the ACCEPT, since the promise was leap-frogged
+    auto m7 = group1.Receive(i1->sequence(), group2.Receive(i1->sequence(), m3));
+    auto m8 = group1.Receive(i1->sequence(), group2.Receive(i1->sequence(), m4));
+
+    ASSERT_EQ(1, m7.size());
+    ASSERT_EQ(1, m8.size());
 }
 }
