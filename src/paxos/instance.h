@@ -251,8 +251,10 @@ public:
     }
 
     std::vector<Message<T>> Tick(int rand, std::time_t current_time) {
-        if (current_time > (last_receive_ + DEFAULT_RECEIVE_TIMEOUT_SEC + rand)) {
-            return Prepare();
+        if(current_time > (last_receive_ + DEFAULT_RECEIVE_TIMEOUT_SEC + rand)) {
+            if(proposed_value_) {
+                return Prepare();
+            }
         }
 
         return std::vector<Message<T>>{};
