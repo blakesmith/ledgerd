@@ -1,6 +1,7 @@
 #ifndef LEDGERD_PAXOS_INSTANCE_H_
 #define LEDGERD_PAXOS_INSTANCE_H_
 
+#include <ctime>
 #include <mutex>
 #include <vector>
 
@@ -27,6 +28,8 @@ enum InstanceState {
 
 template <typename T>
 class Instance {
+    static const int DEFAULT_RECEIVE_TIMEOUT_SEC = 2;
+
     InstanceRole role_;
     InstanceState state_;
     Round<T> round_;
@@ -36,6 +39,7 @@ class Instance {
     std::vector<uint32_t> node_ids_;
     std::unique_ptr<T> proposed_value_;
     std::unique_ptr<T> final_value_;
+    std::time_t last_receive_;
     std::mutex lock_;
 
     void set_role(InstanceRole new_role) {
@@ -173,7 +177,8 @@ public:
           round_(node_ids.size()),
           node_ids_(node_ids),
           proposed_value_(nullptr),
-          final_value_(nullptr) { }
+          final_value_(nullptr),
+          last_receive_(0) { }
 
     InstanceRole role() {
         std::lock_guard<std::mutex> lock(lock_);
@@ -212,8 +217,10 @@ public:
         return messages;
     }
 
-    std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound) {
+    std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound,
+                                            std::time_t current_time = std::time(nullptr)) {
         std::lock_guard<std::mutex> lock(lock_);
+        last_receive_ = current_time;
         std::vector<Message<T>> responses;
         for(auto& message : inbound) {
             switch(message.message_type()) {
@@ -241,6 +248,14 @@ public:
         }
 
         return responses;
+    }
+
+    std::vector<Message<T>> Tick(int rand, std::time_t current_time) {
+        if (current_time > (last_receive_ + DEFAULT_RECEIVE_TIMEOUT_SEC + rand)) {
+            return Prepare();
+        }
+
+        return std::vector<Message<T>>{};
     }
 
     InstanceState state() {

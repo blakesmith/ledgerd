@@ -47,7 +47,7 @@ class Group {
 public:
     Group(uint32_t this_node_id,
           PersistentLog<T>& persistent_log,
-          std::uniform_int_distribution<int> random_dist = std::uniform_int_distribution<int>(0, 10))
+          std::uniform_int_distribution<int> random_dist = std::uniform_int_distribution<int>(0, 3))
         : this_node_id_(this_node_id),
           persistent_log_(persistent_log),
           random_dist_(random_dist),
@@ -117,7 +117,9 @@ public:
         return instance->Prepare();
     }
 
-    std::vector<Message<T>> Receive(uint64_t sequence, const std::vector<Message<T>>& messages) {
+    std::vector<Message<T>> Receive(uint64_t sequence,
+                                    const std::vector<Message<T>>& messages,
+                                    std::time_t current_time = std::time(nullptr)) {
         auto search = instances_.find(sequence);
         Instance<T>* instance;
         if(search == instances_.end()) {
@@ -129,7 +131,7 @@ public:
         } else {
             instance = search->second.get();
         }
-        std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages);
+        std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages, current_time);
         if(instance->state() == InstanceState::COMPLETE) {
             completed_instances_.Add(instance->sequence());
             persist_instances();
@@ -141,7 +143,13 @@ public:
 
     std::vector<Message<T>> Tick(std::time_t current_time = std::time(nullptr)) {
         int rand = random_dist_(random_);
-        return std::vector<Message<T>>{};
+        std::vector<Message<T>> messages;
+        for(auto& kv : instances_) {
+            for(auto message : kv.second->Tick(rand, current_time)) {
+                messages.push_back(message);
+            }
+        }
+        return messages;
     }
 
     std::unique_ptr<T> final_value(uint64_t sequence) {

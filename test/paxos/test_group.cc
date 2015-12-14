@@ -76,9 +76,10 @@ template <typename T>
 static std::vector<Message<T>> rpc(Group<T>& from,
                                    Group<T>& to,
                                    uint64_t sequence,
-                                   const std::vector<Message<T>>& messages) {
-    auto response = to.Receive(sequence, messages);
-    return from.Receive(sequence, response);
+                                   const std::vector<Message<T>>& messages,
+                                   std::time_t current_time = std::time(nullptr)) {
+    auto response = to.Receive(sequence, messages, current_time);
+    return from.Receive(sequence, response, current_time);
 }
 
 TEST(Group, AddRemoveNode) {
@@ -256,12 +257,12 @@ TEST(Group, LeapFroggingProposersTimeouts) {
 
     auto m5 = group1.Propose(i1->sequence(), std::move(v1));
     rpc(group1, group1, i1->sequence(), m5);
-    rpc(group1, group2, i1->sequence(), m5);
+    rpc(group1, group2, i1->sequence(), m5, 0);
     auto m6 = group3.Receive(i1->sequence(), m5);
     ASSERT_EQ(1, m6.size());
     EXPECT_EQ(MessageType::REJECT, m6[0].message_type());
 
     EXPECT_EQ(0, group2.Tick(0).size());
-    EXPECT_EQ(1, group2.Tick(60).size());
+    EXPECT_EQ(1, group2.Tick(10).size());
 }
 }
