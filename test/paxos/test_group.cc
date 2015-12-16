@@ -264,6 +264,6 @@ TEST(Group, LeapFroggingProposersTimeouts) {
     EXPECT_EQ(MessageType::REJECT, m6[0].message_type());
 
     EXPECT_EQ(0, group2.Tick(epoch).size());
-    EXPECT_EQ(1, group2.Tick(epoch + std::chrono::milliseconds(60)).size());
+    EXPECT_EQ(1, group2.Tick(epoch + std::chrono::milliseconds(220)).size());
 }
 }

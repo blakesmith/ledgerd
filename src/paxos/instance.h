@@ -28,8 +28,7 @@ enum InstanceState {
 
 template <typename T>
 class Instance {
-    static const int DEFAULT_RECEIVE_TIMEOUT = 50;
-    static const int DEFAULT_RECEIVE_TIMEOUT_SEC = 2;
+    static const int DEFAULT_RECEIVE_TIMEOUT = 200;
 
     std::mutex lock_;
     InstanceRole role_;
