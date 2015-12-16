@@ -1,7 +1,7 @@
 #ifndef LEDGERD_PAXOS_GROUP_H_
 #define LEDGERD_PAXOS_GROUP_H_
 
-#include <ctime>
+#include <chrono>
 #include <map>
 #include <memory>
 #include <iostream>
@@ -21,7 +21,6 @@ class Group {
     PersistentLog<T>& persistent_log_;
     LinearSequence<uint64_t> active_or_completed_instances_;
     LinearSequence<uint64_t> completed_instances_;
-    std::time_t last_tick_time_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
     std::random_device random_;
@@ -52,8 +51,7 @@ public:
           persistent_log_(persistent_log),
           random_dist_(random_dist),
           active_or_completed_instances_(0),
-          completed_instances_(0),
-          last_tick_time_(0) { }
+          completed_instances_(0) { }
 
     Node<T>* node(uint32_t node_id) const {
         auto search = nodes_.find(node_id);
@@ -119,7 +117,7 @@ public:
 
     std::vector<Message<T>> Receive(uint64_t sequence,
                                     const std::vector<Message<T>>& messages,
-                                    std::time_t current_time = std::time(nullptr)) {
+                                    std::chrono::time_point<std::chrono::system_clock> current_time = std::chrono::system_clock::now()) {
         auto search = instances_.find(sequence);
         Instance<T>* instance;
         if(search == instances_.end()) {
@@ -141,7 +139,7 @@ public:
         return received_messages;
     }
 
-    std::vector<Message<T>> Tick(std::time_t current_time = std::time(nullptr)) {
+    std::vector<Message<T>> Tick(std::chrono::time_point<std::chrono::system_clock> current_time = std::chrono::system_clock::now()) {
         int rand = random_dist_(random_);
         std::vector<Message<T>> messages;
         for(auto& kv : instances_) {

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <ctime>
+#include <chrono>
 #include <map>
 #include <iostream>
 
@@ -77,7 +77,7 @@ static std::vector<Message<T>> rpc(Group<T>& from,
                                    Group<T>& to,
                                    uint64_t sequence,
                                    const std::vector<Message<T>>& messages,
-                                   std::time_t current_time = std::time(nullptr)) {
+                                   std::chrono::time_point<std::chrono::system_clock> current_time = std::chrono::system_clock::now()) {
     auto response = to.Receive(sequence, messages, current_time);
     return from.Receive(sequence, response, current_time);
 }
@@ -256,13 +256,14 @@ TEST(Group, LeapFroggingProposersTimeouts) {
     EXPECT_EQ(MessageType::REJECT, m4[0].message_type());
 
     auto m5 = group1.Propose(i1->sequence(), std::move(v1));
+    std::chrono::time_point<std::chrono::system_clock> epoch;
     rpc(group1, group1, i1->sequence(), m5);
-    rpc(group1, group2, i1->sequence(), m5, 0);
+    rpc(group1, group2, i1->sequence(), m5, epoch);
     auto m6 = group3.Receive(i1->sequence(), m5);
     ASSERT_EQ(1, m6.size());
     EXPECT_EQ(MessageType::REJECT, m6[0].message_type());
 
-    EXPECT_EQ(0, group2.Tick(0).size());
-    EXPECT_EQ(1, group2.Tick(10).size());
+    EXPECT_EQ(0, group2.Tick(epoch).size());
+    EXPECT_EQ(1, group2.Tick(epoch + std::chrono::milliseconds(60)).size());
 }
 }

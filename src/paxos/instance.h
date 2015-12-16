@@ -1,7 +1,7 @@
 #ifndef LEDGERD_PAXOS_INSTANCE_H_
 #define LEDGERD_PAXOS_INSTANCE_H_
 
-#include <ctime>
+#include <chrono>
 #include <mutex>
 #include <vector>
 
@@ -28,8 +28,10 @@ enum InstanceState {
 
 template <typename T>
 class Instance {
+    static const int DEFAULT_RECEIVE_TIMEOUT = 50;
     static const int DEFAULT_RECEIVE_TIMEOUT_SEC = 2;
 
+    std::mutex lock_;
     InstanceRole role_;
     InstanceState state_;
     Round<T> round_;
@@ -39,8 +41,8 @@ class Instance {
     std::vector<uint32_t> node_ids_;
     std::unique_ptr<T> proposed_value_;
     std::unique_ptr<T> final_value_;
-    std::time_t last_receive_;
-    std::mutex lock_;
+    std::chrono::system_clock::time_point last_receive_;
+    std::chrono::system_clock::duration receive_timeout_;
 
     void set_role(InstanceRole new_role) {
         this->role_ = new_role;
@@ -178,7 +180,7 @@ public:
           node_ids_(node_ids),
           proposed_value_(nullptr),
           final_value_(nullptr),
-          last_receive_(0) { }
+          receive_timeout_(std::chrono::milliseconds(DEFAULT_RECEIVE_TIMEOUT)) { }
 
     InstanceRole role() {
         std::lock_guard<std::mutex> lock(lock_);
@@ -218,7 +220,7 @@ public:
     }
 
     std::vector<Message<T>> ReceiveMessages(const std::vector<Message<T>>& inbound,
-                                            std::time_t current_time = std::time(nullptr)) {
+                                            std::chrono::time_point<std::chrono::system_clock> current_time = std::chrono::system_clock::now()) {
         std::lock_guard<std::mutex> lock(lock_);
         last_receive_ = current_time;
         std::vector<Message<T>> responses;
@@ -250,8 +252,9 @@ public:
         return responses;
     }
 
-    std::vector<Message<T>> Tick(int rand, std::time_t current_time) {
-        if(current_time > (last_receive_ + DEFAULT_RECEIVE_TIMEOUT_SEC + rand)) {
+    std::vector<Message<T>> Tick(int rand, std::chrono::system_clock::time_point current_time) {
+        std::chrono::milliseconds rand_duration(rand);
+        if(current_time > (last_receive_ + receive_timeout_ + rand_duration)) {
             if(proposed_value_) {
                 return Prepare();
             }
