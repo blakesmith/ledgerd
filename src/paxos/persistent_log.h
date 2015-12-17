@@ -5,7 +5,8 @@ namespace ledgerd {
 namespace paxos {
 
 enum LogStatus {
-    LOG_OK
+    LOG_OK,
+    LOG_ERR
 };
 
 template <typename T>
