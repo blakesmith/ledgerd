@@ -2,10 +2,9 @@
 #define LEDRERD_CLUSTER_LOG_H_
 
 #include "paxos/persistent_log.h"
+#include "proto/admin.pb.h"
 
 namespace ledgerd {
-
-struct ClusterEvent {};
 
 class ClusterLog : public paxos::PersistentLog<ClusterEvent> {
 public:

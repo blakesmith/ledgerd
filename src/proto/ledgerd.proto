@@ -115,6 +115,27 @@ message ReadResponse {
     LedgerdMessageSet messages = 2;
 }
 
+// Cluster commands
+
+message Node {
+    uint32 id = 1;
+}
+
+enum ClusterEventType {
+    REGISTER_TOPIC = 0;
+}
+
+message RegisterTopicEvent {
+    string name = 1;
+    repeated uint32 partition_ids = 2;
+}
+
+message ClusterEvent {
+    Node source_node = 1;
+    ClusterEventType type = 2;
+    RegisterTopicEvent register_topic = 3;
+}
+
 service Ledgerd {
     rpc Ping(PingRequest) returns (PingResponse) {}
     rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
