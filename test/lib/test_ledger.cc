@@ -152,6 +152,32 @@ TEST(Ledger, CorrectWritesSingleTopic) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
+TEST(Ledger, LatestMessageId) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message[] = "hello";
+    size_t mlen = sizeof(message);
+    ledger_message_set messages;
+    ledger_write_status status;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
+
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
+    EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
+    EXPECT_EQ(1, status.message_id);
+    uint64_t latest_id;
+    ASSERT_EQ(LEDGER_OK, ledger_latest_message_id(&ctx, TOPIC, 0, &latest_id));
+    EXPECT_EQ(2, latest_id);
+
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 TEST(Ledger, BadTopicOpen) {
     ledger_ctx ctx;
     ledger_topic_options options;

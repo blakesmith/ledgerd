@@ -46,6 +46,12 @@ ledger_status LedgerdService::ReadPartition(const std::string& topic_name,
     return ledger_read_partition(&ctx, topic_name.c_str(), partition_number, start_id, nmessages, messages);
 }
 
+ledger_status LedgerdService::LatestMessageId(const std::string& topic_name,
+                                              uint32_t partition_number,
+                                              uint64_t *id) {
+    return ledger_latest_message_id(&ctx, topic_name.c_str(), partition_number, id);
+}
+
 ledger_status LedgerdService::StartConsumer(Consumer* consumer,
                                             const std::string& topic_name,
                                             uint32_t partition_number,

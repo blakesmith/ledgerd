@@ -41,6 +41,9 @@ ledger_status ledger_topic_read_partition(ledger_topic *topic, unsigned int part
                                           uint64_t start_id, size_t nmessages,
                                           ledger_message_set *messages);
 
+ledger_status ledger_topic_latest_message_id(ledger_topic *topic, unsigned int patition_num,
+                                             uint64_t *id);
+
 ledger_status ledger_topic_wait_messages(ledger_topic *topic, unsigned int partition_num);
 ledger_status ledger_topic_signal_readers(ledger_topic *topic, unsigned int partition_num);
 

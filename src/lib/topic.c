@@ -119,6 +119,20 @@ error:
     return rc;
 }
 
+ledger_status ledger_topic_latest_message_id(ledger_topic *topic, unsigned int partition_num,
+                                             uint64_t *id) {
+    ledger_status rc;
+    ledger_partition *partition;
+
+    ledger_check_rc(partition_num < topic->npartitions, LEDGER_ERR_BAD_PARTITION, "Bad partition id");
+    partition = &topic->partitions[partition_num];
+
+    return ledger_partition_latest_message_id(partition, id);
+    
+error:
+    return rc;
+}
+
 ledger_status ledger_topic_wait_messages(ledger_topic *topic, unsigned int partition_num) {
     ledger_status rc;
     ledger_partition *partition;

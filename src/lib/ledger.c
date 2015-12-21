@@ -131,6 +131,20 @@ error:
     return rc;
 }
 
+ledger_status ledger_latest_message_id(ledger_ctx *ctx, const char *name,
+                                       unsigned int partition_num, uint64_t *id) {
+    ledger_status rc;
+    ledger_topic *topic = NULL;
+
+    topic = ledger_lookup_topic(ctx, name);
+    ledger_check_rc(topic != NULL, LEDGER_ERR_BAD_TOPIC, "Topic not found");
+
+    return ledger_topic_latest_message_id(topic, partition_num, id);
+
+error:
+    return rc;
+}
+
 ledger_status ledger_read_partition(ledger_ctx *ctx, const char *name,
                                     unsigned int partition_num, uint64_t start_id,
                                     size_t nmessages, ledger_message_set *messages) {

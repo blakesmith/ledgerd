@@ -27,32 +27,6 @@ static inline ledger_journal_meta_entry *find_latest_meta(ledger_partition *part
     return &partition->meta.entries[partition->meta.nentries-1];
 }
 
-static ledger_status find_latest_message_id(ledger_partition *partition, uint64_t *id) {
-    ledger_journal_meta_entry *latest_meta = find_latest_meta(partition);
-    ledger_journal journal;
-    ledger_journal_options journal_options;
-    ledger_status rc;
-
-    latest_meta = find_latest_meta(partition);
-    if(latest_meta == NULL) {
-        *id = 0;
-        return LEDGER_OK;
-    }
-
-    rc = ledger_journal_open(&journal, partition->path, latest_meta, &journal_options);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
-
-    rc = ledger_journal_latest_message_id(&journal, id);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to find the latest message id");
-
-    ledger_journal_close(&journal);
-    return LEDGER_OK;
-
-error:
-    ledger_journal_close(&journal);
-    return rc;
-}
-
 static ledger_status add_journal(ledger_partition *partition, int fd) {
     ledger_status rc;
     pthread_mutexattr_t mattr;
@@ -73,7 +47,7 @@ static ledger_status add_journal(ledger_partition *partition, int fd) {
     rc = pthread_mutex_init(&meta_entry.write_lock, &mattr);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to initialize index write mutex");
 
-    rc = find_latest_message_id(partition, &meta_entry.first_message_id);
+    rc = ledger_partition_latest_message_id(partition, &meta_entry.first_message_id);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to fetch the latest message id");
 
     nentries = partition->meta.nentries + 1;
@@ -301,6 +275,32 @@ error:
     if(fd) {
         close(fd);
     }
+    return rc;
+}
+
+ledger_status ledger_partition_latest_message_id(ledger_partition *partition, uint64_t *id) {
+    ledger_journal_meta_entry *latest_meta;
+    ledger_journal journal;
+    ledger_journal_options journal_options;
+    ledger_status rc;
+
+    latest_meta = find_latest_meta(partition);
+    if(latest_meta == NULL) {
+        *id = 0;
+        return LEDGER_OK;
+    }
+
+    rc = ledger_journal_open(&journal, partition->path, latest_meta, &journal_options);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open journal");
+
+    rc = ledger_journal_latest_message_id(&journal, id);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to find the latest message id");
+
+    ledger_journal_close(&journal);
+    return LEDGER_OK;
+
+error:
+    ledger_journal_close(&journal);
     return rc;
 }
 
