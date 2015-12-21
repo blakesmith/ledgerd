@@ -11,9 +11,11 @@
 namespace ledgerd {
 
 class ClusterLog : public paxos::PersistentLog<ClusterEvent> {
+    static const std::string TOPIC_NAME;
     LedgerdService& ledger_service_;
 public:
     ClusterLog(LedgerdService& ledger_service);
+    ~ClusterLog();
 
     virtual paxos::LogStatus Write(uint64_t sequence, const ClusterEvent* event);
     virtual std::unique_ptr<ClusterEvent> Get(uint64_t sequence);
