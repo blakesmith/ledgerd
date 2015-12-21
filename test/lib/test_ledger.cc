@@ -159,6 +159,7 @@ TEST(Ledger, LatestMessageId) {
     size_t mlen = sizeof(message);
     ledger_message_set messages;
     ledger_write_status status;
+    uint64_t latest_id;
 
     cleanup(WORKING_DIR);
     ASSERT_EQ(0, setup(WORKING_DIR));
@@ -167,10 +168,12 @@ TEST(Ledger, LatestMessageId) {
     unsigned int partition_ids[] = {0};
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
+    ASSERT_EQ(LEDGER_OK, ledger_latest_message_id(&ctx, TOPIC, 0, &latest_id));
+    EXPECT_EQ(0, latest_id);
+
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
     EXPECT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message, mlen, &status));
     EXPECT_EQ(1, status.message_id);
-    uint64_t latest_id;
     ASSERT_EQ(LEDGER_OK, ledger_latest_message_id(&ctx, TOPIC, 0, &latest_id));
     EXPECT_EQ(2, latest_id);
 
