@@ -6,7 +6,8 @@ namespace paxos {
 
 enum LogStatus {
     LOG_OK,
-    LOG_ERR
+    LOG_ERR,
+    LOG_INCONSISTENT
 };
 
 template <typename T>
