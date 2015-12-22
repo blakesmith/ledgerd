@@ -6,7 +6,7 @@
 #include "ledgerd_service.h"
 
 #include "paxos/persistent_log.h"
-#include "proto/admin.pb.h"
+#include "proto/ledgerd.pb.h"
 
 namespace ledgerd {
 

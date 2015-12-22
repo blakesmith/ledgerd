@@ -14,9 +14,11 @@ check_PROGRAMS = ledgerd_tests
 ledgerd_tests_SOURCES = \
 	test_grpc_interface.cc \
 	test_ledger_service.cc \
-	test_command_parser.cc
+	test_command_parser.cc \
+	test_cluster_log.cc
 
 ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
+	$(top_srcdir)/src/cluster_log.o \
 	$(top_srcdir)/src/ledgerd_consumer.o \
 	$(top_srcdir)/src/ledgerd_service.o \
 	$(top_srcdir)/src/ledgerd_service_config.o \

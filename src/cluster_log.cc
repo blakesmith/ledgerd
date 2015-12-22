@@ -37,7 +37,7 @@ paxos::LogStatus ClusterLog::Write(uint64_t sequence, const ClusterEvent* event)
     if(rc != LEDGER_OK) {
         return paxos::LogStatus::LOG_ERR;
     }
-    if(write_status.message_id != sequence + 1) {
+    if(write_status.message_id != sequence - 1) {
         return paxos::LogStatus::LOG_INCONSISTENT;
     }
 
@@ -48,7 +48,7 @@ std::unique_ptr<ClusterEvent> ClusterLog::Get(uint64_t sequence) {
     ledger_status rc;
     ledger_message_set messages;
 
-    rc = ledger_service_.ReadPartition(TOPIC_NAME, 0, sequence+1, 1, &messages);
+    rc = ledger_service_.ReadPartition(TOPIC_NAME, 0, sequence - 1, 1, &messages);
     if(rc != LEDGER_OK) {
         return nullptr;
     }
