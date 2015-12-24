@@ -95,9 +95,14 @@ ledger_topic *ledger_lookup_topic(ledger_ctx *ctx, const char *name) {
 }
 
 void ledger_close_topic(ledger_ctx *ctx, const char *name) {
-    ledger_topic *topic = ledger_lookup_topic(ctx, name);
-    if(topic != NULL) {
+    ledger_topic *topic = NULL;
+    dnode_t *dtopic;
+
+    dtopic = dict_lookup(&ctx->topics, name);
+    if(dtopic != NULL) {
+        topic = dnode_get(dtopic);
         ledger_topic_close(topic);
+        dict_delete_free(&ctx->topics, dtopic);
     }
 }
 
