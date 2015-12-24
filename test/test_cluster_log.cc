@@ -54,6 +54,8 @@ TEST(ClusterLog, WriteRead) {
     EXPECT_EQ(event.source_node().id(), read_event->source_node().id());
     EXPECT_EQ(event.register_topic().name(), read_event->register_topic().name());
 
+    EXPECT_EQ(1, log.HighestSequence());
+
     cleanup(dir);
 }
 
