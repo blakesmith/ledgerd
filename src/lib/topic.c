@@ -177,6 +177,9 @@ void ledger_topic_close(ledger_topic *topic) {
             free(topic->path);
         }
     }
-    free(topic->name);
+    if(topic->name) {
+        free(topic->name);
+    }
+    topic->name = NULL;
     topic->opened = false;
 }

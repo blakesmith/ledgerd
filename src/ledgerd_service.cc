@@ -27,6 +27,10 @@ ledger_status LedgerdService::OpenTopic(const std::string& name,
                              options);
 }
 
+void LedgerdService::CloseTopic(const std::string& name) {
+    ledger_close_topic(&ctx, name.c_str());
+}
+
 ledger_topic *LedgerdService::GetTopic(const std::string& name) {
     return ledger_lookup_topic(&ctx, name.c_str());
 }

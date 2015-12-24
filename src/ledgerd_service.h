@@ -18,6 +18,8 @@ public:
 
     ledger_status OpenTopic(const std::string& name, const std::vector<unsigned int>& partition_ids, ledger_topic_options *options);
 
+    void CloseTopic(const std::string& name);
+
     ledger_topic *GetTopic(const std::string& name);
 
     ledger_status WritePartition(const std::string& topic_name, uint32_t partition_number, const std::string& data, ledger_write_status *status);

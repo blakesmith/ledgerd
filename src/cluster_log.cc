@@ -23,7 +23,7 @@ ClusterLog::ClusterLog(LedgerdService& ledger_service)
 }
 
 ClusterLog::~ClusterLog() {
-    // TODO: Close the topic?
+    ledger_service_.CloseTopic(TOPIC_NAME);
 }
 
 paxos::LogStatus ClusterLog::Write(uint64_t sequence, const ClusterEvent* event) {
