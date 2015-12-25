@@ -115,6 +115,16 @@ message ReadResponse {
     LedgerdMessageSet messages = 2;
 }
 
+service Ledgerd {
+    rpc Ping(PingRequest) returns (PingResponse) {}
+    rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
+    rpc GetTopic(TopicRequest) returns (TopicResponse) {}
+    rpc WritePartition(WritePartitionRequest) returns (WriteResponse) {}
+    rpc ReadPartition(ReadPartitionRequest) returns (ReadResponse) {}
+    rpc StreamPartition(StreamPartitionRequest) returns (stream LedgerdMessageSet) {}
+    rpc Stream(StreamRequest) returns (stream LedgerdMessageSet) {}
+}
+
 // Cluster commands
 
 message Node {
@@ -136,13 +146,29 @@ message ClusterEvent {
     RegisterTopicEvent register_topic = 3;
 }
 
-service Ledgerd {
-    rpc Ping(PingRequest) returns (PingResponse) {}
-    rpc OpenTopic(OpenTopicRequest) returns (LedgerdResponse) {}
-    rpc GetTopic(TopicRequest) returns (TopicResponse) {}
-    rpc WritePartition(WritePartitionRequest) returns (WriteResponse) {}
-    rpc ReadPartition(ReadPartitionRequest) returns (ReadResponse) {}
-    rpc StreamPartition(StreamPartitionRequest) returns (stream LedgerdMessageSet) {}
-    rpc Stream(StreamRequest) returns (stream LedgerdMessageSet) {}
+message PaxosProposalId {
+    uint32 node_id = 1;
+    uint32 prop_n = 2;
+}
+
+enum PaxosMessageType {
+    PREPARE = 0;
+    PROMISE = 1;
+    REJECT = 2;
+    ACCEPT = 3;
+    ACCEPTED = 4;
+    DECIDEC = 5;
+}
+
+message PaxosMessage {
+    PaxosMessageType message_type = 1;
+    PaxosProposalId proposal_id = 2;
+    uint32 sequence = 3;
+    uint32 source_node_id = 4;
+    ClusterEvent event = 5;
+}
+
+service ClusterService {
+    rpc SendPaxos(PaxosMessage) returns (PaxosMessage) {}
 }
 
