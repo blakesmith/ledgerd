@@ -24,7 +24,8 @@ ledgerd_SOURCES = \
 	ledgerd_consumer.h ledgerd_consumer.cc \
 	ledgerd_service.h ledgerd_service.cc \
 	ledgerd_service_config.h ledgerd_service_config.cc \
-	cluster_log.h cluster_log.cc
+	cluster_log.h cluster_log.cc \
+	cluster_manager.h cluster_manager.cc
 
 
 ledgerd_LDADD = $(top_srcdir)/src/lib/libledger.la
