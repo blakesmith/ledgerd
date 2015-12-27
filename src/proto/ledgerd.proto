@@ -157,7 +157,7 @@ enum PaxosMessageType {
     REJECT = 2;
     ACCEPT = 3;
     ACCEPTED = 4;
-    DECIDEC = 5;
+    DECIDED = 5;
 }
 
 message PaxosMessage {
@@ -168,7 +168,7 @@ message PaxosMessage {
     ClusterEvent event = 5;
 }
 
-service ClusterService {
-    rpc SendPaxos(PaxosMessage) returns (PaxosMessage) {}
+service Clustering {
+    rpc ProcessPaxos(PaxosMessage) returns (PaxosMessage) {}
 }
 

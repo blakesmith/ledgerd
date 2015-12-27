@@ -28,7 +28,8 @@ ledgerd_SOURCES = \
 	cluster_manager.h cluster_manager.cc
 
 
-ledgerd_LDADD = $(top_srcdir)/src/lib/libledger.la
+ledgerd_LDADD = $(top_srcdir)/src/lib/libledger.la \
+	$(top_srcdir)/src/paxos/libpaxos.la
 
 PROTOC = protoc
 PROTOS_PATH = proto

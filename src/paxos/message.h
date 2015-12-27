@@ -8,7 +8,7 @@
 namespace ledgerd {
 namespace paxos {
 
-enum MessageType {
+enum class MessageType {
     PREPARE,
     PROMISE,
     REJECT,
@@ -62,13 +62,13 @@ public:
           target_node_ids_(target_node_ids),
           value_(value) {
         switch (message_type) {
-            case PREPARE:
-            case REJECT:
+            case MessageType::PREPARE:
+            case MessageType::REJECT:
                 value_message_ = false;
                 break;
-            case PROMISE:
-            case ACCEPT:
-            case ACCEPTED:
+            case MessageType::PROMISE:
+            case MessageType::ACCEPT:
+            case MessageType::ACCEPTED:
                 value_message_ = true;
                 break;
             default:
