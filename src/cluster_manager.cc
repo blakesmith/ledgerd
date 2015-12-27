@@ -54,6 +54,39 @@ const paxos::Message<ClusterEvent> ClusterManager::map_internal(const PaxosMessa
 }
 
 void ClusterManager::map_external(const paxos::Message<ClusterEvent>* in, PaxosMessage* out) const {
+    PaxosMessageType type;
+    switch(in->message_type()) {
+        case paxos::MessageType::PREPARE:
+            type = PaxosMessageType::PREPARE;
+            break;
+        case paxos::MessageType::PROMISE:
+            type = PaxosMessageType::PROMISE;
+            break;
+        case paxos::MessageType::REJECT:
+            type = PaxosMessageType::REJECT;
+            break;
+        case paxos::MessageType::ACCEPT:
+            type = PaxosMessageType::ACCEPT;
+            break;
+        case paxos::MessageType::ACCEPTED:
+            type = PaxosMessageType::ACCEPTED;
+            break;
+        case paxos::MessageType::DECIDED:
+            type = PaxosMessageType::DECIDED;
+            break;
+        default:
+            throw std::invalid_argument("Invalid message type");
+            break;
+    };
+    PaxosProposalId* proposal_id = out->mutable_proposal_id();
+    proposal_id->set_node_id(in->proposal_id().node_id());
+    proposal_id->set_prop_n(in->proposal_id().prop_n());
+    out->set_message_type(type);
+    out->set_sequence(in->sequence());
+    out->set_source_node_id(this_node_id_);
+    if(in->value()) {
+        out->set_allocated_event(const_cast<ClusterEvent*>(in->value()));
+    }
 }
 
 }
