@@ -11,9 +11,34 @@ ClusterManager::ClusterManager(uint32_t this_node_id,
       cluster_log_(ledger_service),
       paxos_group_(this_node_id, cluster_log_) { }
 
+void ClusterManager::Start() {
+    paxos_group_.Start();
+}
+
+void ClusterManager::send_messages(uint32_t source_node_id,
+                                   const std::vector<paxos::Message<ClusterEvent>>& messages,
+                                   PaxosMessage* response) {
+    for(auto& m : messages) {
+        for(uint32_t node_id : m.target_node_ids()) {
+            if(node_id == source_node_id) {
+                map_external(&m, response);
+            } else {
+                // TODO: Send message to other nodes, process through paxos group. Async?
+            }
+        }
+    }
+}
+
 grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,
                                           const PaxosMessage* request,
                                           PaxosMessage* response) {
+    const std::vector<paxos::Message<ClusterEvent>> internal_messages {
+        map_internal(request) };
+    std::vector<paxos::Message<ClusterEvent>> responses = paxos_group_.Receive(request->sequence(),
+                                                                               internal_messages);
+    send_messages(request->source_node_id(),
+                  internal_messages,
+                  response);
     return grpc::Status::OK;
 }
 

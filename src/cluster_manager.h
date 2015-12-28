@@ -19,11 +19,17 @@ class ClusterManager : public Clustering::Service {
 
     const paxos::Message<ClusterEvent> map_internal(const PaxosMessage* in) const;
 
+    void send_messages(uint32_t source_node_id,
+                       const std::vector<paxos::Message<ClusterEvent>>& messages,
+                       PaxosMessage* response);
+
     void map_external(const paxos::Message<ClusterEvent>* in,
                       PaxosMessage* out) const;
 public:
     ClusterManager(uint32_t this_node_id,
                    LedgerdService& ledger_service);
+
+    void Start();
 
     grpc::Status ProcessPaxos(grpc::ServerContext* context,
                               const PaxosMessage* request,
