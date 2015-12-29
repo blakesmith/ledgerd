@@ -4,10 +4,19 @@
 
 namespace ledgerd {
 
+NodeInfo::NodeInfo(const std::string& host_and_port)
+    : host_and_port_(host_and_port) { }
+
+const std::string& NodeInfo::host_and_port() const {
+    return host_and_port_;
+}
+
 ClusterManager::ClusterManager(uint32_t this_node_id,
-                               LedgerdService& ledger_service)
+                               LedgerdService& ledger_service,
+                               std::map<uint32_t, NodeInfo> node_info)
     : this_node_id_(this_node_id),
       ledger_service_(ledger_service),
+      node_info_(node_info),
       cluster_log_(ledger_service),
       paxos_group_(this_node_id, cluster_log_) { }
 
@@ -15,7 +24,23 @@ void ClusterManager::Start() {
     paxos_group_.Start();
 }
 
-void ClusterManager::node_connection(uint32_t node_id, Clustering::Stub* stub) {
+void ClusterManager::node_connection(uint32_t node_id, Clustering::Stub** stub) {
+    auto search = connections_.find(node_id);
+    if(search != connections_.end()) {
+        *stub = search->second.get();
+        return;
+    }
+    auto connection_info = node_info_.find(node_id);
+    if(connection_info != node_info_.end()) {
+        std::unique_ptr<Clustering::Stub> new_stub = Clustering::NewStub(
+            grpc::CreateChannel(connection_info->second.host_and_port(),
+                                grpc::InsecureChannelCredentials()));
+        *stub = new_stub.get();
+        connections_[node_id] = std::move(new_stub);
+    }
+
+    // TODO: Log the connection error
+    *stub = nullptr;
 }
 
 void ClusterManager::send_messages(uint32_t source_node_id,
@@ -35,8 +60,9 @@ void ClusterManager::send_messages(uint32_t source_node_id,
                     new AsyncClientRPC<Clustering::Stub, PaxosMessage>[rpc_node_ids.size()]);
         for(int i = 0; i < rpc_node_ids.size(); ++i) {
             uint32_t node_id = rpc_node_ids[i];
-            node_connection(node_id, rpcs[i].stub());
-            // TODO: Fill in node_connection, status on node_connection
+            Clustering::Stub *stub = rpcs[i].stub();
+            node_connection(node_id, &stub);
+            // TODO: Check if connection stub is not valid (not null)
         }
     }
 }
