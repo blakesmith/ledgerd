@@ -55,15 +55,32 @@ void ClusterManager::send_messages(uint32_t source_node_id,
                 rpc_node_ids.push_back(node_id);
             }
         }
+
+        if(rpc_node_ids.size() <= 0) {
+            return;
+        }
+
+        PaxosMessage request;
+        map_external(&m, &request);
+        grpc::CompletionQueue cq;
         std::unique_ptr<AsyncClientRPC<
                 Clustering::Stub, PaxosMessage>[]> rpcs(
                     new AsyncClientRPC<Clustering::Stub, PaxosMessage>[rpc_node_ids.size()]);
         for(int i = 0; i < rpc_node_ids.size(); ++i) {
             uint32_t node_id = rpc_node_ids[i];
-            Clustering::Stub *stub = rpcs[i].stub();
+            auto& rpc = rpcs[i];
+            Clustering::Stub *stub = rpc.stub();
             node_connection(node_id, &stub);
-            // TODO: Check if connection stub is not valid (not null)
+            if(stub != nullptr) {
+                std::unique_ptr<grpc::ClientAsyncResponseReader<PaxosMessage>> reader(
+                    stub->AsyncProcessPaxos(rpc.client_context(), request, &cq));
+                reader->Finish(rpc.reply(),
+                               rpc.status(),
+                               nullptr);
+                rpc.set_reader(std::move(reader));
+            }
         }
+        // TODO, cq.Next
     }
 }
 

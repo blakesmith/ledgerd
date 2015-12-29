@@ -25,8 +25,9 @@ public:
 template <typename C, typename T>
 class AsyncClientRPC {
     C* stub_;
-    std::unique_ptr<T> reply_;
-    std::unique_ptr<grpc::ClientContext> client_context_;
+    T reply_;
+    grpc::ClientContext client_context_;
+    grpc::Status status_;
     std::unique_ptr<grpc::ClientAsyncResponseReader<PaxosMessage>> reader_;
 public:
     AsyncClientRPC()
@@ -37,16 +38,20 @@ public:
         return stub_;
     }
 
-    void set_stub(C* stub) {
-        this->stub_ = stub;
+    void set_reader(std::unique_ptr<grpc::ClientAsyncResponseReader<T>> reader) {
+        this->reader_ = std::move(reader);
     }
 
     T* reply() {
-        return reply_.get();
+        return &reply_;
+    }
+    
+    grpc::Status* status() {
+        return &status_;
     }
 
     grpc::ClientContext* client_context() {
-        return client_context_.get();
+        return &client_context_;
     }
 
     grpc::ClientAsyncResponseReader<T>* reader() {
