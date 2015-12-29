@@ -15,16 +15,28 @@ void ClusterManager::Start() {
     paxos_group_.Start();
 }
 
+void ClusterManager::node_connection(uint32_t node_id, Clustering::Stub* stub) {
+}
+
 void ClusterManager::send_messages(uint32_t source_node_id,
                                    const std::vector<paxos::Message<ClusterEvent>>& messages,
                                    PaxosMessage* response) {
     for(auto& m : messages) {
+        std::vector<uint32_t> rpc_node_ids;
         for(uint32_t node_id : m.target_node_ids()) {
             if(node_id == source_node_id) {
                 map_external(&m, response);
             } else {
-                // TODO: Send message to other nodes, process through paxos group. Async?
+                rpc_node_ids.push_back(node_id);
             }
+        }
+        std::unique_ptr<AsyncClientRPC<
+                Clustering::Stub, PaxosMessage>[]> rpcs(
+                    new AsyncClientRPC<Clustering::Stub, PaxosMessage>[rpc_node_ids.size()]);
+        for(int i = 0; i < rpc_node_ids.size(); ++i) {
+            uint32_t node_id = rpc_node_ids[i];
+            node_connection(node_id, rpcs[i].stub());
+            // TODO: Fill in node_connection, status on node_connection
         }
     }
 }
