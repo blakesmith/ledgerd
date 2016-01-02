@@ -75,7 +75,7 @@ class ClusterManager : public Clustering::Service {
     uint32_t next_rpc_id_;
     LedgerdService& ledger_service_;
     std::unique_ptr<grpc::Server> cluster_server_;
-    const std::string& grpc_cluster_address_;
+    std::string grpc_cluster_address_;
     ClusterLog cluster_log_;
     grpc::CompletionQueue cq_;
     std::thread async_thread_;
