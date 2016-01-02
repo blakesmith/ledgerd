@@ -3,6 +3,9 @@
 #include <chrono>
 #include <vector>
 
+#include <grpc++/server_builder.h>
+#include <grpc++/security/server_credentials.h>
+
 namespace ledgerd {
 
 NodeInfo::NodeInfo(const std::string& host_and_port)
@@ -14,10 +17,12 @@ const std::string& NodeInfo::host_and_port() const {
 
 ClusterManager::ClusterManager(uint32_t this_node_id,
                                LedgerdService& ledger_service,
+                               const std::string& grpc_cluster_address,
                                std::map<uint32_t, NodeInfo> node_info)
     : this_node_id_(this_node_id),
       next_rpc_id_(0),
       ledger_service_(ledger_service),
+      grpc_cluster_address_(grpc_cluster_address),
       node_info_(node_info),
       cluster_log_(ledger_service),
       async_thread_run_(false),
@@ -26,10 +31,19 @@ ClusterManager::ClusterManager(uint32_t this_node_id,
 void ClusterManager::Start() {
     paxos_group_.Start();
     start_async_thread();
+    start_grpc_interface();
 }
 
 void ClusterManager::Stop() {
+    cluster_server_->Shutdown();
     stop_async_thread();
+}
+
+void ClusterManager::start_grpc_interface() {
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(grpc_cluster_address_, grpc::InsecureServerCredentials());
+    builder.RegisterService(this);
+    cluster_server_ = builder.BuildAndStart();
 }
 
 void ClusterManager::start_async_thread() {

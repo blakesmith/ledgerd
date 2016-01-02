@@ -12,6 +12,7 @@
 
 #include <grpc/grpc.h>
 #include <grpc++/grpc++.h>
+#include <grpc++/server.h>
 #include <grpc++/server_context.h>
 
 namespace ledgerd {
@@ -73,6 +74,8 @@ class ClusterManager : public Clustering::Service {
     uint32_t this_node_id_;
     uint32_t next_rpc_id_;
     LedgerdService& ledger_service_;
+    std::unique_ptr<grpc::Server> cluster_server_;
+    const std::string& grpc_cluster_address_;
     ClusterLog cluster_log_;
     grpc::CompletionQueue cq_;
     std::thread async_thread_;
@@ -86,6 +89,8 @@ class ClusterManager : public Clustering::Service {
     void start_async_thread();
 
     void stop_async_thread();
+
+    void start_grpc_interface();
 
     void async_loop();
 
@@ -102,6 +107,7 @@ class ClusterManager : public Clustering::Service {
 public:
     ClusterManager(uint32_t this_node_id,
                    LedgerdService& ledger_service,
+                   const std::string& grpc_cluster_address,
                    std::map<uint32_t, NodeInfo> node_info);
 
     void Start();
