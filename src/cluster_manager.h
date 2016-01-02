@@ -108,6 +108,8 @@ public:
 
     void Stop();
 
+    void Send(std::unique_ptr<ClusterEvent> message);
+
     grpc::Status ProcessPaxos(grpc::ServerContext* context,
                               const PaxosMessage* request,
                               PaxosMessage* response);

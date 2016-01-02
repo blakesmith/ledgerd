@@ -136,6 +136,12 @@ void ClusterManager::send_messages(uint32_t source_node_id,
     }
 }
 
+void ClusterManager::Send(std::unique_ptr<ClusterEvent> event) {
+    paxos::Instance<ClusterEvent>* new_instance = paxos_group_.CreateInstance();
+    auto messages = paxos_group_.Propose(new_instance->sequence(), std::move(event));
+    send_messages(this_node_id_, messages, nullptr);
+}
+
 grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,
                                           const PaxosMessage* request,
                                           PaxosMessage* response) {
