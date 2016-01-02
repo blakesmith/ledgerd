@@ -1,5 +1,6 @@
 #include "cluster_manager.h"
 
+#include <chrono>
 #include <vector>
 
 namespace ledgerd {
@@ -18,10 +19,52 @@ ClusterManager::ClusterManager(uint32_t this_node_id,
       ledger_service_(ledger_service),
       node_info_(node_info),
       cluster_log_(ledger_service),
+      async_thread_run_(false),
       paxos_group_(this_node_id, cluster_log_) { }
 
 void ClusterManager::Start() {
     paxos_group_.Start();
+    start_async_thread();
+}
+
+void ClusterManager::Stop() {
+    stop_async_thread();
+}
+
+void ClusterManager::start_async_thread() {
+    async_thread_run_.store(true);
+    async_thread_ = std::thread(&ClusterManager::async_loop, this);
+}
+
+void ClusterManager::stop_async_thread() {
+    async_thread_run_.store(false);
+    async_thread_.join();
+}
+
+void ClusterManager::async_loop() {
+    while(async_thread_run_.load()) {
+        bool ok;
+        void* tag;
+        auto deadline = std::chrono::system_clock::now() +
+            std::chrono::milliseconds(50);
+        auto status = cq_.AsyncNext(&tag, &ok, deadline);
+        if (status == grpc::CompletionQueue::NextStatus::GOT_EVENT) {
+            AsyncClientRPC<Clustering::Stub, PaxosMessage> *rpc =
+                static_cast<AsyncClientRPC<Clustering::Stub, PaxosMessage>*>(tag);
+            const std::vector<paxos::Message<ClusterEvent>> internal_messages {
+                map_internal(rpc->reply()) };
+            auto requests = paxos_group_.Receive(rpc->reply()->sequence(),
+                                                 internal_messages);
+            if(requests.size() > 0) {
+                send_messages(this_node_id_, requests, nullptr);
+            }
+            // TODO: Remove from in-flight requests
+        } else if(status == grpc::CompletionQueue::NextStatus::SHUTDOWN) {
+            return;
+        } else {
+            continue;
+        }
+    }
 }
 
 void ClusterManager::node_connection(uint32_t node_id, Clustering::Stub** stub) {
@@ -50,7 +93,9 @@ void ClusterManager::send_messages(uint32_t source_node_id,
         std::vector<uint32_t> rpc_node_ids;
         for(uint32_t node_id : m.target_node_ids()) {
             if(node_id == source_node_id) {
-                map_external(&m, response);
+                if(response != nullptr) {
+                    map_external(&m, response);
+                }
             } else {
                 rpc_node_ids.push_back(node_id);
             }
@@ -62,7 +107,6 @@ void ClusterManager::send_messages(uint32_t source_node_id,
 
         PaxosMessage request;
         map_external(&m, &request);
-        grpc::CompletionQueue cq;
         std::unique_ptr<AsyncClientRPC<
                 Clustering::Stub, PaxosMessage>[]> rpcs(
                     new AsyncClientRPC<Clustering::Stub, PaxosMessage>[rpc_node_ids.size()]);
@@ -73,14 +117,13 @@ void ClusterManager::send_messages(uint32_t source_node_id,
             node_connection(node_id, &stub);
             if(stub != nullptr) {
                 std::unique_ptr<grpc::ClientAsyncResponseReader<PaxosMessage>> reader(
-                    stub->AsyncProcessPaxos(rpc.client_context(), request, &cq));
+                    stub->AsyncProcessPaxos(rpc.client_context(), request, &cq_));
                 reader->Finish(rpc.reply(),
                                rpc.status(),
                                nullptr);
                 rpc.set_reader(std::move(reader));
             }
         }
-        // TODO, cq.Next
     }
 }
 

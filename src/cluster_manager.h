@@ -1,7 +1,9 @@
 #ifndef LEDGER_CLUSTER_MANAGER_H_
 #define LEDGER_CLUSTER_MANAGER_H_
 
+#include <atomic>
 #include <map>
+#include <thread>
 
 #include "proto/ledgerd.grpc.pb.h"
 
@@ -63,9 +65,18 @@ class ClusterManager : public Clustering::Service {
     uint32_t this_node_id_;
     LedgerdService& ledger_service_;
     ClusterLog cluster_log_;
+    grpc::CompletionQueue cq_;
+    std::thread async_thread_;
+    std::atomic<bool> async_thread_run_;
     paxos::Group<ClusterEvent> paxos_group_;
     std::map<uint32_t, NodeInfo> node_info_;
     std::map<uint32_t, std::unique_ptr<Clustering::Stub>> connections_;
+
+    void start_async_thread();
+
+    void stop_async_thread();
+
+    void async_loop();
 
     void node_connection(uint32_t node_id, Clustering::Stub** stub);
 
@@ -83,6 +94,8 @@ public:
                    std::map<uint32_t, NodeInfo> node_info);
 
     void Start();
+
+    void Stop();
 
     grpc::Status ProcessPaxos(grpc::ServerContext* context,
                               const PaxosMessage* request,
