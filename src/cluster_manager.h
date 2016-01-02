@@ -26,17 +26,25 @@ public:
 
 template <typename C, typename T>
 class AsyncClientRPC {
+    uint32_t id_;
     C* stub_;
     T reply_;
     grpc::ClientContext client_context_;
     grpc::Status status_;
     std::unique_ptr<grpc::ClientAsyncResponseReader<PaxosMessage>> reader_;
 public:
-    AsyncClientRPC()
-        : stub_(nullptr),
+    AsyncClientRPC(uint32_t id)
+        : id_(id),
+          stub_(nullptr),
           reader_(nullptr) { }
 
-    C* stub() {
+    ~AsyncClientRPC() = default;
+
+    uint32_t id() const {
+        return id_;
+    }
+
+    C* stub() const {
         return stub_;
     }
 
@@ -56,13 +64,14 @@ public:
         return &client_context_;
     }
 
-    grpc::ClientAsyncResponseReader<T>* reader() {
+    grpc::ClientAsyncResponseReader<T>* reader() const {
         return reader_.get();
     }
 };
 
 class ClusterManager : public Clustering::Service {
     uint32_t this_node_id_;
+    uint32_t next_rpc_id_;
     LedgerdService& ledger_service_;
     ClusterLog cluster_log_;
     grpc::CompletionQueue cq_;
@@ -71,6 +80,7 @@ class ClusterManager : public Clustering::Service {
     paxos::Group<ClusterEvent> paxos_group_;
     std::map<uint32_t, NodeInfo> node_info_;
     std::map<uint32_t, std::unique_ptr<Clustering::Stub>> connections_;
+    std::map<uint32_t, std::unique_ptr<AsyncClientRPC<Clustering::Stub, PaxosMessage>>> in_flight_rpcs_;
 
     void start_async_thread();
 

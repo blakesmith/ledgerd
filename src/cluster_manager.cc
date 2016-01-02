@@ -16,6 +16,7 @@ ClusterManager::ClusterManager(uint32_t this_node_id,
                                LedgerdService& ledger_service,
                                std::map<uint32_t, NodeInfo> node_info)
     : this_node_id_(this_node_id),
+      next_rpc_id_(0),
       ledger_service_(ledger_service),
       node_info_(node_info),
       cluster_log_(ledger_service),
@@ -58,7 +59,7 @@ void ClusterManager::async_loop() {
             if(requests.size() > 0) {
                 send_messages(this_node_id_, requests, nullptr);
             }
-            // TODO: Remove from in-flight requests
+            in_flight_rpcs_.erase(rpc->id());
         } else if(status == grpc::CompletionQueue::NextStatus::SHUTDOWN) {
             return;
         } else {
@@ -105,23 +106,27 @@ void ClusterManager::send_messages(uint32_t source_node_id,
             return;
         }
 
+        // Make a copy of the request, since the above response lifecycle
+        // is owned by GRPC and goes out of scope once that message is
+        // sent.
         PaxosMessage request;
         map_external(&m, &request);
-        std::unique_ptr<AsyncClientRPC<
-                Clustering::Stub, PaxosMessage>[]> rpcs(
-                    new AsyncClientRPC<Clustering::Stub, PaxosMessage>[rpc_node_ids.size()]);
+
         for(int i = 0; i < rpc_node_ids.size(); ++i) {
+            ++next_rpc_id_;
+            std::unique_ptr<AsyncClientRPC<Clustering::Stub, PaxosMessage>> rpc(
+                new AsyncClientRPC<Clustering::Stub, PaxosMessage>(next_rpc_id_));
             uint32_t node_id = rpc_node_ids[i];
-            auto& rpc = rpcs[i];
-            Clustering::Stub *stub = rpc.stub();
+            Clustering::Stub *stub = rpc->stub();
             node_connection(node_id, &stub);
             if(stub != nullptr) {
                 std::unique_ptr<grpc::ClientAsyncResponseReader<PaxosMessage>> reader(
-                    stub->AsyncProcessPaxos(rpc.client_context(), request, &cq_));
-                reader->Finish(rpc.reply(),
-                               rpc.status(),
-                               nullptr);
-                rpc.set_reader(std::move(reader));
+                    stub->AsyncProcessPaxos(rpc->client_context(), request, &cq_));
+                rpc->set_reader(std::move(reader));
+                reader->Finish(rpc->reply(),
+                               rpc->status(),
+                               static_cast<void*>(rpc.get()));
+                in_flight_rpcs_[rpc->id()] = std::move(rpc);
             }
         }
     }
