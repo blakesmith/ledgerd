@@ -34,7 +34,7 @@ static int cleanup(const char *directory) {
     return rmrf(directory);
 }
 
-TEST(ClusterManager, StartStop) {
+TEST(ClusterManager, BasicSend) {
     LedgerdServiceConfig c1;
     LedgerdServiceConfig c2;
     LedgerdServiceConfig c3;
@@ -59,6 +59,13 @@ TEST(ClusterManager, StartStop) {
     cm1.Start();
     cm2.Start();
     cm3.Start();
+
+    std::unique_ptr<ClusterEvent> event(new ClusterEvent());
+    event->set_type(ClusterEventType::REGISTER_TOPIC);
+    RegisterTopicEvent* rt = event->mutable_register_topic();
+    rt->set_name("new_topic");
+    rt->add_partition_ids(0);
+    cm1.Send(std::move(event));
 
     cm1.Stop();
     cm2.Stop();

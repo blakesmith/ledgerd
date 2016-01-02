@@ -26,7 +26,11 @@ ClusterManager::ClusterManager(uint32_t this_node_id,
       node_info_(node_info),
       cluster_log_(ledger_service),
       async_thread_run_(false),
-      paxos_group_(this_node_id, cluster_log_) { }
+      paxos_group_(this_node_id, cluster_log_) {
+    for(auto& kv : node_info) {
+        paxos_group_.AddNode(kv.first);
+    }
+}
 
 void ClusterManager::Start() {
     paxos_group_.Start();
@@ -151,6 +155,8 @@ void ClusterManager::send_messages(uint32_t source_node_id,
 }
 
 void ClusterManager::Send(std::unique_ptr<ClusterEvent> event) {
+    Node* node = event->mutable_source_node();
+    node->set_id(this_node_id_);
     paxos::Instance<ClusterEvent>* new_instance = paxos_group_.CreateInstance();
     auto messages = paxos_group_.Propose(new_instance->sequence(), std::move(event));
     send_messages(this_node_id_, messages, nullptr);
