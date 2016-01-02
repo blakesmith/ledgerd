@@ -77,10 +77,6 @@ void ClusterManager::async_loop() {
             if(requests.size() > 0) {
                 send_messages(this_node_id_, requests, nullptr);
             }
-            auto timeouts = paxos_group_.Tick(current_time);
-            if(timeouts.size() > 0) {
-                send_messages(this_node_id_, timeouts, nullptr);
-            }
             rpc_mutex_.lock();
             in_flight_rpcs_.erase(rpc->id());
             rpc_mutex_.unlock();
@@ -88,6 +84,12 @@ void ClusterManager::async_loop() {
             return;
         } else {
             continue;
+        }
+
+        // Poll for timed out instances
+        auto timeouts = paxos_group_.Tick(current_time);
+        if(timeouts.size() > 0) {
+            send_messages(this_node_id_, timeouts, nullptr);
         }
     }
 }
