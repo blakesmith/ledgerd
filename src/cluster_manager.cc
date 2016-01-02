@@ -64,8 +64,8 @@ void ClusterManager::async_loop() {
     while(async_thread_run_.load()) {
         bool ok;
         void* tag;
-        auto deadline = std::chrono::system_clock::now() +
-            std::chrono::milliseconds(50);
+        auto current_time = std::chrono::system_clock::now();
+        auto deadline = current_time + std::chrono::milliseconds(50);
         auto status = cq_.AsyncNext(&tag, &ok, deadline);
         if (status == grpc::CompletionQueue::NextStatus::GOT_EVENT) {
             AsyncClientRPC<Clustering::Stub, PaxosMessage> *rpc =
@@ -76,6 +76,10 @@ void ClusterManager::async_loop() {
                                                  internal_messages);
             if(requests.size() > 0) {
                 send_messages(this_node_id_, requests, nullptr);
+            }
+            auto timeouts = paxos_group_.Tick(current_time);
+            if(timeouts.size() > 0) {
+                send_messages(this_node_id_, timeouts, nullptr);
             }
             rpc_mutex_.lock();
             in_flight_rpcs_.erase(rpc->id());
