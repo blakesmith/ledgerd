@@ -81,6 +81,7 @@ class ClusterManager : public Clustering::Service {
     std::map<uint32_t, NodeInfo> node_info_;
     std::map<uint32_t, std::unique_ptr<Clustering::Stub>> connections_;
     std::map<uint32_t, std::unique_ptr<AsyncClientRPC<Clustering::Stub, PaxosMessage>>> in_flight_rpcs_;
+    std::mutex rpc_mutex_;
 
     void start_async_thread();
 

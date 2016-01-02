@@ -59,7 +59,9 @@ void ClusterManager::async_loop() {
             if(requests.size() > 0) {
                 send_messages(this_node_id_, requests, nullptr);
             }
+            rpc_mutex_.lock();
             in_flight_rpcs_.erase(rpc->id());
+            rpc_mutex_.unlock();
         } else if(status == grpc::CompletionQueue::NextStatus::SHUTDOWN) {
             return;
         } else {
@@ -126,7 +128,9 @@ void ClusterManager::send_messages(uint32_t source_node_id,
                 reader->Finish(rpc->reply(),
                                rpc->status(),
                                static_cast<void*>(rpc.get()));
+                rpc_mutex_.lock();
                 in_flight_rpcs_[rpc->id()] = std::move(rpc);
+                rpc_mutex_.unlock();
             }
         }
     }
