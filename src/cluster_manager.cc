@@ -77,9 +77,8 @@ void ClusterManager::async_loop() {
             if(requests.size() > 0) {
                 send_messages(this_node_id_, requests, nullptr);
             }
-            rpc_mutex_.lock();
+            std::lock_guard<std::mutex> lg(rpc_mutex_);
             in_flight_rpcs_.erase(rpc->id());
-            rpc_mutex_.unlock();
         } else if(status == grpc::CompletionQueue::NextStatus::SHUTDOWN) {
             return;
         } else {
@@ -152,9 +151,8 @@ void ClusterManager::send_messages(uint32_t source_node_id,
                 reader->Finish(rpc->reply(),
                                rpc->status(),
                                static_cast<void*>(rpc.get()));
-                rpc_mutex_.lock();
+                std::lock_guard<std::mutex> lg(rpc_mutex_);
                 in_flight_rpcs_[rpc->id()] = std::move(rpc);
-                rpc_mutex_.unlock();
             }
         }
     }
@@ -167,6 +165,9 @@ uint64_t ClusterManager::Send(std::unique_ptr<ClusterEvent> event) {
     auto messages = paxos_group_.Propose(new_instance->sequence(), std::move(event));
     send_messages(this_node_id_, messages, nullptr);
     return new_instance->sequence();
+}
+
+void ClusterManager::WaitFor(uint64_t sequence) {
 }
 
 grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,

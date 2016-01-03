@@ -116,6 +116,8 @@ public:
 
     uint64_t Send(std::unique_ptr<ClusterEvent> message);
 
+    void WaitFor(uint64_t sequence);
+
     grpc::Status ProcessPaxos(grpc::ServerContext* context,
                               const PaxosMessage* request,
                               PaxosMessage* response);

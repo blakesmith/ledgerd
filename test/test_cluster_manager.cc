@@ -65,7 +65,8 @@ TEST(ClusterManager, BasicSend) {
     RegisterTopicEvent* rt = event->mutable_register_topic();
     rt->set_name("new_topic");
     rt->add_partition_ids(0);
-    cm1.Send(std::move(event));
+    uint64_t sequence = cm1.Send(std::move(event));
+    cm1.WaitFor(sequence);
 
     cm1.Stop();
     cm2.Stop();
