@@ -1,5 +1,6 @@
 #include "cluster_manager.h"
 
+#include <iostream>
 #include <chrono>
 #include <vector>
 
@@ -67,9 +68,13 @@ void ClusterManager::async_loop() {
         auto current_time = std::chrono::system_clock::now();
         auto deadline = current_time + std::chrono::milliseconds(50);
         auto status = cq_.AsyncNext(&tag, &ok, deadline);
-        if (status == grpc::CompletionQueue::NextStatus::GOT_EVENT) {
+        if (status == grpc::CompletionQueue::NextStatus::GOT_EVENT && ok) {
             AsyncClientRPC<Clustering::Stub, PaxosMessage> *rpc =
                 static_cast<AsyncClientRPC<Clustering::Stub, PaxosMessage>*>(tag);
+            std::cout << "Receiving paxos reply message on node: " << this_node_id_
+                      << " sequence: " << rpc->reply()->sequence()
+                      << " proposal: " << rpc->reply()->proposal_id().prop_n()
+                      << std::endl;
             const std::vector<paxos::Message<ClusterEvent>> internal_messages {
                 map_internal(rpc->reply()) };
             auto requests = paxos_group_.Receive(rpc->reply()->sequence(),
@@ -86,10 +91,11 @@ void ClusterManager::async_loop() {
         }
 
         // Poll for timed out instances
-        auto timeouts = paxos_group_.Tick(current_time);
-        if(timeouts.size() > 0) {
-            send_messages(this_node_id_, timeouts, nullptr);
-        }
+        // auto timeouts = paxos_group_.Tick();
+        // if(timeouts.size() > 0) {
+        //     std::cout << "Received timeout " << timeouts.size() << " messages" << std::endl; 
+        //     send_messages(this_node_id_, timeouts, nullptr);
+        // }
     }
 }
 
@@ -106,6 +112,7 @@ void ClusterManager::node_connection(uint32_t node_id, Clustering::Stub** stub) 
                                 grpc::InsecureChannelCredentials()));
         *stub = new_stub.get();
         connections_[node_id] = std::move(new_stub);
+        return;
     }
 
     // TODO: Log the connection error
@@ -122,7 +129,7 @@ void ClusterManager::send_messages(uint32_t source_node_id,
                 if(response != nullptr) {
                     map_external(&m, response);
                 }
-            } else {
+            } else if (node_id != this_node_id_) {
                 rpc_node_ids.push_back(node_id);
             }
         }
@@ -145,12 +152,16 @@ void ClusterManager::send_messages(uint32_t source_node_id,
             Clustering::Stub *stub = rpc->stub();
             node_connection(node_id, &stub);
             if(stub != nullptr) {
+                std::cout << "Sending paxos message from node: " << this_node_id_
+                          << " sequence: " << request.sequence()
+                          << " proposal: " << request.proposal_id().prop_n()
+                          << std::endl;
                 std::unique_ptr<grpc::ClientAsyncResponseReader<PaxosMessage>> reader(
                     stub->AsyncProcessPaxos(rpc->client_context(), request, &cq_));
-                rpc->set_reader(std::move(reader));
                 reader->Finish(rpc->reply(),
                                rpc->status(),
                                static_cast<void*>(rpc.get()));
+                rpc->set_reader(std::move(reader));
                 std::lock_guard<std::mutex> lg(rpc_mutex_);
                 in_flight_rpcs_[rpc->id()] = std::move(rpc);
             }
@@ -168,11 +179,16 @@ uint64_t ClusterManager::Send(std::unique_ptr<ClusterEvent> event) {
 }
 
 void ClusterManager::WaitFor(uint64_t sequence) {
+    paxos_group_.WaitForJournaled(sequence);
 }
 
 grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,
                                           const PaxosMessage* request,
                                           PaxosMessage* response) {
+    std::cout << "Processing paxos request on node: " << this_node_id_
+              << " sequence: " << request->sequence()
+              << " proposal: " << request->proposal_id().prop_n()
+              << std::endl;
     const std::vector<paxos::Message<ClusterEvent>> internal_messages {
         map_internal(request) };
     std::vector<paxos::Message<ClusterEvent>> responses = paxos_group_.Receive(request->sequence(),
@@ -251,7 +267,7 @@ void ClusterManager::map_external(const paxos::Message<ClusterEvent>* in, PaxosM
     out->set_sequence(in->sequence());
     out->set_source_node_id(this_node_id_);
     if(in->value()) {
-        out->set_allocated_event(const_cast<ClusterEvent*>(in->value()));
+        out->mutable_event()->CopyFrom(*in->value());
     }
 }
 

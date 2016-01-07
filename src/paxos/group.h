@@ -23,6 +23,7 @@ class Group {
     PersistentLog<T>& persistent_log_;
     LinearSequence<uint64_t> active_or_completed_instances_;
     LinearSequence<uint64_t> completed_instances_;
+    LinearSequence<uint64_t> journaled_instances_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
     std::random_device random_;
@@ -33,6 +34,7 @@ class Group {
             if(completed_instances_.in_joint_range(it->first)) {
                 LogStatus status = persistent_log_.Write(it->second->sequence(),
                                                          it->second->final_value());
+                journaled_instances_.Add(it->first);
                 if(status == LogStatus::LOG_OK) {
                     instances_.erase(it);
                 }
@@ -67,7 +69,8 @@ public:
           persistent_log_(persistent_log),
           random_dist_(random_dist),
           active_or_completed_instances_(0),
-          completed_instances_(0) { }
+          completed_instances_(0),
+          journaled_instances_(0) { }
 
     Node<T>* node(uint32_t node_id) {
         std::lock_guard<std::mutex> lock(lock_);
@@ -154,6 +157,10 @@ public:
             }
         }
         return messages;
+    }
+
+    void WaitForJournaled(uint64_t sequence) {
+        journaled_instances_.WaitFor(sequence);
     }
 
     std::unique_ptr<T> final_value(uint64_t sequence) {
