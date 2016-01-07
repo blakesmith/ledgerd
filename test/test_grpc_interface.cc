@@ -211,7 +211,7 @@ TEST(GrpcInterface, StreamPartition) {
     server->Shutdown();
 }
 
-TEST(GrpcInterface, Stream) {
+TEST(GrpcInterface, DISABLED_Stream) {
     const std::string topic_name = "grpc_interface_stream_topic";
     LedgerdServiceConfig config;
     config.set_grpc_address("0.0.0.0:50051");

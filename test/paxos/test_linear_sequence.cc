@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "paxos/linear_sequence.h"
 
@@ -48,6 +49,27 @@ TEST(LinearSequence, DisjointOutOfOrderAdds) {
     EXPECT_EQ(0, sequence.lower_bound());
     EXPECT_EQ(6, sequence.upper_bound());
     EXPECT_EQ(0, sequence.n_disjoint());
+}
+
+TEST(LinearSequence, WaitFor) {
+    LinearSequence<uint64_t> sequence(0);
+    std::thread t1([&sequence] {
+            for(int i = 1; i < 10; ++i) {
+                sequence.Add(i);
+            }
+        });
+    sequence.WaitFor(9);
+    EXPECT_EQ(9, sequence.upper_bound());
+    t1.join();
+}
+
+TEST(LinearSequence, WaitForAlreadyPassed) {
+    LinearSequence<uint64_t> sequence(0);
+    sequence.Add(1);
+    sequence.Add(2);
+    sequence.Add(3);
+    sequence.WaitFor(2);
+    EXPECT_EQ(3, sequence.upper_bound());
 }
 
 }
