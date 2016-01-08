@@ -187,6 +187,7 @@ grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,
                                           PaxosMessage* response) {
     std::cout << "Processing paxos request on node: " << this_node_id_
               << " sequence: " << request->sequence()
+              << " source node: " << request->source_node_id()
               << " proposal: " << request->proposal_id().prop_n()
               << std::endl;
     const std::vector<paxos::Message<ClusterEvent>> internal_messages {
@@ -194,8 +195,12 @@ grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,
     std::vector<paxos::Message<ClusterEvent>> responses = paxos_group_.Receive(request->sequence(),
                                                                                internal_messages);
     send_messages(request->source_node_id(),
-                  internal_messages,
+                  responses,
                   response);
+    std::cout << "Replying with paxos message on node: " << this_node_id_
+              << " sequence: " << response->sequence()
+              << " proposal: " << response->proposal_id().prop_n()
+              << std::endl;
     return grpc::Status::OK;
 }
 
