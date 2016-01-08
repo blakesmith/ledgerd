@@ -32,11 +32,15 @@ class Group {
     void persist_instances() {
         for(auto it = instances_.begin(); it != instances_.end(); ++it) {
             if(completed_instances_.in_joint_range(it->first)) {
+                std::cout << "About to journal instance: " << it->first << " on node: " << this_node_id_ << std::endl;
                 LogStatus status = persistent_log_.Write(it->second->sequence(),
                                                          it->second->final_value());
-                journaled_instances_.Add(it->first);
                 if(status == LogStatus::LOG_OK) {
+                    std::cout << "Journaling instance: " << it->first << " on node: " << this_node_id_ << std::endl;
+                    journaled_instances_.Add(it->first);
                     instances_.erase(it);
+                } else {
+                    std::cout << "Error journaling instance: " << it->first << " on node: " << this_node_id_ << std::endl;
                 }
             }
         }

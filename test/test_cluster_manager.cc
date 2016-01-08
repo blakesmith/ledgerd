@@ -38,6 +38,9 @@ TEST(ClusterManager, BasicSend) {
     LedgerdServiceConfig c1;
     LedgerdServiceConfig c2;
     LedgerdServiceConfig c3;
+    cleanup("/tmp/ledgerd_cluster_c1");
+    cleanup("/tmp/ledgerd_cluster_c2");
+    cleanup("/tmp/ledgerd_cluster_c3");
     setup("/tmp/ledgerd_cluster_c1");
     setup("/tmp/ledgerd_cluster_c2");
     setup("/tmp/ledgerd_cluster_c3");
@@ -66,7 +69,23 @@ TEST(ClusterManager, BasicSend) {
     rt->set_name("new_topic");
     rt->add_partition_ids(0);
     uint64_t sequence = cm1.Send(std::move(event));
-    cm1.WaitFor(sequence);
+    cm1.WaitForSequence(sequence);
+    cm2.WaitForSequence(sequence);
+    cm3.WaitForSequence(sequence);
+
+    auto cev1 = cm1.GetEvent(sequence);
+    auto cev2 = cm2.GetEvent(sequence);
+    auto cev3 = cm3.GetEvent(sequence);
+
+    ASSERT_TRUE(cev1 != nullptr);
+    ASSERT_TRUE(cev2 != nullptr);
+    ASSERT_TRUE(cev3 != nullptr);
+    ASSERT_EQ(ClusterEventType::REGISTER_TOPIC, cev1->type());
+    ASSERT_EQ(ClusterEventType::REGISTER_TOPIC, cev2->type());
+    ASSERT_EQ(ClusterEventType::REGISTER_TOPIC, cev3->type());
+    EXPECT_EQ("new_topic", cev1->register_topic().name());
+    EXPECT_EQ("new_topic", cev2->register_topic().name());
+    EXPECT_EQ("new_topic", cev3->register_topic().name());
 
     cm1.Stop();
     cm2.Stop();

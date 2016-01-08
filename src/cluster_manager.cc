@@ -178,8 +178,12 @@ uint64_t ClusterManager::Send(std::unique_ptr<ClusterEvent> event) {
     return new_instance->sequence();
 }
 
-void ClusterManager::WaitFor(uint64_t sequence) {
+void ClusterManager::WaitForSequence(uint64_t sequence) {
     paxos_group_.WaitForJournaled(sequence);
+}
+
+std::unique_ptr<ClusterEvent> ClusterManager::GetEvent(uint64_t sequence) {
+    return cluster_log_.Get(sequence);
 }
 
 grpc::Status ClusterManager::ProcessPaxos(grpc::ServerContext* context,
