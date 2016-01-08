@@ -91,11 +91,11 @@ void ClusterManager::async_loop() {
         }
 
         // Poll for timed out instances
-        // auto timeouts = paxos_group_.Tick();
-        // if(timeouts.size() > 0) {
-        //     std::cout << "Received timeout " << timeouts.size() << " messages" << std::endl; 
-        //     send_messages(this_node_id_, timeouts, nullptr);
-        // }
+        auto timeouts = paxos_group_.Tick();
+        if(timeouts.size() > 0) {
+            std::cout << "Received timeout " << timeouts.size() << " messages" << std::endl;
+            send_messages(this_node_id_, timeouts, nullptr);
+        }
     }
 }
 
