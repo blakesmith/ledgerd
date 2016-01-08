@@ -38,7 +38,6 @@ class Group {
                 if(status == LogStatus::LOG_OK) {
                     std::cout << "Journaling instance: " << it->first << " on node: " << this_node_id_ << std::endl;
                     journaled_instances_.Add(it->first);
-                    instances_.erase(it);
                 } else {
                     std::cout << "Error journaling instance: " << it->first << " on node: " << this_node_id_ << std::endl;
                 }
@@ -154,8 +153,13 @@ public:
         std::lock_guard<std::mutex> lock(lock_);
         int rand = random_dist_(random_);
         std::vector<Message<T>> messages;
-        for(auto& kv : instances_) {
-            for(auto message : kv.second->Tick(rand, current_time)) {
+        for(auto it = instances_.begin(); it != instances_.end(); ++it) {
+            if(journaled_instances_.in_joint_range(it->first)) {
+                std::cout << "Removing completed instance: " << it->first << " on node: " << this_node_id_ << std::endl;
+                instances_.erase(it);
+                break;
+            }
+            for(auto message : it->second->Tick(rand, current_time)) {
                 messages.push_back(message);
             }
         }

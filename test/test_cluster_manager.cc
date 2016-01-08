@@ -87,6 +87,8 @@ TEST(ClusterManager, BasicSend) {
     EXPECT_EQ("new_topic", cev2->register_topic().name());
     EXPECT_EQ("new_topic", cev3->register_topic().name());
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
     cm1.Stop();
     cm2.Stop();
     cm3.Stop();

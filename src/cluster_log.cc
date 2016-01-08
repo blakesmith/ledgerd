@@ -34,9 +34,7 @@ paxos::LogStatus ClusterLog::Write(uint64_t sequence, const ClusterEvent* event)
 
     event->SerializeToString(&out);
 
-    std::cout << "About to write: " << event->register_topic().name() << std::endl;
     rc = ledger_service_.WritePartition(TOPIC_NAME, 0, out, &write_status);
-    std::cout << "Done writing" << std::endl;
     if(rc != LEDGER_OK) {
         return paxos::LogStatus::LOG_ERR;
     }
