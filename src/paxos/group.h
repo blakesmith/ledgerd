@@ -145,7 +145,6 @@ public:
         if(instance->state() == InstanceState::COMPLETE) {
             completed_instances_.Add(instance->sequence());
             persist_instances();
-            return std::vector<Message<T>>{};
         }
 
         return received_messages;

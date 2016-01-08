@@ -235,13 +235,22 @@ const paxos::Message<ClusterEvent> ClusterManager::map_internal(const PaxosMessa
     };
     paxos::ProposalId proposal_id(in->proposal_id().node_id(),
                                   in->proposal_id().prop_n());
-    return paxos::Message<ClusterEvent>(
-        type,
-        in->sequence(),
-        proposal_id,
-        in->source_node_id(),
-        std::vector<uint32_t> { this_node_id_ },
-        &in->event());
+    if(in->has_event()) {
+        return paxos::Message<ClusterEvent>(
+            type,
+            in->sequence(),
+            proposal_id,
+            in->source_node_id(),
+            std::vector<uint32_t> { this_node_id_ },
+            &in->event());
+    } else {
+        return paxos::Message<ClusterEvent>(
+            type,
+            in->sequence(),
+            proposal_id,
+            in->source_node_id(),
+            std::vector<uint32_t> { this_node_id_ });
+    }
 }
 
 void ClusterManager::map_external(const paxos::Message<ClusterEvent>* in, PaxosMessage* out) const {
@@ -277,6 +286,8 @@ void ClusterManager::map_external(const paxos::Message<ClusterEvent>* in, PaxosM
     out->set_source_node_id(this_node_id_);
     if(in->value()) {
         out->mutable_event()->CopyFrom(*in->value());
+    } else {
+        out->clear_event();
     }
 }
 
