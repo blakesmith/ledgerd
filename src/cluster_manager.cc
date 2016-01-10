@@ -1,7 +1,6 @@
 #include "cluster_manager.h"
 #include "log.h"
 
-#include <iostream>
 #include <chrono>
 #include <vector>
 
@@ -38,8 +37,7 @@ void ClusterManager::log_paxos_message(const std::string& location,
                                        const PaxosMessage* message) const {
     LOG(logDEBUG) << location << " paxos message on node: " << this_node_id_
                   << " sequence: " << message->sequence()
-                  << " proposal: " << message->proposal_id().prop_n()
-                  << std::endl;
+                  << " proposal: " << message->proposal_id().prop_n();
 }
 
 void ClusterManager::Start() {
@@ -99,7 +97,7 @@ void ClusterManager::async_loop() {
         // Poll for timed out instances
         auto timeouts = paxos_group_.Tick();
         if(timeouts.size() > 0) {
-            LOG(logINFO) << "Received timeout " << timeouts.size() << " messages" << std::endl;
+            LOG(logINFO) << "Received timeout " << timeouts.size() << " messages";
             send_messages(this_node_id_, timeouts, nullptr);
         }
     }

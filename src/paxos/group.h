@@ -5,11 +5,11 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <iostream>
 #include <random>
 
 #include "instance.h"
 #include "linear_sequence.h"
+#include "log.h"
 #include "node.h"
 #include "persistent_log.h"
 
@@ -32,14 +32,14 @@ class Group {
     void persist_instances() {
         for(auto it = instances_.begin(); it != instances_.end(); ++it) {
             if(completed_instances_.in_joint_range(it->first)) {
-                std::cout << "About to journal instance: " << it->first << " on node: " << this_node_id_ << std::endl;
+                LOG(logDEBUG) << "About to journal instance: " << it->first << " on node: " << this_node_id_;
                 LogStatus status = persistent_log_.Write(it->second->sequence(),
                                                          it->second->final_value());
                 if(status == LogStatus::LOG_OK) {
-                    std::cout << "Journaling instance: " << it->first << " on node: " << this_node_id_ << std::endl;
+                    LOG(logDEBUG) << "Journaling instance: " << it->first << " on node: " << this_node_id_;
                     journaled_instances_.Add(it->first);
                 } else {
-                    std::cout << "Error journaling instance: " << it->first << " on node: " << this_node_id_ << std::endl;
+                    LOG(logDEBUG) << "Error journaling instance: " << it->first << " on node: " << this_node_id_;
                 }
             }
         }
@@ -155,7 +155,7 @@ public:
         std::vector<Message<T>> messages;
         for(auto it = instances_.begin(); it != instances_.end(); ++it) {
             if(journaled_instances_.in_joint_range(it->first)) {
-                std::cout << "Removing completed instance: " << it->first << " on node: " << this_node_id_ << std::endl;
+                LOG(logDEBUG) << "Removing completed instance: " << it->first << " on node: " << this_node_id_;
                 instances_.erase(it);
                 break;
             }
