@@ -107,6 +107,8 @@ class ClusterManager : public Clustering::Service {
 
     void map_external(const paxos::Message<ClusterEvent>* in,
                       PaxosMessage* out) const;
+
+    uint64_t send(std::unique_ptr<ClusterEvent> message);
 public:
     ClusterManager(uint32_t this_node_id,
                    LedgerdService& ledger_service,
@@ -117,7 +119,8 @@ public:
 
     void Stop();
 
-    uint64_t Send(std::unique_ptr<ClusterEvent> message);
+    uint64_t RegisterTopic(const std::string& topic_name,
+                           const std::vector<unsigned int>& partition_ids);
 
     void WaitForSequence(uint64_t sequence);
 

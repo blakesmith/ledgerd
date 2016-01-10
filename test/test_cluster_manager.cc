@@ -63,12 +63,8 @@ TEST(ClusterManager, BasicSend) {
     cm2.Start();
     cm3.Start();
 
-    std::unique_ptr<ClusterEvent> event(new ClusterEvent());
-    event->set_type(ClusterEventType::REGISTER_TOPIC);
-    RegisterTopicEvent* rt = event->mutable_register_topic();
-    rt->set_name("new_topic");
-    rt->add_partition_ids(0);
-    uint64_t sequence = cm1.Send(std::move(event));
+    const std::vector<unsigned int> partition_ids = { 0 };
+    uint64_t sequence = cm1.RegisterTopic("new_topic", partition_ids);
     cm1.WaitForSequence(sequence);
     cm2.WaitForSequence(sequence);
     cm3.WaitForSequence(sequence);
