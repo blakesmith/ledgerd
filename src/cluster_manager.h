@@ -96,6 +96,9 @@ class ClusterManager : public Clustering::Service {
 
     void node_connection(uint32_t node_id, Clustering::Stub** stub);
 
+    void log_paxos_message(const std::string& location,
+                           const PaxosMessage* message) const;
+
     const paxos::Message<ClusterEvent> map_internal(const PaxosMessage* in) const;
 
     void send_messages(uint32_t source_node_id,
