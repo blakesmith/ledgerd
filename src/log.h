@@ -81,7 +81,7 @@ inline TLogLevel Log::FromString(const std::string& level)
 
 typedef Log FILELog;
 
-#define LOG(level) \
+#define LEDGERD_LOG(level) \
     if (level > FILELog::ReportingLevel()) ; \
     else Log().Get(level)
 
