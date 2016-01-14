@@ -2,6 +2,7 @@
 #define LEDGERD_GRPC_INTERFACE_H_
 
 #include "proto/ledgerd.grpc.pb.h"
+#include "cluster_manager.h"
 #include "ledgerd_service.h"
 
 #include <grpc/grpc.h>
@@ -10,8 +11,10 @@
 namespace ledgerd {
 class GrpcInterface final : public Ledgerd::Service {
     LedgerdService& ledgerd_service_;
+    ClusterManager& cluster_manager_;
 public:
-    GrpcInterface(LedgerdService& ledgerd_service);
+    GrpcInterface(LedgerdService& ledgerd_service,
+                  ClusterManager& cluster_manager);
     grpc::Status Ping(grpc::ServerContext *context, const PingRequest *req,
                       PingResponse *resp) override;
 

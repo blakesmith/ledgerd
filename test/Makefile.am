@@ -25,6 +25,7 @@ ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
 	$(top_srcdir)/src/ledgerd_consumer.o \
 	$(top_srcdir)/src/ledgerd_service.o \
 	$(top_srcdir)/src/ledgerd_service_config.o \
+	$(top_srcdir)/src/node_info.o \
 	$(top_srcdir)/src/grpc_interface.o \
 	$(top_srcdir)/src/command.o \
 	$(top_srcdir)/src/command_parser.o \

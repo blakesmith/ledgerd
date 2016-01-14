@@ -9,13 +9,6 @@
 
 namespace ledgerd {
 
-NodeInfo::NodeInfo(const std::string& host_and_port)
-    : host_and_port_(host_and_port) { }
-
-const std::string& NodeInfo::host_and_port() const {
-    return host_and_port_;
-}
-
 ClusterManager::ClusterManager(uint32_t this_node_id,
                                LedgerdService& ledger_service,
                                const std::string& grpc_cluster_address,

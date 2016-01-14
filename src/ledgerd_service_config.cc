@@ -37,4 +37,13 @@ void LedgerdServiceConfig::set_cluster_node_id(uint32_t node_id) {
 const uint32_t LedgerdServiceConfig::cluster_node_id() const {
     return cluster_node_id_;
 }
+
+void LedgerdServiceConfig::add_node(uint32_t node_id, const std::string& host_and_port) {
+    NodeInfo node_info(host_and_port);
+    node_info_[node_id] = std::move(node_info);
+}
+
+const std::map<uint32_t, NodeInfo>& LedgerdServiceConfig::node_info() const {
+    return node_info_;
+}
 }

@@ -41,8 +41,10 @@ static ledger_consume_status stream_f(ledger_consumer_ctx* ctx,
     }
 }
 
-GrpcInterface::GrpcInterface(LedgerdService& ledgerd_service)
-    : ledgerd_service_(ledgerd_service) { }
+GrpcInterface::GrpcInterface(LedgerdService& ledgerd_service,
+                             ClusterManager& cluster_manager)
+    : ledgerd_service_(ledgerd_service),
+      cluster_manager_(cluster_manager) { }
 
 LedgerdStatus GrpcInterface::translate_status(ledger_status rc) {
     switch(rc) {

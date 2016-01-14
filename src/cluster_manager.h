@@ -8,6 +8,7 @@
 #include "proto/ledgerd.grpc.pb.h"
 
 #include "cluster_log.h"
+#include "node_info.h"
 #include "paxos/group.h"
 
 #include <grpc/grpc.h>
@@ -17,13 +18,6 @@
 
 namespace ledgerd {
 
-class NodeInfo {
-    const std::string host_and_port_;
-public:
-    NodeInfo(const std::string& host_and_port);
-
-    const std::string& host_and_port() const;
-};
 
 template <typename C, typename T>
 class AsyncClientRPC {

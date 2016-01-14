@@ -29,7 +29,11 @@ TEST(GrpcInterface, PingPong) {
     config.set_grpc_address("0.0.0.0:50051");
     config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
-    GrpcInterface grpc_interface(ledgerd_service);;
+    ClusterManager cluster_manager(0,
+                                   ledgerd_service,
+                                   "0.0.0.0:50052",
+                                   std::map<uint32_t, NodeInfo>{});
+    GrpcInterface grpc_interface(ledgerd_service, cluster_manager);
     grpc::ServerBuilder builder;
     builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
@@ -52,7 +56,11 @@ TEST(GrpcInterface, SimpleReadWrite) {
     config.set_grpc_address("0.0.0.0:50051");
     config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
-    GrpcInterface grpc_interface(ledgerd_service);;
+    ClusterManager cluster_manager(0,
+                                   ledgerd_service,
+                                   "0.0.0.0:50052",
+                                   std::map<uint32_t, NodeInfo>{});
+    GrpcInterface grpc_interface(ledgerd_service, cluster_manager);
     grpc::ServerBuilder builder;
     builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
@@ -109,7 +117,11 @@ TEST(GrpcInterface, GetTopic) {
     config.set_grpc_address("0.0.0.0:50051");
     config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
-    GrpcInterface grpc_interface(ledgerd_service);;
+    ClusterManager cluster_manager(0,
+                                   ledgerd_service,
+                                   "0.0.0.0:50052",
+                                   std::map<uint32_t, NodeInfo>{});
+    GrpcInterface grpc_interface(ledgerd_service, cluster_manager);
     grpc::ServerBuilder builder;
     builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
@@ -154,7 +166,11 @@ TEST(GrpcInterface, StreamPartition) {
     config.set_grpc_address("0.0.0.0:50051");
     config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
-    GrpcInterface grpc_interface(ledgerd_service);;
+    ClusterManager cluster_manager(0,
+                                   ledgerd_service,
+                                   "0.0.0.0:50052",
+                                   std::map<uint32_t, NodeInfo>{});
+    GrpcInterface grpc_interface(ledgerd_service, cluster_manager);
     grpc::ServerBuilder builder;
     builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
@@ -217,7 +233,11 @@ TEST(GrpcInterface, DISABLED_Stream) {
     config.set_grpc_address("0.0.0.0:50051");
     config.set_root_directory("/tmp/ledgerd");
     LedgerdService ledgerd_service(config);
-    GrpcInterface grpc_interface(ledgerd_service);;
+    ClusterManager cluster_manager(0,
+                                   ledgerd_service,
+                                   "0.0.0.0:50052",
+                                   std::map<uint32_t, NodeInfo>{});
+    GrpcInterface grpc_interface(ledgerd_service, cluster_manager);
     grpc::ServerBuilder builder;
     builder.AddListeningPort(config.get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
