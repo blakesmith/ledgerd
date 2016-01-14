@@ -108,7 +108,10 @@ grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTo
     if(rc != ::LEDGER_OK) {
         // TODO: I REALLY need a reliable way to get error messages out
         resp->set_error_message("Something went wrong");
+        return grpc::Status::OK;
     }
+
+    cluster_manager_.RegisterTopic(req->name(), partition_ids);
 
     return grpc::Status::OK;
 }
