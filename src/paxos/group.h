@@ -55,9 +55,22 @@ class Group {
         }
     }
 
+    void prime_listeners(uint64_t highest_log_sequence) {
+        for(auto listener : listeners_) {
+            uint64_t highest_listener_sequence = listener->HighestSequence();
+            while(highest_listener_sequence < highest_log_sequence) {
+                uint64_t next_sequence = highest_listener_sequence++;
+                auto value = persistent_log_.Get(next_sequence);
+                listener->Receive(next_sequence, value.get());
+                highest_listener_sequence = next_sequence;
+            }
+        }
+    }
+
     void prime_state() {
-        uint64_t highest_sequence = persistent_log_.HighestSequence();
-        completed_instances_.set_upper_bound(highest_sequence);
+        uint64_t highest_log_sequence = persistent_log_.HighestSequence();
+        completed_instances_.set_upper_bound(highest_log_sequence);
+        prime_listeners(highest_log_sequence);
     }
 
     Instance<T>* create_instance(uint64_t sequence) {

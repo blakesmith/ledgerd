@@ -70,6 +70,9 @@ public:
     }
 
     uint64_t HighestSequence() {
+        if(final_values_.size() == 0) {
+            return 0;
+        }
         return final_values_.rbegin()->first;
     }
 };
@@ -310,6 +313,10 @@ TEST(Group, Listeners) {
     group3.AddNode(0);
     group3.AddNode(1);
     group3.AddNode(2);
+
+    group1.Start();
+    group2.Start();
+    group3.Start();
 
     std::vector<Group<std::string>*> groups { &group2, &group3 };
     std::unique_ptr<std::string> value1(new std::string("hello"));
