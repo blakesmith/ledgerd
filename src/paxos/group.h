@@ -39,7 +39,8 @@ class Group {
 
     void persist_instances() {
         for(auto it = instances_.begin(); it != instances_.end(); ++it) {
-            if(completed_instances_.in_joint_range(it->first)) {
+            if(completed_instances_.in_joint_range(it->first) &&
+               !journaled_instances_.in_joint_range(it->first)) {
                 LEDGERD_LOG(logDEBUG) << "About to journal instance: " << it->first << " on node: " << this_node_id_;
                 LogStatus status = persistent_log_.Write(it->second->sequence(),
                                                          it->second->final_value());

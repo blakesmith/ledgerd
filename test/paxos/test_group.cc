@@ -242,6 +242,7 @@ TEST(Group, GroupRestarts) {
     EXPECT_TRUE(restarted_group.instance_complete(sequence3));
 
     EXPECT_EQ(3, listener.HighestSequence());
+    EXPECT_EQ(6, listener.sequence_count());
     EXPECT_EQ(listener.HighestSequence(), log.HighestSequence());
 }
 
@@ -338,7 +339,7 @@ TEST(Group, Listeners) {
                                            groups,
                                            std::move(value3));
     EXPECT_EQ(3, listener.HighestSequence());
-    EXPECT_EQ(10, listener.sequence_count());
+    EXPECT_EQ(6, listener.sequence_count());
 }
 
 }
