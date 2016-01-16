@@ -232,11 +232,17 @@ TEST(Group, GroupRestarts) {
     EXPECT_TRUE(group1.instance_complete(sequence2));
     EXPECT_TRUE(group1.instance_complete(sequence3));
 
+
+    MemoryListener<std::string> listener;
     Group<std::string> restarted_group(0, log);
+    restarted_group.AddListener(&listener);
     restarted_group.Start();
     EXPECT_TRUE(restarted_group.instance_complete(sequence1));
     EXPECT_TRUE(restarted_group.instance_complete(sequence2));
     EXPECT_TRUE(restarted_group.instance_complete(sequence3));
+
+    EXPECT_EQ(3, listener.HighestSequence());
+    EXPECT_EQ(listener.HighestSequence(), log.HighestSequence());
 }
 
 TEST(Group, LeapFroggingProposersTimeouts) {
@@ -334,4 +340,5 @@ TEST(Group, Listeners) {
     EXPECT_EQ(3, listener.HighestSequence());
     EXPECT_EQ(10, listener.sequence_count());
 }
+
 }

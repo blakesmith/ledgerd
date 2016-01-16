@@ -55,11 +55,18 @@ class Group {
         }
     }
 
+    // This should only be run in the case where a listener is added after
+    // sequences have already been written to the log
     void prime_listeners(uint64_t highest_log_sequence) {
         for(auto listener : listeners_) {
             uint64_t highest_listener_sequence = listener->HighestSequence();
+            if(highest_listener_sequence < highest_log_sequence) {
+                LEDGERD_LOG(logINFO) << "Listener is "
+                                     << (highest_log_sequence - highest_listener_sequence)
+                                     << " sequences behind, priming state";
+            }
             while(highest_listener_sequence < highest_log_sequence) {
-                uint64_t next_sequence = highest_listener_sequence++;
+                uint64_t next_sequence = ++highest_listener_sequence;
                 auto value = persistent_log_.Get(next_sequence);
                 listener->Receive(next_sequence, value.get());
                 highest_listener_sequence = next_sequence;
