@@ -26,6 +26,29 @@ public:
 };
 
 template <typename T>
+class MemoryListener : public Listener<T> {
+    uint64_t highest_sequence_;
+    uint64_t sequence_count_;
+public:
+    MemoryListener()
+        : highest_sequence_(0),
+          sequence_count_(0) { }
+
+    uint64_t sequence_count() const {
+        return sequence_count_;
+    }
+
+    ListenerStatus Receive(uint64_t sequence, const T* final_value) {
+        sequence_count_ += sequence;
+        highest_sequence_ = sequence;
+    }
+
+    uint64_t HighestSequence() {
+        return highest_sequence_;
+    }
+};
+
+template <typename T>
 class MemoryLog : public PersistentLog<T> {
     std::map<uint64_t, std::unique_ptr<T>> final_values_;
 public:
@@ -265,5 +288,43 @@ TEST(Group, LeapFroggingProposersTimeouts) {
 
     EXPECT_EQ(0, group2.Tick(epoch).size());
     EXPECT_EQ(1, group2.Tick(epoch + std::chrono::milliseconds(220)).size());
+}
+
+TEST(Group, Listeners) {
+    MemoryLog<std::string> log;
+    Group<std::string> group1(0, log);
+    Group<std::string> group2(1, log);
+    Group<std::string> group3(2, log);
+
+    group1.AddNode(0);
+    group1.AddNode(1);
+    group1.AddNode(2);
+
+    MemoryListener<std::string> listener;
+    group1.AddListener(&listener);
+
+    group2.AddNode(0);
+    group2.AddNode(1);
+    group2.AddNode(2);
+
+    group3.AddNode(0);
+    group3.AddNode(1);
+    group3.AddNode(2);
+
+    std::vector<Group<std::string>*> groups { &group2, &group3 };
+    std::unique_ptr<std::string> value1(new std::string("hello"));
+    std::unique_ptr<std::string> value2(new std::string("there"));
+    std::unique_ptr<std::string> value3(new std::string("friend"));
+    uint64_t sequence1 = complete_sequence(group1,
+                                           groups,
+                                           std::move(value1));
+    uint64_t sequence2 = complete_sequence(group1,
+                                           groups,
+                                           std::move(value2));
+    uint64_t sequence3 = complete_sequence(group1,
+                                           groups,
+                                           std::move(value3));
+    EXPECT_EQ(3, listener.HighestSequence());
+    EXPECT_EQ(10, listener.sequence_count());
 }
 }

@@ -9,6 +9,7 @@
 
 #include "instance.h"
 #include "linear_sequence.h"
+#include "listener.h"
 #include "log.h"
 #include "node.h"
 #include "persistent_log.h"
@@ -26,8 +27,15 @@ class Group {
     LinearSequence<uint64_t> journaled_instances_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
+    std::vector<Listener<T>*> listeners_;
     std::random_device random_;
     std::uniform_int_distribution<int> random_dist_;
+
+    void notify_listeners(uint64_t sequence, const T* final_value) {
+        for(auto listener : listeners_) {
+            listener->Receive(sequence, final_value);
+        }
+    }
 
     void persist_instances() {
         for(auto it = instances_.begin(); it != instances_.end(); ++it) {
@@ -38,6 +46,8 @@ class Group {
                 if(status == LogStatus::LOG_OK) {
                     LEDGERD_LOG(logDEBUG) << "Journaling instance: " << it->first << " on node: " << this_node_id_;
                     journaled_instances_.Add(it->first);
+                    notify_listeners(it->second->sequence(),
+                                     it->second->final_value());
                 } else {
                     LEDGERD_LOG(logDEBUG) << "Error journaling instance: " << it->first << " on node: " << this_node_id_;
                 }
@@ -97,6 +107,10 @@ public:
         Node<T>* node_ref = new_node.get();
         nodes_[node_id] = std::move(new_node);
         return node_ref;
+    }
+
+    void AddListener(Listener<T>* listener) {
+        listeners_.push_back(listener);
     }
 
     void RemoveNode(uint32_t node_id) {
