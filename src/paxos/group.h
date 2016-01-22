@@ -131,6 +131,7 @@ public:
     }
 
     void AddListener(Listener<T>* listener) {
+        std::lock_guard<std::mutex> lock(lock_);
         listeners_.push_back(listener);
     }
 
@@ -202,7 +203,7 @@ public:
     }
 
     void WaitForJournaled(uint64_t sequence) {
-        journaled_instances_.WaitFor(sequence);
+        journaled_instances_.WaitForUpperBound(sequence);
     }
 
     std::unique_ptr<T> final_value(uint64_t sequence) {

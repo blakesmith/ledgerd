@@ -131,6 +131,19 @@ TEST(Group, CreateInstance) {
     EXPECT_EQ(instance_nodes, instance->node_ids());
 }
 
+TEST(Group, DISABLED_SingleNodeRound) {
+    NullLog<std::string> log;
+    Group<std::string> group(0, log);
+
+    std::vector<Group<std::string>*> groups;
+    std::unique_ptr<std::string> value(new std::string("hello"));
+    uint64_t sequence = complete_sequence(group,
+                                          groups,
+                                          std::move(value));
+    ASSERT_TRUE(group.final_value(sequence) != nullptr);
+    EXPECT_EQ("hello", *group.final_value(sequence));
+}
+
 TEST(Group, MultiplePeerProposals) {
     NullLog<std::string> log;
     Group<std::string> group1(0, log);

@@ -41,7 +41,7 @@ class Instance {
     std::unique_ptr<T> proposed_value_;
     std::unique_ptr<T> final_value_;
     std::chrono::system_clock::time_point last_receive_;
-    std::chrono::system_clock::duration receive_timeout_;
+    const std::chrono::system_clock::duration receive_timeout_;
 
     void set_role(InstanceRole new_role) {
         this->role_ = new_role;
@@ -156,7 +156,6 @@ class Instance {
     }
 
     void handle_decided(const Message<T>& message, std::vector<Message<T>>* responses) {
-        // TODO: Broadcast value to all 'learners'
         final_value_ = std::unique_ptr<T>(new T(*message.value()));
         transition(InstanceState::COMPLETE);
     }

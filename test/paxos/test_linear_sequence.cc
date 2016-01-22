@@ -51,24 +51,34 @@ TEST(LinearSequence, DisjointOutOfOrderAdds) {
     EXPECT_EQ(0, sequence.n_disjoint());
 }
 
-TEST(LinearSequence, WaitFor) {
+TEST(LinearSequence, WaitForAdded) {
+    LinearSequence<uint64_t> sequence(0);
+    std::thread t1([&sequence] {
+            sequence.Add(9);
+        });
+    sequence.WaitForAdded(9);
+    EXPECT_EQ(0, sequence.upper_bound());
+    t1.join();
+}
+
+TEST(LinearSequence, WaitForUpperBound) {
     LinearSequence<uint64_t> sequence(0);
     std::thread t1([&sequence] {
             for(int i = 1; i < 10; ++i) {
                 sequence.Add(i);
             }
         });
-    sequence.WaitFor(9);
+    sequence.WaitForUpperBound(9);
     EXPECT_EQ(9, sequence.upper_bound());
     t1.join();
 }
 
-TEST(LinearSequence, WaitForAlreadyPassed) {
+TEST(LinearSequence, WaitForUpperBoundAlreadyPassed) {
     LinearSequence<uint64_t> sequence(0);
     sequence.Add(1);
     sequence.Add(2);
     sequence.Add(3);
-    sequence.WaitFor(2);
+    sequence.WaitForUpperBound(2);
     EXPECT_EQ(3, sequence.upper_bound());
 }
 

@@ -44,6 +44,24 @@ class LinearSequence {
             waiters_.erase(n);
         }
     }
+
+    void wait_for(T n, std::function<bool(T)> pred) {
+        wait_mutex_.lock();
+        auto search = waiters_.find(n);
+        WaitGroup<T>* group_ref;
+        if(search == waiters_.end()) {
+            std::unique_ptr<WaitGroup<T>> new_group(
+                new WaitGroup<T>(n));
+            group_ref = new_group.get();
+            waiters_[n] = std::move(new_group);
+        } else {
+            group_ref = search->second.get();
+        }
+        wait_mutex_.unlock();
+        std::unique_lock<std::mutex> glk(group_ref->lock);
+        group_ref->cond.wait(glk, [this, pred, n] { return pred(n); });
+    }
+
 public:
     LinearSequence(T lower_bound)
         : lower_bound_(lower_bound),
@@ -64,24 +82,18 @@ public:
             }
         } else {
             disjoint_values_.insert(n);
+            notify_waiters(n);
         }
     }
 
-    void WaitFor(T n) {
-        wait_mutex_.lock();
-        auto search = waiters_.find(n);
-        WaitGroup<T>* group_ref;
-        if(search == waiters_.end()) {
-            std::unique_ptr<WaitGroup<T>> new_group(
-                new WaitGroup<T>(n));
-            group_ref = new_group.get();
-            waiters_[n] = std::move(new_group);
-        } else {
-            group_ref = search->second.get();
-        }
-        wait_mutex_.unlock();
-        std::unique_lock<std::mutex> glk(group_ref->lock);
-        group_ref->cond.wait(glk, [this, n] { return upper_bound() >= n; });
+    void WaitForUpperBound(T n) {
+        return wait_for(n, [this](T n) { return upper_bound() >= n; });
+    }
+
+    void WaitForAdded(T n) {
+        return wait_for(n, [this](T n) {
+                return upper_bound() >= n || disjoint_values_.count(n) > 0;
+            });
     }
 
     T next() const{
