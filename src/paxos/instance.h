@@ -37,6 +37,7 @@ class Instance {
     ProposalId highest_promise_;
     uint64_t sequence_;
     uint32_t this_node_id_;
+    bool carry_proposed_value_;
     std::vector<uint32_t> node_ids_;
     std::unique_ptr<T> proposed_value_;
     std::unique_ptr<T> final_value_;
@@ -119,9 +120,12 @@ class Instance {
         if(final_value_) {
             accept_value = final_value_.get();
         } else {
-            accept_value = round_.highest_value() ?
-                const_cast<T*>(round_.highest_value()) :
-                const_cast<T*>(proposed_value_.get());
+            if(round_.highest_value()) {
+                carry_proposed_value_ = true;
+                accept_value = const_cast<T*>(round_.highest_value());
+            } else {
+                accept_value = const_cast<T*>(proposed_value_.get());
+            }
         }
         if(round_.IsPromiseQuorum() || final_value_) {
             responses->push_back(
@@ -174,6 +178,7 @@ public:
           highest_promise_(ProposalId(0, 0)),
           sequence_(sequence),
           this_node_id_(this_node_id),
+          carry_proposed_value_(false),
           round_(node_ids.size()),
           node_ids_(node_ids),
           proposed_value_(nullptr),
@@ -281,9 +286,18 @@ public:
         return proposed_value_.get();
     }
 
+    std::unique_ptr<T> moved_proposed_value() {
+        std::lock_guard<std::mutex> lock(lock_);
+        return std::move(proposed_value_);
+    }
+
     void set_proposed_value(std::unique_ptr<T> proposed) {
         std::lock_guard<std::mutex> lock(lock_);
         proposed_value_ = std::move(proposed);        
+    }
+
+    bool carry_proposed_value() const {
+        return carry_proposed_value_;
     }
 };
 }

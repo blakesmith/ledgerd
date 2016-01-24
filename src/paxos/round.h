@@ -1,6 +1,8 @@
 #ifndef LEDGERD_PAXOS_ROUND_H_
 #define LEDGERD_PAXOS_ROUND_H_
 
+#include "log.h"
+
 #include <algorithm>
 #include <iostream>
 #include <cassert>

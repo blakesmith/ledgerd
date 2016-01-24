@@ -95,6 +95,16 @@ class Group {
         return instance;
     }
 
+    std::vector<Message<T>> propose(uint64_t sequence, std::unique_ptr<T> value) {
+        auto search = instances_.find(sequence);
+        if(search == instances_.end()) {
+            return std::vector<Message<T>>{};
+        }
+        const std::unique_ptr<Instance<T>>& instance = search->second;
+        instance->set_proposed_value(std::move(value));
+        return instance->Prepare();
+    }
+
 public:
     Group(uint32_t this_node_id,
           PersistentLog<T>& persistent_log,
@@ -152,13 +162,7 @@ public:
 
     std::vector<Message<T>> Propose(uint64_t sequence, std::unique_ptr<T> value) {
         std::lock_guard<std::mutex> lock(lock_);
-        auto search = instances_.find(sequence);
-        if(search == instances_.end()) {
-            return std::vector<Message<T>>{};
-        }
-        const std::unique_ptr<Instance<T>>& instance = search->second;
-        instance->set_proposed_value(std::move(value));
-        return instance->Prepare();
+        return propose(sequence, std::move(value));
     }
 
     std::vector<Message<T>> Receive(uint64_t sequence,
@@ -177,9 +181,20 @@ public:
             instance = search->second.get();
         }
         std::vector<Message<T>> received_messages = instance->ReceiveMessages(messages, current_time);
+
         if(instance->state() == InstanceState::COMPLETE) {
             completed_instances_.Add(instance->sequence());
             persist_instances();
+            // We still have a proposed value that needs to
+            // be completed, start another round of Paxos
+            if(instance->carry_proposed_value()) {
+                Instance<T>* next_instance = create_instance(active_or_completed_instances_.next());
+                LEDGERD_LOG(logDEBUG) << "Next sequence is: " << next_instance->sequence();
+                auto m = propose(next_instance->sequence(),
+                                 instance->moved_proposed_value());
+                LEDGERD_LOG(logDEBUG) << "Next sequence messages: " << m.size();
+                return m;
+            }
         }
 
         return received_messages;
@@ -214,6 +229,10 @@ public:
     bool instance_complete(uint64_t sequence) {
         std::lock_guard<std::mutex> lock(lock_);
         return completed_instances_.in_joint_range(sequence);
+    }
+
+    uint32_t id() const {
+        return this_node_id_;
     }
 };
 }

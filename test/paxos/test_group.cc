@@ -85,16 +85,25 @@ static uint64_t complete_sequence(Group<T>& primary_group,
     auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
 
     uint64_t sequence = instance->sequence();
-    while(!primary_group.instance_complete(sequence)) {
+    while(!broadcast_messages.empty()) {
         std::vector<Message<T>> replies;
         for(auto& g : peers) {
-            for(auto& m : g->Receive(sequence, broadcast_messages)) {
-                replies.push_back(m);
+            for(auto& bm : broadcast_messages) {
+                sequence = bm.sequence();
+                for(auto target_id : bm.target_node_ids()) {
+                    if(target_id == g->id()) {
+                        const std::vector<Message<T>> bcv { bm };
+                        for(auto& m : g->Receive(sequence, bcv)) {
+                            replies.push_back(m);
+                        }
+                    }
+                }
             }
         }
+
         broadcast_messages = primary_group.Receive(sequence, replies);
     }
-    
+
     return instance->sequence();
 }
 
@@ -200,6 +209,13 @@ TEST(Group, OldProposal) {
     EXPECT_EQ("hello", *group1.final_value(sequence));
 
     Group<std::string> group4(3, log);
+    group4.AddNode(0);
+    group4.AddNode(1);
+    group4.AddNode(2);
+    group4.AddNode(3);
+    group1.AddNode(3);
+    group2.AddNode(3);
+    group3.AddNode(3);
     std::unique_ptr<std::string> value2(new std::string("join"));
     std::vector<Group<std::string>*> groups2 { &group1, &group2, &group3 };
     uint64_t sequence2 = complete_sequence(group4,
@@ -208,6 +224,7 @@ TEST(Group, OldProposal) {
     ASSERT_EQ(sequence, sequence2);
     ASSERT_TRUE(group4.final_value(sequence) != nullptr);
     EXPECT_EQ("hello", *group4.final_value(sequence2));
+    EXPECT_EQ("join", *group4.final_value(sequence2+1));
 }
 
 TEST(Group, GroupRestarts) {
