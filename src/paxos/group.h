@@ -190,8 +190,11 @@ public:
             if(instance->carry_proposed_value()) {
                 Instance<T>* next_instance = create_instance(active_or_completed_instances_.next());
                 LEDGERD_LOG(logDEBUG) << "Next sequence is: " << next_instance->sequence();
-                return propose(next_instance->sequence(),
-                               instance->moved_proposed_value());
+                auto new_messages = propose(next_instance->sequence(),
+                                            instance->moved_proposed_value());
+                for(auto& m : new_messages) {
+                    received_messages.push_back(std::move(m));
+                }
             }
         }
 
