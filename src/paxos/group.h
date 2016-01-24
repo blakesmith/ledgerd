@@ -190,10 +190,8 @@ public:
             if(instance->carry_proposed_value()) {
                 Instance<T>* next_instance = create_instance(active_or_completed_instances_.next());
                 LEDGERD_LOG(logDEBUG) << "Next sequence is: " << next_instance->sequence();
-                auto m = propose(next_instance->sequence(),
-                                 instance->moved_proposed_value());
-                LEDGERD_LOG(logDEBUG) << "Next sequence messages: " << m.size();
-                return m;
+                return propose(next_instance->sequence(),
+                               instance->moved_proposed_value());
             }
         }
 
