@@ -2,6 +2,7 @@
 #define LEDGERD_PAXOS_LINEAR_SEQUENCE_H_
 
 #include <condition_variable>
+#include <future>
 #include <map>
 #include <mutex>
 #include <set>
@@ -26,6 +27,7 @@ struct WaitGroup {
 };
 
 template <typename T,
+          typename V = int,
           typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 
 class LinearSequence {
@@ -33,7 +35,9 @@ class LinearSequence {
     T upper_bound_;
     std::set<T> disjoint_values_;
     std::mutex wait_mutex_;
+    std::mutex promise_mutex_;
     std::map<T, std::unique_ptr<WaitGroup<T>>> waiters_;
+    std::map<T, std::promise<V>> promises_;
 
     void notify_waiters(T n) {
         std::lock_guard<std::mutex> lk(wait_mutex_);
@@ -62,6 +66,16 @@ class LinearSequence {
         group_ref->cond.wait(glk, [this, pred, n] { return pred(n); });
     }
 
+    std::promise<V>& promise_for(T n) {
+        auto search = promises_.find(n);
+        if(search == promises_.end()) {
+            auto inserted = promises_.emplace(n, std::promise<V>());
+            return inserted.first->second;
+        }
+
+        return search->second;
+    }
+
 public:
     LinearSequence(T lower_bound)
         : lower_bound_(lower_bound),
@@ -86,6 +100,10 @@ public:
         }
     }
 
+    void Clear(T n) {
+        promises_.erase(n);
+    }
+
     void WaitForUpperBound(T n) {
         return wait_for(n, [this](T n) { return upper_bound() >= n; });
     }
@@ -94,6 +112,30 @@ public:
         return wait_for(n, [this](T n) {
                 return upper_bound() >= n || disjoint_values_.count(n) > 0;
             });
+    }
+
+    std::future<V> Future(T n) {
+        std::lock_guard<std::mutex> lock(promise_mutex_);
+        auto& p = promise_for(n);
+        return p.get_future();
+    }
+
+    void Deliver(T n, const V& v) {
+        std::lock_guard<std::mutex> lock(promise_mutex_);
+        auto& p = promise_for(n);
+        p.set_value(v);
+    }
+
+    void Deliver(T n, V& v) {
+        std::lock_guard<std::mutex> lock(promise_mutex_);
+        auto& p = promise_for(n);
+        p.set_value(v);
+    }
+
+    void Deliver(T n, V&& v) {
+        std::lock_guard<std::mutex> lock(promise_mutex_);
+        auto& p = promise_for(n);
+        p.set_value(v);
     }
 
     T next() const{

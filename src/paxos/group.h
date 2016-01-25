@@ -17,7 +17,8 @@
 namespace ledgerd {
 namespace paxos {
 
-template <typename T>
+template <typename T,
+          typename V = int>
 class Group {
     std::mutex lock_;
     uint32_t this_node_id_;
@@ -25,6 +26,7 @@ class Group {
     LinearSequence<uint64_t> active_or_completed_instances_;
     LinearSequence<uint64_t> completed_instances_;
     LinearSequence<uint64_t> journaled_instances_;
+    LinearSequence<uint64_t, V> value_reads_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
     std::vector<Listener<T>*> listeners_;
@@ -114,7 +116,8 @@ public:
           random_dist_(random_dist),
           active_or_completed_instances_(0),
           completed_instances_(0),
-          journaled_instances_(0) { }
+          journaled_instances_(0),
+          value_reads_(0) { }
 
     Node<T>* node(uint32_t node_id) {
         std::lock_guard<std::mutex> lock(lock_);

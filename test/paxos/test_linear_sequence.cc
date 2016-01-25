@@ -73,6 +73,22 @@ TEST(LinearSequence, WaitForUpperBound) {
     t1.join();
 }
 
+TEST(LinearSequence, ValueDelivery) {
+    LinearSequence<uint64_t, std::string> sequence(0);
+    std::thread t1([&sequence] {
+            for(int i = 1; i < 10; ++i) {
+                sequence.Deliver(i, std::to_string(i));
+            }
+        });
+
+    for(int i = 1; i < 10; ++i) {
+        auto f = sequence.Future(i);
+        f.wait();
+        EXPECT_EQ(std::to_string(i), f.get());
+    }
+    t1.join();
+}
+
 TEST(LinearSequence, WaitForUpperBoundAlreadyPassed) {
     LinearSequence<uint64_t> sequence(0);
     sequence.Add(1);
