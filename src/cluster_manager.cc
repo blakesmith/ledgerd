@@ -163,11 +163,14 @@ void ClusterManager::send_messages(uint32_t source_node_id,
     }
 }
 
-uint64_t ClusterManager::send(std::unique_ptr<ClusterEvent> event) {
+uint64_t ClusterManager::send(std::unique_ptr<ClusterEvent> event,
+                              uint64_t* value_read_id) {
     Node* node = event->mutable_source_node();
     node->set_id(this_node_id_);
     paxos::Instance<ClusterEvent>* new_instance = paxos_group_.CreateInstance();
-    auto messages = paxos_group_.Propose(new_instance->sequence(), std::move(event));
+    auto messages = paxos_group_.Propose(new_instance->sequence(),
+                                         std::move(event),
+                                         value_read_id);
     send_messages(this_node_id_, messages, nullptr);
     return new_instance->sequence();
 }
@@ -181,7 +184,19 @@ uint64_t ClusterManager::RegisterTopic(const std::string& topic_name,
     for(unsigned int id : partition_ids) {
         rt->add_partition_ids(id);
     }
-    return send(std::move(event));
+    return send(std::move(event), nullptr);
+}
+
+uint64_t ClusterManager::GetClusterState(ClusterState* cluster_state) {
+    std::unique_ptr<ClusterEvent> event(new ClusterEvent());
+    event->set_type(ClusterEventType::GET_CLUSTER_STATE);
+    uint64_t value_read_id;
+    uint64_t sequence = send(std::move(event), &value_read_id);
+    // std::future<?> f = paxos_group_.ReadValue(value_read_id);
+    // f.wait();
+    // auto value = f.get();
+    // Map cluster state
+    return sequence;
 }
 
 void ClusterManager::WaitForSequence(uint64_t sequence) {

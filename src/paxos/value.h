@@ -24,7 +24,7 @@ public:
     Value(uint64_t id,
           std::unique_ptr<T> value)
         : id_(id),
-          value_(value) { }
+          value_(std::move(value)) { }
 
     ~Value() = default;
 
@@ -52,7 +52,7 @@ public:
     }
 
     const T* value() const {
-        return value_;
+        return value_.get();
     }
 };
 

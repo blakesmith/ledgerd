@@ -133,6 +133,7 @@ message Node {
 
 enum ClusterEventType {
     REGISTER_TOPIC = 0;
+    GET_CLUSTER_STATE = 1;
 }
 
 message RegisterTopicEvent {
@@ -140,10 +141,14 @@ message RegisterTopicEvent {
     repeated uint32 partition_ids = 2;
 }
 
+message GetClusterStateEvent {
+}
+
 message ClusterEvent {
     Node source_node = 1;
     ClusterEventType type = 2;
     RegisterTopicEvent register_topic = 3;
+    GetClusterStateEvent get_cluster_state = 4;
 }
 
 message PaxosProposalId {

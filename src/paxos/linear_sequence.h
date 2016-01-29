@@ -101,6 +101,7 @@ public:
     }
 
     void Clear(T n) {
+        std::lock_guard<std::mutex> lock(promise_mutex_);
         promises_.erase(n);
     }
 

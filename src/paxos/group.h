@@ -97,7 +97,8 @@ class Group {
         return instance;
     }
 
-    std::vector<Message<T>> propose(uint64_t sequence, std::unique_ptr<T> value) {
+    std::vector<Message<T>> propose(uint64_t sequence,
+                                    Value<T> value) {
         auto search = instances_.find(sequence);
         if(search == instances_.end()) {
             return std::vector<Message<T>>{};
@@ -163,9 +164,15 @@ public:
         return create_instance(active_or_completed_instances_.next());
     }
 
-    std::vector<Message<T>> Propose(uint64_t sequence, std::unique_ptr<T> value) {
+    std::vector<Message<T>> Propose(uint64_t sequence,
+                                    std::unique_ptr<T> value,
+                                    uint64_t* value_read_id = nullptr) {
         std::lock_guard<std::mutex> lock(lock_);
-        return propose(sequence, std::move(value));
+        Value<T> wrapped_value(value_reads_.next(), std::move(value));
+        if(value_read_id != nullptr) {
+            *value_read_id = wrapped_value.id();
+        }
+        return propose(sequence, std::move(wrapped_value));
     }
 
     std::vector<Message<T>> Receive(uint64_t sequence,

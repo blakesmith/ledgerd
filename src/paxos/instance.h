@@ -7,6 +7,7 @@
 
 #include "message.h"
 #include "round.h"
+#include "value.h"
 
 namespace ledgerd {
 namespace paxos {
@@ -39,7 +40,7 @@ class Instance {
     uint32_t this_node_id_;
     bool carry_proposed_value_;
     std::vector<uint32_t> node_ids_;
-    std::unique_ptr<T> proposed_value_;
+    Value<T> proposed_value_;
     std::unique_ptr<T> final_value_;
     std::chrono::system_clock::time_point last_receive_;
     const std::chrono::system_clock::duration receive_timeout_;
@@ -124,7 +125,7 @@ class Instance {
                 carry_proposed_value_ = true;
                 accept_value = const_cast<T*>(round_.highest_value());
             } else {
-                accept_value = const_cast<T*>(proposed_value_.get());
+                accept_value = const_cast<T*>(proposed_value_.value());
             }
         }
         if(round_.IsPromiseQuorum() || final_value_) {
@@ -181,7 +182,7 @@ public:
           carry_proposed_value_(false),
           round_(node_ids.size()),
           node_ids_(node_ids),
-          proposed_value_(nullptr),
+          proposed_value_(Value<T>(0, nullptr)),
           final_value_(nullptr),
           receive_timeout_(std::chrono::milliseconds(DEFAULT_RECEIVE_TIMEOUT)) { }
 
@@ -258,7 +259,7 @@ public:
     std::vector<Message<T>> Tick(int rand, std::chrono::system_clock::time_point current_time) {
         std::chrono::milliseconds rand_duration(rand);
         if(current_time > (last_receive_ + receive_timeout_ + rand_duration)) {
-            if(proposed_value_) {
+            if(proposed_value_.value()) {
                 return Prepare();
             }
         }
@@ -281,19 +282,23 @@ public:
         final_value_ = std::move(value);
     }
 
-    T* proposed_value() {
+    Value<T>& proposed_value() {
         std::lock_guard<std::mutex> lock(lock_);
-        return proposed_value_.get();
+        return proposed_value_;
     }
 
-    std::unique_ptr<T> moved_proposed_value() {
+    Value<T> moved_proposed_value() {
         std::lock_guard<std::mutex> lock(lock_);
         return std::move(proposed_value_);
     }
 
-    void set_proposed_value(std::unique_ptr<T> proposed) {
+    void set_proposed_value(Value<T>&& proposed) {
         std::lock_guard<std::mutex> lock(lock_);
         proposed_value_ = std::move(proposed);        
+    }
+
+    void set_proposed_value(std::unique_ptr<T> proposed) {
+        set_proposed_value(Value<T>(0, std::move(proposed)));
     }
 
     bool carry_proposed_value() const {

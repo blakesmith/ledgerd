@@ -18,6 +18,14 @@
 
 namespace ledgerd {
 
+struct ClusterTopic {
+    std::string name;
+    std::vector<uint32_t> partition_ids;
+};
+
+struct ClusterState {
+    std::vector<ClusterTopic> topics;
+};
 
 template <typename C, typename T>
 class AsyncClientRPC {
@@ -102,12 +110,15 @@ class ClusterManager : public Clustering::Service {
     void map_external(const paxos::Message<ClusterEvent>* in,
                       PaxosMessage* out) const;
 
-    uint64_t send(std::unique_ptr<ClusterEvent> message);
+    uint64_t send(std::unique_ptr<ClusterEvent> message,
+                  uint64_t* value_read_id);
 public:
     ClusterManager(uint32_t this_node_id,
                    LedgerdService& ledger_service,
                    const std::string& grpc_cluster_address,
                    std::map<uint32_t, NodeInfo> node_info);
+
+    ~ClusterManager() = default;
 
     void Start();
 
@@ -115,6 +126,8 @@ public:
 
     uint64_t RegisterTopic(const std::string& topic_name,
                            const std::vector<unsigned int>& partition_ids);
+
+    uint64_t GetClusterState(ClusterState* cluster_state);
 
     void WaitForSequence(uint64_t sequence);
 
