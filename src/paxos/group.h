@@ -182,7 +182,9 @@ public:
                                     std::unique_ptr<T> value,
                                     uint64_t* value_read_id = nullptr) {
         std::lock_guard<std::mutex> lock(lock_);
-        Value<T> wrapped_value(value_reads_.next(), std::move(value));
+        uint64_t next_id = value_reads_.next();
+        value_reads_.Add(next_id);
+        Value<T> wrapped_value(next_id, std::move(value));
         if(value_read_id != nullptr) {
             *value_read_id = wrapped_value.id();
         }
@@ -250,6 +252,10 @@ public:
 
     std::future<V> ReadValue(uint64_t value_id) {
         return value_reads_.Future(value_id);
+    }
+
+    void ClearValue(uint64_t value_id) {
+        value_reads_.Clear(value_id);
     }
 
     std::unique_ptr<T> final_value(uint64_t sequence) {

@@ -7,6 +7,7 @@
 
 #include "proto/ledgerd.grpc.pb.h"
 
+#include "cluster_listener.h"
 #include "cluster_log.h"
 #include "cluster_values.h"
 #include "node_info.h"
@@ -71,6 +72,7 @@ class ClusterManager : public Clustering::Service {
     std::unique_ptr<grpc::Server> cluster_server_;
     std::string grpc_cluster_address_;
     ClusterLog cluster_log_;
+    ClusterListener cluster_listener_;
     grpc::CompletionQueue cq_;
     std::thread async_thread_;
     std::atomic<bool> async_thread_run_;

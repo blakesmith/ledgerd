@@ -20,6 +20,7 @@ ledgerd_tests_SOURCES = \
 
 ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
 	$(top_srcdir)/src/paxos/libpaxos.la \
+	$(top_srcdir)/src/cluster_listener.o \
 	$(top_srcdir)/src/cluster_log.o \
 	$(top_srcdir)/src/cluster_manager.o \
 	$(top_srcdir)/src/ledgerd_consumer.o \

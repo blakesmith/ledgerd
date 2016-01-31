@@ -133,6 +133,7 @@ TEST(ClusterManager, GetTopics) {
     cm1.GetTopics(&topic_list);
 
     EXPECT_EQ(1, topic_list.topics.size());
+    EXPECT_EQ("new_topic", topic_list.topics[0].name);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
 

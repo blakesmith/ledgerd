@@ -24,6 +24,7 @@ ClusterManager::ClusterManager(uint32_t this_node_id,
     for(auto& kv : node_info) {
         paxos_group_.AddNode(kv.first);
     }
+    paxos_group_.AddListener(&cluster_listener_);
 }
 
 void ClusterManager::log_paxos_message(const std::string& location,
@@ -189,7 +190,7 @@ uint64_t ClusterManager::RegisterTopic(const std::string& topic_name,
 
 void ClusterManager::GetTopics(ClusterTopicList* topic_list) {
     std::unique_ptr<ClusterEvent> event(new ClusterEvent());
-    event->set_type(ClusterEventType::GET_CLUSTER_STATE);
+    event->set_type(ClusterEventType::LIST_TOPICS);
     uint64_t value_read_id;
     uint64_t sequence = send(std::move(event), &value_read_id);
     std::future<ClusterValue> f = paxos_group_.ReadValue(value_read_id);
@@ -197,6 +198,7 @@ void ClusterManager::GetTopics(ClusterTopicList* topic_list) {
     auto value = f.get();
     assert(value.type == ClusterValueType::TOPIC_LIST);
     *topic_list = value.topic_list;
+    paxos_group_.ClearValue(value_read_id);
 }
 
 void ClusterManager::WaitForSequence(uint64_t sequence) {
