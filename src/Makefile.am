@@ -26,6 +26,7 @@ ledgerd_SOURCES = \
 	ledgerd_service.h ledgerd_service.cc \
 	ledgerd_service_config.h ledgerd_service_config.cc \
 	cluster_log.h cluster_log.cc \
+	cluster_listener.h cluster_listener.cc \
 	cluster_manager.h cluster_manager.cc \
 	node_info.h node_info.cc
 

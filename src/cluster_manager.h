@@ -8,6 +8,7 @@
 #include "proto/ledgerd.grpc.pb.h"
 
 #include "cluster_log.h"
+#include "cluster_values.h"
 #include "node_info.h"
 #include "paxos/group.h"
 
@@ -17,24 +18,6 @@
 #include <grpc++/server_context.h>
 
 namespace ledgerd {
-
-struct ClusterTopic {
-    std::string name;
-    std::vector<uint32_t> partition_ids;
-};
-
-struct ClusterTopicList {
-    std::vector<ClusterTopic> topics;
-};
-
-enum class ClusterValueType {
-    TOPIC_LIST
-};
-
-struct ClusterValue {
-    ClusterValueType type;
-    ClusterTopicList topic_list;
-};
 
 template <typename C, typename T>
 class AsyncClientRPC {
