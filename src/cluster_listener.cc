@@ -11,8 +11,9 @@ paxos::ListenerStatus ClusterListener::Receive(uint64_t sequence, const ClusterE
             const RegisterTopicEvent& register_topic = event->register_topic();
             ClusterTopic topic;
             topic.name = register_topic.name();
-            // TODO: Stop hardcoding!
-            topic.partition_ids.push_back(0);
+            for(int i = 0; i < register_topic.partition_ids_size(); i++) {
+                topic.partition_ids.push_back(register_topic.partition_ids(i));
+            }
             topic_list_.topics.push_back(std::move(topic));
             break;
         }
