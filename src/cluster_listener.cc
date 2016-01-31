@@ -10,6 +10,7 @@ paxos::ListenerStatus ClusterListener::Receive(uint64_t sequence, const ClusterE
         case ClusterEventType::REGISTER_TOPIC: {
             const RegisterTopicEvent& register_topic = event->register_topic();
             ClusterTopic topic;
+            topic.node_id = event->source_node().id();
             topic.name = register_topic.name();
             for(int i = 0; i < register_topic.partition_ids_size(); i++) {
                 topic.partition_ids.push_back(register_topic.partition_ids(i));

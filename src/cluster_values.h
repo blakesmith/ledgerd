@@ -8,6 +8,7 @@ namespace ledgerd {
 struct ClusterTopic {
     std::string name;
     std::vector<uint32_t> partition_ids;
+    uint32_t node_id;
 };
 
 struct ClusterTopicList {

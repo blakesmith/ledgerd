@@ -124,7 +124,7 @@ TEST(ClusterManager, GetTopics) {
     cm3.Start();
 
     const std::vector<unsigned int> partition_ids = { 0, 1 };
-    uint64_t sequence = cm1.RegisterTopic("new_topic", partition_ids);
+    uint64_t sequence = cm2.RegisterTopic("new_topic", partition_ids);
     cm1.WaitForSequence(sequence);
     cm2.WaitForSequence(sequence);
     cm3.WaitForSequence(sequence);
@@ -135,6 +135,7 @@ TEST(ClusterManager, GetTopics) {
     EXPECT_EQ(1, topic_list.topics.size());
     EXPECT_EQ("new_topic", topic_list.topics[0].name);
     EXPECT_EQ(partition_ids, topic_list.topics[0].partition_ids);
+    EXPECT_EQ(1, topic_list.topics[0].node_id);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
