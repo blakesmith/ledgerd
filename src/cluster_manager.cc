@@ -187,16 +187,16 @@ uint64_t ClusterManager::RegisterTopic(const std::string& topic_name,
     return send(std::move(event), nullptr);
 }
 
-uint64_t ClusterManager::GetClusterState(ClusterState* cluster_state) {
+void ClusterManager::GetTopics(ClusterTopicList* topic_list) {
     std::unique_ptr<ClusterEvent> event(new ClusterEvent());
     event->set_type(ClusterEventType::GET_CLUSTER_STATE);
     uint64_t value_read_id;
     uint64_t sequence = send(std::move(event), &value_read_id);
-    // std::future<?> f = paxos_group_.ReadValue(value_read_id);
-    // f.wait();
-    // auto value = f.get();
-    // Map cluster state
-    return sequence;
+    std::future<ClusterValue> f = paxos_group_.ReadValue(value_read_id);
+    f.wait();
+    auto value = f.get();
+    assert(value.type == ClusterValueType::TOPIC_LIST);
+    *topic_list = value.topic_list;
 }
 
 void ClusterManager::WaitForSequence(uint64_t sequence) {

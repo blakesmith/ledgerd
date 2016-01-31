@@ -23,8 +23,17 @@ struct ClusterTopic {
     std::vector<uint32_t> partition_ids;
 };
 
-struct ClusterState {
+struct ClusterTopicList {
     std::vector<ClusterTopic> topics;
+};
+
+enum class ClusterValueType {
+    TOPIC_LIST
+};
+
+struct ClusterValue {
+    ClusterValueType type;
+    ClusterTopicList topic_list;
 };
 
 template <typename C, typename T>
@@ -82,7 +91,7 @@ class ClusterManager : public Clustering::Service {
     grpc::CompletionQueue cq_;
     std::thread async_thread_;
     std::atomic<bool> async_thread_run_;
-    paxos::Group<ClusterEvent> paxos_group_;
+    paxos::Group<ClusterEvent, ClusterValue> paxos_group_;
     std::map<uint32_t, NodeInfo> node_info_;
     std::map<uint32_t, std::unique_ptr<Clustering::Stub>> connections_;
     std::map<uint32_t, std::unique_ptr<AsyncClientRPC<Clustering::Stub, PaxosMessage>>> in_flight_rpcs_;
@@ -127,7 +136,7 @@ public:
     uint64_t RegisterTopic(const std::string& topic_name,
                            const std::vector<unsigned int>& partition_ids);
 
-    uint64_t GetClusterState(ClusterState* cluster_state);
+    void GetTopics(ClusterTopicList* topic_list);
 
     void WaitForSequence(uint64_t sequence);
 

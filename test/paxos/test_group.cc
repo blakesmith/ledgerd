@@ -26,13 +26,15 @@ public:
 };
 
 template <typename T>
-class MemoryListener : public Listener<T> {
+class MemoryListener : public Listener<T, std::string> {
     uint64_t highest_sequence_;
     uint64_t sequence_count_;
+    const T* final_value_;
 public:
     MemoryListener()
         : highest_sequence_(0),
-          sequence_count_(0) { }
+          sequence_count_(0),
+          final_value_(nullptr) { }
 
     uint64_t sequence_count() const {
         return sequence_count_;
@@ -41,6 +43,11 @@ public:
     ListenerStatus Receive(uint64_t sequence, const T* final_value) {
         sequence_count_ += sequence;
         highest_sequence_ = sequence;
+        final_value_ = final_value;
+    }
+
+    ListenerStatus Map(const T* value, std::string* out) {
+        *out = "hello!";
     }
 
     uint64_t HighestSequence() {
@@ -77,9 +84,9 @@ public:
     }
 };
 
-template <typename T>
-static uint64_t complete_sequence(Group<T>& primary_group,
-                                  std::vector<Group<T>*> peers,
+template <typename T, typename V>
+static uint64_t complete_sequence(Group<T, V>& primary_group,
+                                  std::vector<Group<T, V>*> peers,
                                   std::unique_ptr<T> value) {
     Instance<T>* instance = primary_group.CreateInstance();
     auto broadcast_messages = primary_group.Propose(instance->sequence(), std::move(value));
@@ -264,7 +271,7 @@ TEST(Group, GroupRestarts) {
 
 
     MemoryListener<std::string> listener;
-    Group<std::string> restarted_group(0, log);
+    Group<std::string, std::string> restarted_group(0, log);
     restarted_group.AddListener(&listener);
     restarted_group.Start();
     EXPECT_TRUE(restarted_group.instance_complete(sequence1));
@@ -332,9 +339,9 @@ TEST(Group, LeapFroggingProposersTimeouts) {
 
 TEST(Group, Listeners) {
     MemoryLog<std::string> log;
-    Group<std::string> group1(0, log);
-    Group<std::string> group2(1, log);
-    Group<std::string> group3(2, log);
+    Group<std::string, std::string> group1(0, log);
+    Group<std::string, std::string> group2(1, log);
+    Group<std::string, std::string> group3(2, log);
 
     group1.AddNode(0);
     group1.AddNode(1);
@@ -355,7 +362,7 @@ TEST(Group, Listeners) {
     group2.Start();
     group3.Start();
 
-    std::vector<Group<std::string>*> groups { &group2, &group3 };
+    std::vector<Group<std::string, std::string>*> groups { &group2, &group3 };
     std::unique_ptr<std::string> value1(new std::string("hello"));
     std::unique_ptr<std::string> value2(new std::string("there"));
     std::unique_ptr<std::string> value3(new std::string("friend"));

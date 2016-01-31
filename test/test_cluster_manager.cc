@@ -94,4 +94,55 @@ TEST(ClusterManager, BasicSend) {
     cleanup("/tmp/ledgerd_cluster_c3");
 }
 
+TEST(ClusterManager, GetTopics) {
+    LedgerdServiceConfig c1;
+    LedgerdServiceConfig c2;
+    LedgerdServiceConfig c3;
+    cleanup("/tmp/ledgerd_cluster_c1");
+    cleanup("/tmp/ledgerd_cluster_c2");
+    cleanup("/tmp/ledgerd_cluster_c3");
+    setup("/tmp/ledgerd_cluster_c1");
+    setup("/tmp/ledgerd_cluster_c2");
+    setup("/tmp/ledgerd_cluster_c3");
+    c1.set_root_directory("/tmp/ledgerd_cluster_c1");
+    c2.set_root_directory("/tmp/ledgerd_cluster_c2");
+    c3.set_root_directory("/tmp/ledgerd_cluster_c3");
+    LedgerdService ls1(c1);
+    LedgerdService ls2(c2);
+    LedgerdService ls3(c3);
+
+    const std::map<uint32_t, NodeInfo> nodes =
+        {{0, NodeInfo("0.0.0.0:54321")},
+         {1, NodeInfo("0.0.0.0:54322")},
+         {2, NodeInfo("0.0.0.0:54323")}};
+    ClusterManager cm1(0, ls1, "0.0.0.0:54321", nodes);
+    ClusterManager cm2(1, ls2, "0.0.0.0:54322", nodes);
+    ClusterManager cm3(2, ls3, "0.0.0.0:54323", nodes);
+
+    cm1.Start();
+    cm2.Start();
+    cm3.Start();
+
+    const std::vector<unsigned int> partition_ids = { 0 };
+    uint64_t sequence = cm1.RegisterTopic("new_topic", partition_ids);
+    cm1.WaitForSequence(sequence);
+    cm2.WaitForSequence(sequence);
+    cm3.WaitForSequence(sequence);
+
+    ClusterTopicList topic_list;
+    cm1.GetTopics(&topic_list);
+
+    EXPECT_EQ(1, topic_list.topics.size());
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    cm1.Stop();
+    cm2.Stop();
+    cm3.Stop();
+
+    cleanup("/tmp/ledgerd_cluster_c1");
+    cleanup("/tmp/ledgerd_cluster_c2");
+    cleanup("/tmp/ledgerd_cluster_c3");
+}
+
 }

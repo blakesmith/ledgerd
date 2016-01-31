@@ -18,7 +18,7 @@ namespace ledgerd {
 namespace paxos {
 
 template <typename T,
-          typename V = int>
+          typename V = bool>
 class Group {
     std::mutex lock_;
     uint32_t this_node_id_;
@@ -29,13 +29,27 @@ class Group {
     LinearSequence<uint64_t, V> value_reads_;
     std::map<uint32_t, std::unique_ptr<Node<T>>> nodes_;
     std::map<uint64_t, std::unique_ptr<Instance<T>>> instances_;
-    std::vector<Listener<T>*> listeners_;
+    std::vector<Listener<T, V>*> listeners_;
     std::random_device random_;
     std::uniform_int_distribution<int> random_dist_;
 
     void notify_listeners(uint64_t sequence, const T* final_value) {
         for(auto listener : listeners_) {
             listener->Receive(sequence, final_value);
+        }
+    }
+
+    void notify_reader(Instance<T>* instance) {
+        const T* event_value = instance->proposed_value().value();
+        if(event_value != nullptr) {
+            V mapped_value;
+            for(auto listener : listeners_) {
+                auto status = listener->Map(event_value, &mapped_value);
+                if(status == ListenerStatus::OK) {
+                    value_reads_.Deliver(instance->proposed_value().id(),
+                                         std::move(mapped_value));
+                }
+            }
         }
     }
 
@@ -144,7 +158,7 @@ public:
         return node_ref;
     }
 
-    void AddListener(Listener<T>* listener) {
+    void AddListener(Listener<T, V>* listener) {
         std::lock_guard<std::mutex> lock(lock_);
         listeners_.push_back(listener);
     }
@@ -205,6 +219,8 @@ public:
                 for(auto& m : new_messages) {
                     received_messages.push_back(std::move(m));
                 }
+            } else {
+                notify_reader(instance);
             }
         }
 
@@ -230,6 +246,10 @@ public:
 
     void WaitForJournaled(uint64_t sequence) {
         journaled_instances_.WaitForUpperBound(sequence);
+    }
+
+    std::future<V> ReadValue(uint64_t value_id) {
+        return value_reads_.Future(value_id);
     }
 
     std::unique_ptr<T> final_value(uint64_t sequence) {
