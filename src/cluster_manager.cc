@@ -133,7 +133,7 @@ void ClusterManager::send_messages(uint32_t source_node_id,
         }
 
         if(rpc_node_ids.size() <= 0) {
-            return;
+            continue;
         }
 
         // Make a copy of the request, since the above response lifecycle
