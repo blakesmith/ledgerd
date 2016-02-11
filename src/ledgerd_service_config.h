@@ -5,12 +5,16 @@
 #include <string>
 
 #include "node_info.h"
+#include "lib/topic.h"
 
 namespace ledgerd {
 
 class LedgerdServiceConfig {
     std::string root_directory_;
     std::string grpc_address_;
+
+    ledger_topic_options default_topic_options_;
+    unsigned int default_partition_count_;
 
     uint32_t cluster_node_id_;
     std::string grpc_cluster_address_;
@@ -33,6 +37,11 @@ public:
 
     void add_node(uint32_t node_id, const std::string& host_and_port);
     const std::map<uint32_t, NodeInfo>& node_info() const;
+
+    void set_default_partition_count(unsigned int n_partitions);
+    unsigned int default_partition_count() const;
+
+    const ledger_topic_options* default_topic_options() const;
 };
 }
 

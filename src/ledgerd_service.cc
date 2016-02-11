@@ -39,7 +39,32 @@ ledger_status LedgerdService::WritePartition(const std::string& topic_name,
                                              uint32_t partition_number,
                                              const std::string& data,
                                              ledger_write_status *status) {
-    return ledger_write_partition(&ctx, topic_name.c_str(), partition_number, const_cast<char*>(data.data()), data.size(), status);
+    ledger_status rc = ledger_write_partition(&ctx,
+                                              topic_name.c_str(),
+                                              partition_number,
+                                              const_cast<char*>(data.data()),
+                                              data.size(),
+                                              status);
+    if(rc == LEDGER_ERR_BAD_TOPIC) {
+        std::vector<unsigned int> partition_ids;
+        for(unsigned int i = 0; i < config_.default_partition_count(); i++) {
+            partition_ids.push_back(i);
+        }
+        rc = OpenTopic(topic_name,
+                       partition_ids,
+                       const_cast<ledger_topic_options*>(config_.default_topic_options()));
+        if(rc != LEDGER_OK) {
+            return rc;
+        }
+        return ledger_write_partition(&ctx,
+                                      topic_name.c_str(),
+                                      partition_number,
+                                      const_cast<char*>(data.data()),
+                                      data.size(),
+                                      status);
+    }
+
+    return rc;
 }
 
 ledger_status LedgerdService::ReadPartition(const std::string& topic_name,

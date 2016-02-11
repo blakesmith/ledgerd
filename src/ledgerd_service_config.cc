@@ -4,7 +4,10 @@ namespace ledgerd {
 LedgerdServiceConfig::LedgerdServiceConfig()
     : root_directory_("/var/lib/ledgerd"),
       grpc_address_("0.0.0.0:50051"),
-      grpc_cluster_address_("0.0.0.0:50052") { }
+      grpc_cluster_address_("0.0.0.0:50052"),
+      default_partition_count_(1) {
+    ledger_topic_options_init(&default_topic_options_);
+}
 
 void LedgerdServiceConfig::set_root_directory(const std::string& root_directory) {
     this->root_directory_ = root_directory;
@@ -45,5 +48,17 @@ void LedgerdServiceConfig::add_node(uint32_t node_id, const std::string& host_an
 
 const std::map<uint32_t, NodeInfo>& LedgerdServiceConfig::node_info() const {
     return node_info_;
+}
+
+void LedgerdServiceConfig::set_default_partition_count(unsigned int n_partitions) {
+    default_partition_count_ = n_partitions;
+}
+
+unsigned int LedgerdServiceConfig::default_partition_count() const {
+    return default_partition_count_;
+}
+
+const ledger_topic_options* LedgerdServiceConfig::default_topic_options() const {
+    return &default_topic_options_;
 }
 }
