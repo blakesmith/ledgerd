@@ -9,7 +9,7 @@ node default, "ledgerd.blakesmith.me" {
 
   Exec["apt-update"] -> Package <| |>
 
-  package { ["build-essential", "automake", "libtool", "gdb", "pkg-config", "valgrind", "git", "cmake"]:
+  package { ["build-essential", "automake", "libtool", "gdb", "pkg-config", "valgrind", "git", "cmake", "checkinstall"]:
     ensure => installed
   }
 }

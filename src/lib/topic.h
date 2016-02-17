@@ -16,6 +16,7 @@ extern "C" {
 typedef struct {
     bool drop_corrupt;
     size_t journal_max_size_bytes;
+    int32_t journal_purge_age_seconds;
 } ledger_topic_options;
 
 typedef struct {

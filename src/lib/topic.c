@@ -36,6 +36,7 @@ error:
 ledger_status ledger_topic_options_init(ledger_topic_options *options) {
     options->drop_corrupt = false;
     options->journal_max_size_bytes = DEFAULT_JOURNAL_MAX_SIZE;
+    options->journal_purge_age_seconds = LEDGER_JOURNAL_NO_PURGE;
 
     return LEDGER_OK;
 }
@@ -74,6 +75,7 @@ ledger_status ledger_topic_open(ledger_topic *topic, const char *root,
         partition = &topic->partitions[i];
         partition_options.drop_corrupt = options->drop_corrupt;
         partition_options.journal_max_size_bytes = options->journal_max_size_bytes;
+        partition_options.journal_purge_age_seconds = options->journal_purge_age_seconds;
 
         rc = ledger_partition_open(partition, topic_path, partition_ids[i], &partition_options);
         ledger_check_rc(rc == LEDGER_OK, rc, "Failed to open partition");

@@ -15,8 +15,31 @@
 #define LOCK_FILE "locks"
 
 static ledger_status remove_old_journals(ledger_partition *partition) {
-    // TODO: implement
+    int rc;
+    struct timeval tv;
+    time_t journal_age;
+    ledger_journal_meta_entry *journal_meta;
+
+    if(partition->options.journal_purge_age_seconds == LEDGER_JOURNAL_NO_PURGE) {
+        return LEDGER_OK;
+    }
+
+    rc = gettimeofday(&tv, NULL);
+    ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to fetch initial journal rotation time of day");
+
+    for(int i = 0; i < partition->meta.nentries; i++) {
+        journal_meta = &partition->meta.entries[i];
+        journal_age = tv.tv_sec - journal_meta->create_time;
+        if(journal_age > partition->options.journal_purge_age_seconds) {
+            // TODO: Truncate (rebuild?) meta table, remove journal file
+            printf("Rotate!\n");
+        }
+    }
+
     return LEDGER_OK;
+
+error:
+    return LEDGER_ERR_GENERAL;
 }
 
 static inline ledger_journal_meta_entry *find_latest_meta(ledger_partition *partition) {

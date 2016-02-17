@@ -535,4 +535,56 @@ TEST(Ledger, JournalRotation) {
     ledger_close_context(&ctx);
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
+
+TEST(Ledger, JournalPurges) {
+    ledger_ctx ctx;
+    ledger_topic_options options;
+    const char message1[] = "hello";
+    size_t mlen = sizeof(message1);
+    ledger_message_set messages;
+    int messages_count;
+    int i;
+    DIR *dir;
+    struct dirent *dit;
+
+    cleanup(WORKING_DIR);
+    ASSERT_EQ(0, setup(WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_open_context(&ctx, WORKING_DIR));
+    ASSERT_EQ(LEDGER_OK, ledger_topic_options_init(&options));
+    options.journal_max_size_bytes = 100;
+    options.journal_purge_age_seconds = 1;
+    unsigned int partition_ids[] = {0};
+    ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
+
+    // Write enough messages to force journal rotations
+    messages_count = 10;
+    for(i = 0; i < messages_count; i++) {
+        ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen, NULL));
+    }
+
+    sleep(2);
+
+    // Write enough again. Old journals should be purged.
+    for(i = 0; i < messages_count; i++) {
+        ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen, NULL));
+    }
+
+    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, messages_count*2, &messages));
+    EXPECT_EQ(messages_count, messages.nmessages);
+
+    dir = opendir(FULL_PARTITION);
+    ASSERT_TRUE(dir != NULL);
+
+    int journal_count = 0;
+    while((dit = readdir(dir)) != NULL) {
+        journal_count++;
+    }
+    EXPECT_EQ(8, journal_count);
+
+    ledger_message_set_free(&messages);
+    ASSERT_EQ(0, closedir(dir));
+    ledger_close_context(&ctx);
+    ASSERT_EQ(0, cleanup(WORKING_DIR));
+}
+
 }

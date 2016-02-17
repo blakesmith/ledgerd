@@ -11,6 +11,8 @@
 extern "C" {
 #endif
 
+#define LEDGER_JOURNAL_NO_PURGE -1
+
 typedef struct {
     void *map;
     size_t map_len;
@@ -34,6 +36,7 @@ typedef struct {
 typedef struct {
     bool drop_corrupt;
     size_t journal_max_size_bytes;
+    uint32_t journal_purge_age_seconds;
 } ledger_partition_options;
 
 typedef struct {
