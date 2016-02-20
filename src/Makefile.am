@@ -22,6 +22,7 @@ ledgerd_SOURCES = \
 	log.h \
 	grpc_interface.h grpc_interface.cc \
 	ledgerd.cc \
+	service_config_parser.h service_config_parser.cc \
 	ledgerd_consumer.h ledgerd_consumer.cc \
 	ledgerd_service.h ledgerd_service.cc \
 	ledgerd_service_config.h ledgerd_service_config.cc \

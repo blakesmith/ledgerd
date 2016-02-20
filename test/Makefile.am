@@ -16,6 +16,7 @@ ledgerd_tests_SOURCES = \
 	test_ledger_service.cc \
 	test_command_parser.cc \
 	test_cluster_log.cc \
+	test_service_config_parser.cc \
 	test_cluster_manager.cc
 
 ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
@@ -26,6 +27,7 @@ ledgerd_tests_LDADD = $(top_srcdir)/src/lib/libledger.la \
 	$(top_srcdir)/src/ledgerd_consumer.o \
 	$(top_srcdir)/src/ledgerd_service.o \
 	$(top_srcdir)/src/ledgerd_service_config.o \
+	$(top_srcdir)/src/service_config_parser.o \
 	$(top_srcdir)/src/node_info.o \
 	$(top_srcdir)/src/grpc_interface.o \
 	$(top_srcdir)/src/command.o \
