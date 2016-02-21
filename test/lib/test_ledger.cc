@@ -536,7 +536,7 @@ TEST(Ledger, JournalRotation) {
     ASSERT_EQ(0, cleanup(WORKING_DIR));
 }
 
-TEST(Ledger, DISABLED_JournalPurges) {
+TEST(Ledger, JournalPurges) {
     ledger_ctx ctx;
     ledger_topic_options options;
     const char message1[] = "hello";

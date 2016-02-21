@@ -14,12 +14,47 @@
 #define META_FILE "meta"
 #define LOCK_FILE "locks"
 
-static ledger_status remove_old_journals(ledger_partition *partition) {
+static ledger_status purge_journals(int truncate_index) {
+    // TODO: Remove journal files
+    if(truncate_index == -1) {
+        // No journals to be removed
+        return LEDGER_OK;
+    }
+
+    return LEDGER_OK;
+}
+
+static ledger_status shrink_meta(int truncate_index,
+                                 int meta_fd,
+                                 int* new_meta_fd) {
+    if(truncate_index == -1) {
+        // No changes to be made to the meta table
+        return LEDGER_OK;
+    }
+
+    // 1. Open tempfile for new rewritten meta file
+    // 2. Calculate new number of entries. Truncate index math?
+    // 3. Copy new entries from old file
+    // 4. Close old meta file
+    // 5. Rename tempfile -> current file
+    // 6. Pass back pointer to new file
+    // TODO: Truncate (rebuild?) meta table
+    return LEDGER_OK;
+}
+
+// We pass in a new_meta_fd out pointer, which will always get a reference
+// to the active file descriptor for the meta file. This function may or
+// may not rewrite the meta file, in cases of truncation. After calling this
+// function, it is not valid for callers to access meta_fd directly anymore.
+static ledger_status remove_old_journals(ledger_partition *partition,
+                                         int meta_fd,
+                                         int *new_meta_fd) {
     int rc;
     struct timeval tv;
     time_t journal_age;
     ledger_journal_meta_entry *journal_meta;
 
+    *new_meta_fd = meta_fd;
     if(partition->options.journal_purge_age_seconds == LEDGER_JOURNAL_NO_PURGE) {
         return LEDGER_OK;
     }
@@ -27,19 +62,25 @@ static ledger_status remove_old_journals(ledger_partition *partition) {
     rc = gettimeofday(&tv, NULL);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to fetch initial journal rotation time of day");
 
+    // Truncate all journals up until this index, inclusive.
+    int truncate_idx = -1;
     for(int i = 0; i < partition->meta.nentries; i++) {
         journal_meta = &partition->meta.entries[i];
         journal_age = tv.tv_sec - journal_meta->create_time;
         if(journal_age > partition->options.journal_purge_age_seconds) {
-            // TODO: Truncate (rebuild?) meta table, remove journal file
-            printf("Rotate!\n");
+            truncate_idx = i;
+        } else {
+            break;
         }
     }
 
-    return LEDGER_OK;
+    rc = shrink_meta(truncate_idx, meta_fd, new_meta_fd);
+    ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to shrink meta file");
+
+    return purge_journals(truncate_idx);
 
 error:
-    return LEDGER_ERR_GENERAL;
+    return rc;
 }
 
 static inline ledger_journal_meta_entry *find_latest_meta(ledger_partition *partition) {
@@ -272,31 +313,35 @@ static ledger_status unmap_meta(ledger_partition *partition) {
 }
 
 static ledger_status rotate_journals(ledger_partition *partition) {
-    ledger_status rc;
+    ledger_status rc = LEDGER_OK;
     int fd = 0;
+    int new_fd = 0;
     struct stat st;
-
-    rc = remove_old_journals(partition);
-    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to remove old journals");
 
     fd = open_meta(partition);
     ledger_check_rc(fd > 0, rc, "Failed to open meta file");
 
-    rc = add_journal(partition, fd);
+    rc = remove_old_journals(partition, fd, &new_fd);
+    ledger_check_rc(rc == LEDGER_OK, rc, "Failed to remove old journals");
+
+    rc = add_journal(partition, new_fd);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to add a journal");
 
-    rc = fstat(fd, &st);
+    rc = fstat(new_fd, &st);
     ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to stat meta file");
 
-    rc = remap_meta(partition, fd, st.st_size);
+    rc = remap_meta(partition, new_fd, st.st_size);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to remap meta during rotation");
 
-    close(fd);
+    close(new_fd);
     return LEDGER_OK;
 
 error:
     if(fd) {
         close(fd);
+    }
+    if(new_fd) {
+        close(new_fd);
     }
     return rc;
 }

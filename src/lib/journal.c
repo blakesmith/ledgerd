@@ -204,9 +204,6 @@ ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
     journal_read_len = end_idx_offset - start_idx_offset;
     total_messages = journal_read_len / sizeof(uint64_t);
 
-    /* printf("Start offset: %" PRIu64 ", End offset: %" PRIu64 */
-    /*        ", Read length: %ld, File size: %ld\n", start_idx_offset, */
-    /*        end_idx_offset, journal_read_len, idx_st.st_size); */
     journal->idx.map = mmap(NULL, idx_st.st_size, PROT_READ, MAP_PRIVATE,
                             journal->idx.fd, 0);
     ledger_check_rc(journal->idx.map != (void *)-1, LEDGER_ERR_IO, "Failed to memory map journal index");
