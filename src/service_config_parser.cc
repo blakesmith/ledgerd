@@ -16,7 +16,6 @@ std::unique_ptr<LedgerdServiceConfig> ServiceConfigParser::MakeServiceConfig(int
         { "cluster-address", required_argument, 0, 'c' },
         { "cluster-node-id", required_argument, 0, 'i' },
         { "default-partition-count", required_argument, 0, 'p' },
-        { "peer-nodes", required_argument, 0, 'n' },
         { 0, 0, 0, 0}
     };
     int ch;
@@ -38,10 +37,6 @@ std::unique_ptr<LedgerdServiceConfig> ServiceConfigParser::MakeServiceConfig(int
                 break;
             case 'p':
                 config->set_default_partition_count(atoi(optarg));
-                break;
-            case 'n':
-                config->add_node(0, "blah:blah");
-                config->add_node(1, "blah:blah");
                 break;
             default:
                 break;
