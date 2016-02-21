@@ -38,4 +38,13 @@ TEST(ServiceConfigParser, AllOptions) {
     EXPECT_EQ(5, config->default_partition_count());
 }
 
+TEST(ServiceConfigParser, Help) {
+    ServiceConfigParser parser;
+    const char *argv[] { "ledgerd", "--help"};
+    int argc = sizeof(argv) / sizeof(char*);
+
+    auto config = parser.MakeServiceConfig(argc, const_cast<char**>(argv));
+    ASSERT_TRUE(config == nullptr);
+}
+
 }

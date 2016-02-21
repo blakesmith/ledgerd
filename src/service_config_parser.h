@@ -7,6 +7,7 @@
 
 namespace ledgerd {
 class ServiceConfigParser final {
+    void print_help();
 public:
     ServiceConfigParser();
     std::unique_ptr<LedgerdServiceConfig> MakeServiceConfig(int argc, char **argv);
