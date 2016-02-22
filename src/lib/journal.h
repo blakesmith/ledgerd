@@ -54,6 +54,7 @@ ledger_status ledger_journal_write(ledger_journal *journal, void *data,
 ledger_status ledger_journal_latest_message_id(ledger_journal *journal, uint64_t *id);
 ledger_status ledger_journal_read(ledger_journal *journal, uint64_t start_id,
                                   size_t nmessages, ledger_message_set *messages);
+ledger_status ledger_journal_delete(const char *partition_path, uint32_t journal_id);
 
 #if defined(__cplusplus)
 }

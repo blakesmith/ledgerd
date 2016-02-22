@@ -1,3 +1,5 @@
+#define _XOPEN_SOURCE 500
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -14,32 +16,86 @@
 #define META_FILE "meta"
 #define LOCK_FILE "locks"
 
-static ledger_status purge_journals(int truncate_index) {
-    // TODO: Remove journal files
+static ledger_status purge_journals(ledger_partition *partition,
+                                    int truncate_index) {
+    ledger_status rc = LEDGER_OK;
+    ledger_journal_meta_entry *meta_entry;
+
     if(truncate_index == -1) {
         // No journals to be removed
         return LEDGER_OK;
     }
 
-    return LEDGER_OK;
+    int nremove = truncate_index + 1;
+    for(int i = 0; i < nremove; i++) {
+        meta_entry = &partition->meta.entries[i];
+        rc = ledger_journal_delete(partition->path, meta_entry->id);
+        ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_IO, "Error deleting journal file");
+    }
+
+    return rc;
+
+error:
+    return rc;
 }
 
-static ledger_status shrink_meta(int truncate_index,
+static ledger_status shrink_meta(ledger_partition *partition,
+                                 int truncate_index,
                                  int meta_fd,
                                  int* new_meta_fd) {
+    ledger_status rc = LEDGER_OK;
+    int tmp_fd = 0;
+    int fd = 0;
+    size_t write_size;
+    ledger_journal_meta_entry *meta_entry;
+    char *meta_path = NULL;
+    ssize_t path_len;
+    char tmp_name[] = "/tmp/ledgerd_metaXXXXXX";
+
     if(truncate_index == -1) {
         // No changes to be made to the meta table
         return LEDGER_OK;
     }
 
-    // 1. Open tempfile for new rewritten meta file
-    // 2. Calculate new number of entries. Truncate index math?
-    // 3. Copy new entries from old file
-    // 4. Close old meta file
-    // 5. Rename tempfile -> current file
-    // 6. Pass back pointer to new file
-    // TODO: Truncate (rebuild?) meta table
+    tmp_fd = mkstemp(tmp_name);
+    ledger_check_rc(tmp_fd != -1, LEDGER_ERR_IO, "Error opening meta temporary file");
+
+    uint32_t next_index = truncate_index + 1;
+    uint32_t nentries = partition->meta.nentries - next_index;
+    rc = ledger_pwrite(tmp_fd, (void *)&nentries, sizeof(uint32_t), 0);
+    ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write meta number of entries");
+
+    meta_entry = &partition->meta.entries[next_index];
+    write_size = nentries * sizeof(ledger_journal_meta_entry);
+    rc = ledger_pwrite(tmp_fd, (void *)meta_entry, write_size, sizeof(uint32_t));
+    ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write the shrunken meta entries");
+
+    path_len = ledger_concat_path(partition->path, META_FILE, &meta_path);
+    ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build meta path");
+
+    rc = rename(tmp_name, meta_path);
+    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to rename temporary meta file");
+
+    fd = open(meta_path, O_RDWR|O_CREAT, 0700);
+    ledger_check_rc(fd > 0 || errno == EEXIST, LEDGER_ERR_BAD_META, "Failed to open meta file");
+
+    *new_meta_fd = fd;
+
+    free(meta_path);
+    close(tmp_fd);
     return LEDGER_OK;
+
+error:
+    if(tmp_fd) {
+        close(tmp_fd);
+    }
+    if(fd) {
+        close(fd);
+    }
+    if(meta_path) {
+        free(meta_path);
+    }
+    return rc;
 }
 
 // We pass in a new_meta_fd out pointer, which will always get a reference
@@ -74,10 +130,10 @@ static ledger_status remove_old_journals(ledger_partition *partition,
         }
     }
 
-    rc = shrink_meta(truncate_idx, meta_fd, new_meta_fd);
-    ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to shrink meta file");
+    rc = purge_journals(partition, truncate_idx);
+    ledger_check_rc(rc == LEDGER_OK, LEDGER_ERR_GENERAL, "Failed to remove journal files");
 
-    return purge_journals(truncate_idx);
+    return shrink_meta(partition, truncate_idx, meta_fd, new_meta_fd);
 
 error:
     return rc;

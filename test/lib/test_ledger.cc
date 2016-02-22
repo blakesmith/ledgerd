@@ -569,10 +569,10 @@ TEST(Ledger, JournalPurges) {
         ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen, NULL));
     }
 
-    EXPECT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, messages_count*2, &messages));
+    ASSERT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, messages_count*2, &messages));
     EXPECT_EQ(messages_count, messages.nmessages);
 
-    dir = opendir(FULL_PARTITION);
+    dir = opendir("/tmp/ledgerd/my_data/0");
     ASSERT_TRUE(dir != NULL);
 
     int journal_count = 0;

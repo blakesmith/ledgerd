@@ -267,3 +267,29 @@ error:
     }
     return rc;
 }
+
+ledger_status ledger_journal_delete(const char *partition_path, uint32_t journal_id) {
+    ledger_status rc;
+    char *path = NULL;
+    char journal_path[13];
+    size_t path_len;
+
+    rc = snprintf(journal_path, 13, "%08d.%s", journal_id, JOURNAL_EXT);
+    ledger_check_rc(rc > 0, LEDGER_ERR_GENERAL, "Error building journal path");
+
+    path_len = ledger_concat_path(partition_path, journal_path, &path);
+    ledger_check_rc(path_len > 0, LEDGER_ERR_MEMORY, "Failed to build journal path");
+
+    rc = unlink(path);
+    ledger_check_rc(rc == 0, LEDGER_ERR_IO, "Failed to unlink journal file");
+
+    free(path);
+
+    return LEDGER_OK;
+
+error:
+    if(path) {
+        free(path);
+    }
+    return rc;
+}

@@ -23,6 +23,7 @@ typedef enum {
 
 #define ledger_check_rc(C, R, M) if(!(C)) { \
     rc = R; \
+    printf("%s\n", M);                           \
     goto error; \
 }
 
