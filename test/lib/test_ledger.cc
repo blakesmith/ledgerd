@@ -557,7 +557,7 @@ TEST(Ledger, JournalPurges) {
     ASSERT_EQ(LEDGER_OK, ledger_open_topic(&ctx, TOPIC, partition_ids, 1, &options));
 
     // Write enough messages to force journal rotations
-    messages_count = 10;
+    messages_count = 50;
     for(i = 0; i < messages_count; i++) {
         ASSERT_EQ(LEDGER_OK, ledger_write_partition(&ctx, TOPIC, 0, (void *)message1, mlen, NULL));
     }
@@ -570,16 +570,16 @@ TEST(Ledger, JournalPurges) {
     }
 
     ASSERT_EQ(LEDGER_OK, ledger_read_partition(&ctx, TOPIC, 0, LEDGER_BEGIN, messages_count*2, &messages));
-    EXPECT_EQ(messages_count, messages.nmessages);
+    EXPECT_EQ(52, messages.nmessages);
 
-    dir = opendir("/tmp/ledgerd/my_data/0");
+    dir = opendir("/tmp/ledger/my_data/0");
     ASSERT_TRUE(dir != NULL);
 
     int journal_count = 0;
     while((dit = readdir(dir)) != NULL) {
         journal_count++;
     }
-    EXPECT_EQ(8, journal_count);
+    EXPECT_EQ(17, journal_count);
 
     ledger_message_set_free(&messages);
     ASSERT_EQ(0, closedir(dir));

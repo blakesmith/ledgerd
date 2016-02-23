@@ -65,6 +65,9 @@ static ledger_status shrink_meta(ledger_partition *partition,
     rc = ledger_pwrite(tmp_fd, (void *)&nentries, sizeof(uint32_t), 0);
     ledger_check_rc(rc, LEDGER_ERR_IO, "Failed to write meta number of entries");
 
+    // Update this temporarily until the meta file gets remapped
+    partition->meta.nentries = nentries;
+
     meta_entry = &partition->meta.entries[next_index];
     write_size = nentries * sizeof(ledger_journal_meta_entry);
     rc = ledger_pwrite(tmp_fd, (void *)meta_entry, write_size, sizeof(uint32_t));
@@ -154,6 +157,7 @@ static ledger_status add_journal(ledger_partition *partition, int fd) {
     uint32_t nentries;
     off_t offset;
     ledger_journal_meta_entry meta_entry;
+    ledger_journal_meta_entry *latest_meta;
 
     rc = gettimeofday(&tv, NULL);
     ledger_check_rc(rc == 0, LEDGER_ERR_GENERAL, "Failed to fetch initial meta time of day");
@@ -170,8 +174,13 @@ static ledger_status add_journal(ledger_partition *partition, int fd) {
     rc = ledger_partition_latest_message_id(partition, &meta_entry.first_message_id);
     ledger_check_rc(rc == LEDGER_OK, rc, "Failed to fetch the latest message id");
 
+    latest_meta = find_latest_meta(partition);
+    if(latest_meta != NULL) {
+        meta_entry.id = latest_meta->id + 1;
+    } else {
+        meta_entry.id = 0;
+    }
     nentries = partition->meta.nentries + 1;
-    meta_entry.id = partition->meta.nentries;
 
     meta_entry.create_time = tv.tv_sec;
 
