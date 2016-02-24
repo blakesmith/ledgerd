@@ -1,4 +1,3 @@
-#include <iostream>
 #include <memory>
 
 #include <grpc++/server.h>
@@ -7,6 +6,7 @@
 
 #include "cluster_manager.h"
 #include "ledgerd_service.h"
+#include "log.h"
 #include "service_config_parser.h"
 #include "ledgerd_service_config.h"
 #include "grpc_interface.h"
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     builder.AddListeningPort(config->get_grpc_address(), grpc::InsecureServerCredentials());
     builder.RegisterService(&grpc_interface);
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << config->get_grpc_address() << std::endl;
+    LEDGERD_LOG(logINFO) << "Server listening on " << config->get_grpc_address();
     server->Wait();
     cluster_manager.Stop();
 
