@@ -17,6 +17,7 @@ message PingResponse {
 message TopicOptions {
     bool drop_corrupt = 1;
     uint32 journal_max_size_bytes = 2;
+    int32 journal_purge_age_seconds = 3;
 }
 
 enum LedgerdStatus {

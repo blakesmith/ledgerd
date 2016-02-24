@@ -33,7 +33,7 @@ std::unique_ptr<LedgerdServiceConfig> ServiceConfigParser::MakeServiceConfig(int
     int ch;
     std::unique_ptr<LedgerdServiceConfig> config = std::unique_ptr<LedgerdServiceConfig>(new LedgerdServiceConfig());
 
-    while((ch = getopt_long(argc, argv, "h:r:g:c:i:n:", longopts, NULL)) != -1) {
+    while((ch = getopt_long(argc, argv, "h:r:g:c:i:p:", longopts, NULL)) != -1) {
         switch(ch) {
             case 'r':
                 config->set_root_directory(std::string(optarg, strlen(optarg)));

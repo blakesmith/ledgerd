@@ -101,6 +101,7 @@ grpc::Status GrpcInterface::OpenTopic(grpc::ServerContext *context, const OpenTo
         const TopicOptions& opts = req->options();
         topic_options.drop_corrupt = opts.drop_corrupt();
         topic_options.journal_max_size_bytes = opts.journal_max_size_bytes();
+        topic_options.journal_purge_age_seconds = opts.journal_purge_age_seconds();
     }
 
     rc = ledgerd_service_.OpenTopic(req->name(), partition_ids, &topic_options);

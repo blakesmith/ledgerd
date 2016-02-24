@@ -39,7 +39,7 @@ std::unique_ptr<Command> CommandParser::MakeCommand(int argc, char **argv) {
     Options full_opts;
 
     full_opts.common_opts.host = "localhost";
-    full_opts.common_opts.port = 64399;
+    full_opts.common_opts.port = 50051;
     full_opts.nmessages = 1;
     full_opts.start_id = 0;
 
